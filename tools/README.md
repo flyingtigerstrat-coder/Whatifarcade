@@ -6,6 +6,11 @@ lock, and the multi-pod operating model, read **[`/CLAUDE.md`](../CLAUDE.md)**
 first; for the architectural spec read
 **[`STUDIO_ENGINE_AND_TOOLING.md`](./STUDIO_ENGINE_AND_TOOLING.md)**.
 
+> **Scope:** this is the **lighting runtime** (relights a baked scene live). It is
+> *distinct* from the **pixel-art asset pipeline** (`/tools/pixel-pipeline`, see
+> `CLAUDE.md` §8), which *bakes* the sprites/scenes in the first place. Different
+> jobs, same `/tools` home: the pipeline produces assets; Relight lights them.
+
 ## What's in here
 
 | File | What it is |
