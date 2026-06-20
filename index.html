@@ -7,14 +7,12 @@
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Inter:wght@400;500;600&family=Press+Start+2P&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/shared/brand.css">
 <style>
   :root{
-    --night:#0e0b16; --night2:#15101f; --dusk:#1c1530; --dusk2:#281b3c;
-    --rust:#d2743f; --rust-deep:#8a3a28; --amber:#f0cf86; --cream:#f6e7c4;
-    --dust:#c98f4a; --teal:#9fd8d8; --muted:#a8927e; --line:rgba(240,207,134,.14);
-    --display:'Bricolage Grotesque',system-ui,sans-serif;
-    --body:'Inter',system-ui,sans-serif;
-    --pixel:'Press Start 2P',monospace;
+    /* brand tokens (palette + type) now load from /shared/brand.css */
+    /* these are storefront-local extras, not brand: */
+    --night2:#15101f; --muted:#a8927e; --line:rgba(240,207,134,.14);
   }
   *{box-sizing:border-box;margin:0;padding:0}
   html{scroll-behavior:smooth}

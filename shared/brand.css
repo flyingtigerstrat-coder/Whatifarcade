@@ -1,0 +1,32 @@
+/* =============================================================
+   shared/brand.css — What If Arcade brand tokens (LOCKED)
+   -------------------------------------------------------------
+   WHAT: the studio's palette + type, as CSS custom properties.
+         The single source of truth for the brand (CLAUDE.md §4).
+   USE:  <link rel="stylesheet" href="/shared/brand.css"> in <head>,
+         before any page-local <style>. Then reference via var(),
+         e.g. color:var(--rust). Pages may define their own LOCAL
+         extras (e.g. --night2, --muted, --line) in their own :root;
+         those are page tuning, not brand, and stay page-local.
+   RULE: brand is LOCKED — do not drift these values. Gold is
+         Noodle's signature alone and is intentionally NOT here
+         (it belongs only to Noodle's marks). Changes are Tier-1
+         shared + human-ratified (GOVERNANCE.md §7).
+   ============================================================= */
+:root{
+  /* palette — CLAUDE.md §4 */
+  --night:#0e0b16;     /* base background */
+  --dusk:#1c1530;      /* dusk gradient start */
+  --dusk2:#281b3c;     /* dusk gradient end */
+  --rust:#d2743f;      /* primary */
+  --rust-deep:#8a3a28;
+  --amber:#f0cf86;     /* glow */
+  --dust:#c98f4a;
+  --cream:#f6e7c4;
+  --teal:#9fd8d8;      /* rare — the one shimmer (wish cursor) */
+
+  /* type — CLAUDE.md §4 */
+  --display:'Bricolage Grotesque',system-ui,sans-serif; /* display / wordmark */
+  --body:'Inter',system-ui,sans-serif;                  /* body */
+  --pixel:'Press Start 2P',monospace;                   /* arcade chrome only */
+}
