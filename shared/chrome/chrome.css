@@ -1,0 +1,59 @@
+/* =============================================================
+   shared/chrome/chrome.css — studio chrome (nav + footer + brand lockup)
+   -------------------------------------------------------------
+   WHAT: the shared furniture every What If Arcade page wears.
+   PROVIDES:
+     - top nav: .nav / .nav.solid / .nav__links
+     - brand lockup (nav + footer): .brand .coinmark .wm  .wm .dot  .navdot
+     - footer: .foot .foot__rail .trundle .foot__grid .foot__meta
+               .studio (Noodle Studios gold wordmark) .noodle (footer easter egg)
+   REQUIRES: /shared/brand.css tokens. Three host tuning tokens are used with
+     built-in fallbacks so this file renders standalone: --line, --muted, --night2
+     (a host page may override them in its own :root).
+   NOT HERE (left inline in the storefront by design, too entangled to lift blind):
+     - the wish console + teal cursor (woven into storefront .btn / .eyebrow)
+     - the cabinet frame / arcade shelf (storefront layout, not a studio widget)
+   USE: <link rel="stylesheet" href="/shared/chrome/chrome.css"> after brand.css.
+   ============================================================= */
+  /* ---------- top bar ---------- */
+  .nav{
+    position:fixed; top:0; left:0; right:0; z-index:50;
+    display:flex; align-items:center; justify-content:space-between;
+    padding:16px 28px; background:linear-gradient(var(--night),rgba(14,11,22,0));
+    transition:background .3s;
+  }
+  .nav.solid{background:rgba(14,11,22,.92); border-bottom:1px solid var(--line,rgba(240,207,134,.14))}
+  .brand{display:flex; align-items:center; gap:11px; perspective:600px}
+  .coinmark{width:30px; height:30px; flex:none;
+    animation:coinflip .75s cubic-bezier(.2,.7,.2,1) both, coinbreath 4.2s ease-in-out .9s infinite}
+  @keyframes coinflip{0%{transform:rotateY(96deg) scale(.9)}60%{transform:rotateY(-12deg)}100%{transform:rotateY(0) scale(1)}}
+  @keyframes coinbreath{0%,100%{filter:drop-shadow(0 0 2px rgba(240,207,134,.25))}50%{filter:drop-shadow(0 0 9px rgba(240,207,134,.6))}}
+  .wm{font-family:var(--display); font-weight:700; font-size:1.16rem; letter-spacing:-.01em; color:var(--cream); line-height:1}
+  .wm .dot{color:var(--rust)}
+  .foot .coinmark{width:26px; height:26px}
+  .foot .wm{font-size:1.05rem}
+  .navdot{width:11px; height:11px; border-radius:50%; background:var(--amber); flex:none; box-shadow:0 0 10px var(--amber); animation:dotflk 3.2s infinite}
+  @keyframes dotflk{0%,92%,100%{opacity:1}94%{opacity:.4}}
+  .nav__links{display:flex; gap:26px; font-family:var(--pixel); font-size:9px; letter-spacing:1px; color:var(--muted,#a8927e)}
+  .nav__links a{transition:color .2s}
+  .nav__links a:hover{color:var(--amber)}
+  @media(max-width:640px){.nav__links{display:none}}
+
+  /* ---------- footer ---------- */
+  .foot{border-top:1px solid var(--line,rgba(240,207,134,.14)); padding:30px 0 40px; background:var(--night2,#15101f); position:relative; overflow:hidden}
+  .foot__rail{height:2px; background:repeating-linear-gradient(90deg,var(--rust-deep) 0 8px,transparent 8px 16px); opacity:.5; margin-bottom:18px}
+  .trundle{position:absolute; bottom:34px; left:-130px; width:120px; opacity:.85;
+    animation:roll 17s linear infinite}
+  @keyframes roll{from{left:-130px}to{left:110%}}
+  .foot__grid{display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap}
+  .foot .brand{font-size:12px}
+  .studio{font-family:var(--display); font-weight:700; font-style:italic; font-size:clamp(1.05rem,2.4vw,1.32rem);
+    letter-spacing:.015em; line-height:1; display:inline-flex; align-items:center; gap:9px;
+    background:linear-gradient(180deg,#fbe7a6 12%,#e3a948 95%); -webkit-background-clip:text; background-clip:text;
+    color:transparent; -webkit-text-fill-color:transparent; filter:drop-shadow(0 0 13px rgba(240,207,134,.4))}
+  .noodle{height:44px; width:auto; image-rendering:pixelated; margin-right:1px;
+    animation:noodleshimmer 3.2s ease-in-out infinite}
+  @keyframes noodleshimmer{0%,100%{filter:drop-shadow(0 0 3px rgba(240,207,134,.3)) brightness(1)}
+    50%{filter:drop-shadow(0 0 11px rgba(240,207,134,.85)) brightness(1.13)}}
+  .foot__meta{font-size:.86rem; color:var(--muted,#a8927e); margin-top:16px}
+  .foot__meta a{color:var(--rust)}
