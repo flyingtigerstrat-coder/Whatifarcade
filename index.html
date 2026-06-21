@@ -567,8 +567,9 @@
   })();
 
   // ---- "coins inserted" play counter ----
-  // a play == a coin: clicking an active cabinet's link increments that game's count.
-  // counts are shared/persistent via the same Apps Script (type=play) and read back as data.plays.
+  // a play == a coin inserted: each game records its own play on load.
+  // CREDITS = shared play totals, read here via the votes/plays JSONP (data.plays).
+  // Plays are WRITTEN by each game on load (/shared/play-counter.js), not by the storefront.
   (function(){
     var coins = Array.prototype.slice.call(document.querySelectorAll('.coins'));
     if(!coins.length) return;
@@ -581,21 +582,11 @@
       if(!map) return;
       coins.forEach(function(c){ var g=c.getAttribute('data-game'); if(typeof map[g]==='number') setC(c, map[g]); });
     };
-    // insert a coin when an active cabinet's link is clicked (coming-soon cards have no link)
-    var links = Array.prototype.slice.call(document.querySelectorAll('.cab:not(.cab--soon) .cab__link[href]'));
-    links.forEach(function(a){
-      var cab=a.closest('.cab'), v=cab&&cab.querySelector('.vote'), g=v&&v.getAttribute('data-game');
-      if(!g) return;
-      a.addEventListener('click', function(){
-        var c=byGame(g);
-        if(c){ setC(c, getC(c)+1); c.classList.remove('bump'); void c.offsetWidth; c.classList.add('bump'); }
-        if(VOTE_ENDPOINT){ try{
-          var body=new URLSearchParams({type:'play',game:g,ref:location.href,ts:new Date().toISOString()});
-          if(navigator.sendBeacon){ navigator.sendBeacon(VOTE_ENDPOINT, body); }   // survives navigation
-          else { fetch(VOTE_ENDPOINT,{method:'POST',mode:'no-cors',keepalive:true,body:body}); }
-        }catch(_){} }
-      });
-    });
+    // Plays are now recorded by each game itself on load (see /shared/play-counter.js),
+    // so every play counts regardless of entry path, and the write fires on a stable
+    // page (fetch follows the Apps Script redirect) instead of a beacon mid-navigation.
+    // The storefront only DISPLAYS the shared total (the JSONP read above); it no
+    // longer writes plays.
   })();
 })();
 </script>
