@@ -1,0 +1,663 @@
+<!doctype html>
+<!-- Koi — a pond to keep · koi v2.2 (per-patch hi tone) · Noodle Studios / What If Arcade -->
+<!--
+  ARCHITECTURE: the pond is the platform; a "skin" is content.
+  Single shared POND state (koi, plants, food, ripples, economy, time).
+  RENDER CONTRACT — every skin implements:
+     water(ctx, t)              full-bleed water/background + light
+     koi(ctx, k, sp, dim)       one koi, given its precomputed spine `sp`
+     plant(ctx, p)              one plant (pad / lotus)         [optional -> falls back to Natural]
+     fx(ctx)                    ripples + food                 [optional -> falls back to generic]
+     overlay(ctx, t)           foreground (vignette/fog/petals)
+  The engine computes koi geometry once and calls the active skin. Skins are
+  drop-in: register in SKINS and it appears. Natural is the canonical core;
+  art skins are faithful performances of it.
+-->
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Koi — a pond to keep</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  html,body{height:100%;background:#0c1512;overflow:hidden;cursor:crosshair}
+  #c{display:block;width:100vw;height:100vh;touch-action:none}
+  .chrome{font-family:ui-sans-serif,-apple-system,"Segoe UI",Inter,sans-serif;
+    transition:opacity .7s ease, transform .7s ease;z-index:10;user-select:none}
+  .chrome.hide{opacity:0;pointer-events:none;transform:translateY(10px)}
+  #pond{position:fixed;left:20px;top:18px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;z-index:10}
+  #ser{display:inline-flex;align-items:center;gap:8px;color:rgba(240,238,230,.92);font-size:13px;letter-spacing:.06em;
+    padding:8px 15px;border-radius:999px;background:rgba(10,16,14,.4);
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08)}
+  #ser .glyph{color:#f0b9cf;font-size:12px}
+  #ser b{font-weight:600;font-variant-numeric:tabular-nums}
+  #ser .lbl{opacity:.5;text-transform:lowercase;letter-spacing:.12em;font-size:11px}
+  #tend{display:flex;gap:8px}
+  .buy{appearance:none;border:0;cursor:pointer;border-radius:999px;padding:8px 14px;font-size:12px;
+    letter-spacing:.04em;color:rgba(238,240,234,.92);background:rgba(10,16,14,.4);white-space:nowrap;
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08);
+    display:inline-flex;align-items:center;gap:7px;transition:background .3s,opacity .3s,border-color .3s}
+  .buy:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.16)}
+  .buy:disabled{opacity:.32;cursor:default}
+  .buy .cost{display:inline-flex;align-items:center;gap:3px;opacity:.72;font-variant-numeric:tabular-nums}
+  .buy .cost::before{content:'❀';color:#f0b9cf;opacity:.9}
+  #skins{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);display:flex;gap:4px;align-items:center;
+    padding:5px;border-radius:999px;background:rgba(10,16,14,.42);box-shadow:0 8px 40px rgba(0,0,0,.4);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.10);z-index:10}
+  #skins.hide{transform:translateX(-50%) translateY(12px)}
+  .pill{appearance:none;border:0;cursor:pointer;color:rgba(238,240,234,.6);background:transparent;
+    border-radius:999px;padding:8px 16px;font-size:12px;letter-spacing:.12em;text-transform:lowercase;
+    white-space:nowrap;transition:color .35s,background .35s}
+  .pill:hover{color:rgba(238,240,234,.95)}
+  .pill.on{color:#0c1512;background:rgba(238,240,234,.94);font-weight:500}
+  @media (max-width:580px){ .pill{padding:7px 10px;letter-spacing:.04em} #tend{flex-wrap:wrap} }
+  #hint{position:fixed;left:50%;bottom:66px;transform:translateX(-50%);font-size:11px;letter-spacing:.16em;
+    text-transform:lowercase;color:rgba(238,240,234,.4);transition:opacity 1s;z-index:10;pointer-events:none}
+  #veil{position:fixed;inset:0;background:#0c1512;opacity:0;pointer-events:none;transition:opacity .42s;z-index:5}
+  #nav{position:fixed;top:18px;right:16px;z-index:30;display:flex;gap:8px}
+  #nav button{font:600 12px Inter,system-ui,sans-serif;color:#dfeee6;background:rgba(20,40,33,.55);border:1px solid rgba(255,255,255,.12);
+    -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-radius:10px;padding:8px 12px;cursor:pointer;transition:background .2s}
+  #nav button:hover{background:rgba(30,55,46,.72)}
+  #codex{position:fixed;top:0;right:0;height:100%;width:min(384px,93vw);z-index:40;
+    background:linear-gradient(180deg,rgba(14,33,27,.97),rgba(9,22,17,.985));-webkit-backdrop-filter:blur(8px);backdrop-filter:blur(8px);
+    border-left:1px solid rgba(255,255,255,.1);transform:translateX(100%);transition:transform .32s cubic-bezier(.4,0,.2,1);
+    display:flex;flex-direction:column;color:#f6e7c4;box-shadow:-18px 0 50px rgba(0,0,0,.4)}
+  #codex.open{transform:translateX(0)}
+  #codex header{display:flex;align-items:center;justify-content:space-between;padding:16px 18px;border-bottom:1px solid rgba(255,255,255,.08)}
+  #codex header h2{font:600 14px Inter,system-ui,sans-serif;letter-spacing:.5px}
+  #codex .x{background:none;border:none;color:#bcd4ca;cursor:pointer;font-size:22px;line-height:1;padding:0 4px}
+  #cxList{overflow-y:auto;padding:14px;display:flex;flex-direction:column;gap:11px}
+  .cx{background:rgba(255,255,255,.04);border:1px solid rgba(255,255,255,.08);border-radius:12px;padding:10px 12px;display:flex;gap:12px;align-items:center}
+  .cx canvas{width:104px;height:60px;flex:0 0 auto;border-radius:8px}
+  .cx .info{flex:1;min-width:0}
+  .cx .nm{font:600 13.5px Inter,system-ui,sans-serif}
+  .cx .jp{font-size:10.5px;color:#9bc4b4;opacity:.8;font-weight:400}
+  .cx .ds{font-size:11px;color:#cfe3d8;opacity:.82;line-height:1.42;margin-top:3px}
+  .cx .act{margin-top:7px}
+  .cx .own{font-size:10.5px;color:#9bc4b4}
+  .cx .ul{font:600 10.5px Inter,system-ui,sans-serif;color:#1a120a;background:#f0cf86;border:none;border-radius:99px;padding:5px 11px;cursor:pointer}
+  .cx .ul:disabled{background:rgba(240,207,134,.22);color:#b39a64;cursor:default}
+</style>
+</head>
+<body>
+<canvas id="c"></canvas>
+<div id="veil"></div>
+<div id="pond">
+  <div id="ser"><span class="glyph">❀</span><b id="serN">0</b><span class="lbl">serenity</span></div>
+  <div id="tend" class="chrome">
+    <button class="buy" id="buyKoi">release koi <span class="cost"><span id="cKoi">5</span></span></button>
+    <button class="buy" id="buyLotus">plant lotus <span class="cost"><span id="cLotus">8</span></span></button>
+  </div>
+</div>
+<div id="hint" class="chrome">drag to stir &nbsp;·&nbsp; click to feed &nbsp;·&nbsp; tend &amp; grow</div>
+<div id="skins" class="chrome">
+  <button class="pill on" data-skin="natural">natural</button>
+  <button class="pill" data-skin="metal">liquid metal</button>
+  <button class="pill" data-skin="ink">sumi ink</button>
+  <button class="pill" data-skin="rain">rain on glass</button>
+</div>
+<div id="nav"><button id="codexBtn">&#10047; koi codex</button></div>
+<div id="codex"><header><h2>Koi Codex</h2><button class="x" id="codexX">&times;</button></header><div id="cxList"></div></div>
+<script>
+const cv=document.getElementById('c'), ctx=cv.getContext('2d',{alpha:false});
+const veil=document.getElementById('veil');
+const REDUCE=matchMedia('(prefers-reduced-motion: reduce)').matches;
+let W=0,H=0,DPR=1;
+const TAU=Math.PI*2, clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t, rand=(a,b)=>a+Math.random()*(b-a);
+function hexA(hex,a){const n=hex.replace('#','');return `rgba(${parseInt(n.substr(0,2),16)},${parseInt(n.substr(2,2),16)},${parseInt(n.substr(4,2),16)},${a})`;}
+function shade(hex,m){const n=hex.replace('#','');return `rgb(${parseInt(n.substr(0,2),16)*m|0},${parseInt(n.substr(2,2),16)*m|0},${parseInt(n.substr(4,2),16)*m|0})`;}
+function hsl(h,s,l,a){return `hsla(${h},${s}%,${l}%,${a==null?1:a})`;}
+
+// ---------- persistence (pond you keep) ----------
+const Store={save(o){try{localStorage.setItem('koipond_v2',JSON.stringify(o));}catch(e){}},
+             load(){try{return JSON.parse(localStorage.getItem('koipond_v2')||'null');}catch(e){return null;}}};
+
+// ---------- koi varieties (show-accurate Nishikigoi) ----------
+// patches ride the body: a..b = fraction head->tail; top/bot = [inner,outer] reach across each flank
+//   (fraction of half-width). soft=1 -> leading edge feathers (sashi); trailing stays crisp (kiwa).
+//   c: 'hi' (=accent/red), 'sumi' (black), 'shiro' (white) or a literal hex.
+const V={
+  kohaku:{base:'#f6efe1',accent:'#d8381b',metal:0,extraHi:1,patches:[          // white + stepped red (Sandan)
+    {c:'hi',a:.04,b:.27,top:[0,.92],bot:[0,.50],soft:1},
+    {c:'hi',a:.40,b:.60,top:[0,.85],bot:[0,.62],soft:1},
+    {c:'hi',a:.71,b:.88,top:[0,.72],bot:[0,.30],soft:1}]},
+  sanke:{base:'#f6efe1',accent:'#d8381b',sumi:'#1b1510',metal:0,extraHi:1,patches:[  // Kohaku hi + sumi above lateral line, clean head
+    {c:'hi',a:.10,b:.30,top:[0,.90],bot:[0,.55],soft:1},
+    {c:'hi',a:.47,b:.65,top:[0,.82],bot:[0,.55],soft:1},
+    {c:'sumi',a:.31,b:.43,top:[0,.62],soft:0},
+    {c:'sumi',a:.60,b:.72,bot:[0,.60],soft:0}]},
+  showa:{base:'#171210',accent:'#cf3219',shiro:'#efe7d6',metal:0,menware:1,motoguro:1,head:{type:'blotch'},patches:[ // black base wraps; white+red over
+    {c:'shiro',a:.05,b:.30,top:[0,.95],bot:[0,.95],soft:0},
+    {c:'hi',a:.12,b:.42,top:[0,.85],bot:[0,.35],soft:1},
+    {c:'shiro',a:.52,b:.78,top:[0,.95],bot:[0,.95],soft:0},
+    {c:'hi',a:.64,b:.90,top:[0,.70],bot:[0,.30],soft:1}]},
+  ogon:{base:'#e3a73f',accent:'#f6cf86',metal:1,solid:1,patches:[]},      // solid metallic gold (scale shimmer)
+  platinum:{base:'#e9eef0',accent:'#cfe0e6',metal:1,solid:1,patches:[]},  // solid metallic white
+  benigoi:{base:'#c5401d',accent:'#e0563a',metal:0,solid:1,patches:[]},   // solid red-orange (NOT flat -> shimmer)
+  asagi:{base:'#7f96a8',accent:'#cf6a33',metal:0,net:1,cheeks:'#cf6a33',patches:[ // blue net back, red up the flanks only
+    {c:'hi',a:.34,b:.97,bot:[.42,.95],soft:1},
+    {c:'hi',a:.34,b:.97,top:[.42,.95],soft:1}]},
+  tancho:{base:'#f4efe4',accent:'#d4291a',metal:0,head:{type:'dot'},patches:[]}, // white + single head sun
+};
+const STARTERS=['kohaku','showa','asagi','ogon','sanke','benigoi','platinum','tancho'];
+
+// ---------- POND state (single source of truth) ----------
+const Pond={koi:[],plants:[],food:[],ripples:[],petals:[],sparkles:[],sun:{x:0,y:0},econ:{serenity:0},unlocked:['kohaku','asagi','ogon'],_t:0};
+
+function makeKoi(variety,x,y,age,seed){
+  const v=V[variety]||V.kohaku, len=rand(96,150), sd=seed??(Math.random()*1e4|0);
+  const k={variety, V:v, x:x??rand(W*.25,W*.75), y:y??rand(W?H*.25:200,H*.75||400), ang:rand(0,TAU),
+    spd:rand(15,26)*(REDUCE?.5:1), len, wd:len*rand(.105,.125), depth:rand(0,1),
+    phase:rand(0,TAU), finph:rand(0,TAU), wig:rand(.85,1.2), turn:0, trail:[],
+    age:age??rand(.35,1), hunger:rand(.2,.6), wellfed:0, wake:[], seed:sd};
+  k.pattern=buildPattern(v,sd);                 // per-individual markings (no two koi alike)
+  return k;
+}
+function makePad(x,y,size){return {type:'pad',x,y,size:size??rand(.2,.5),rot:rand(0,TAU),grow:size?1:rand(.2,.6),hue:rand(-8,8),bp:rand(0,TAU),amp:rand(2,3.6),dx:0,dy:0,vx:0,vy:0,rv:rand(-.04,.04)};}
+function makeLotus(x,y){return {type:'lotus',x,y,grow:0,bloom:0,rot:rand(0,TAU),bp:rand(0,TAU),amp:rand(1.6,2.8),dx:0,dy:0,vx:0,vy:0,rv:rand(-.03,.03)};}
+
+function seedDefault(){
+  Pond.koi=[]; Pond.plants=[]; Pond.econ.serenity=6;
+  STARTERS.slice(0,4).forEach(v=>Pond.koi.push(makeKoi(v)));
+  Pond.plants.push(makePad(W*.22,H*.7), makePad(W*.78,H*.32), makePad(W*.6,H*.78));
+}
+function restore(s){
+  Pond.econ.serenity=s.econ?.serenity||6;
+  Pond.unlocked=s.unlocked&&s.unlocked.length?s.unlocked:['kohaku','asagi','ogon'];
+  Pond.koi=(s.koi||[]).map(k=>makeKoi(k.variety,k.x*W,k.y*H,k.age,k.seed));
+  Pond.plants=(s.plants||[]).map(p=> p.type==='lotus'? Object.assign(makeLotus(p.x*W,p.y*H),{grow:p.grow,bloom:p.bloom}) : Object.assign(makePad(p.x*W,p.y*H,p.size),{grow:p.grow}));
+  if(!Pond.koi.length) seedDefault();
+}
+function persist(){
+  Store.save({econ:Pond.econ, unlocked:Pond.unlocked,
+    koi:Pond.koi.map(k=>({variety:k.variety,age:k.age,x:k.x/W,y:k.y/H,seed:k.seed})),
+    plants:Pond.plants.map(p=>({type:p.type,x:p.x/W,y:p.y/H,size:p.size,grow:p.grow,bloom:p.bloom}))});
+}
+
+// ---------- geometry (shared by all skins) ----------
+function elen(k){return k.len*lerp(.52,1,k.age);}
+function ewd(k){return k.wd*lerp(.6,.95,k.age);}
+function spine(k,count){
+  const L=elen(k), step=L/(count-1), tr=k.trail, pts=[];
+  if(tr.length<2){for(let i=0;i<count;i++)pts.push({x:k.x-Math.cos(k.ang)*step*i,y:k.y-Math.sin(k.ang)*step*i});}
+  else{let idx=0,acc=0;pts.push({x:tr[0].x,y:tr[0].y});
+    for(let n=1;n<count;n++){let need=step;
+      while(need>0&&idx<tr.length-1){const a=tr[idx],b=tr[idx+1],seg=Math.hypot(b.x-a.x,b.y-a.y)||1e-4;
+        if(seg-acc>=need){acc+=need;const t=acc/seg;pts.push({x:lerp(a.x,b.x,t),y:lerp(a.y,b.y,t)});need=0;}
+        else{need-=(seg-acc);idx++;acc=0;}}
+      if(pts.length<=n)pts.push({x:tr[tr.length-1].x,y:tr[tr.length-1].y});}}
+  for(let i=0;i<count;i++){const a=pts[Math.max(0,i-1)],b=pts[Math.min(count-1,i+1)];
+    let tx=b.x-a.x,ty=b.y-a.y;const l=Math.hypot(tx,ty)||1;tx/=l;ty/=l;
+    const nx=-ty,ny=tx,tt=i/(count-1),wig=Math.sin(k.phase-i*.55)*(tt*tt)*L*.05;
+    pts[i].x+=nx*wig;pts[i].y+=ny*wig;pts[i].nx=nx;pts[i].ny=ny;pts[i].t=tt;}
+  return pts;
+}
+function widthAt(t){
+  const nose=.34+.66*Math.sin(Math.min(1,t/.16)*Math.PI/2);     // rounded head, full by ~16%
+  const taper=Math.pow(Math.max(0,1-(t-.30)/.74),1.5);          // broad shoulder ~30% then smooth taper
+  const w = t<.30 ? nose : .10+.90*taper;                       // continuous at the shoulder; thin caudal peduncle
+  return Math.max(.05,w);
+}
+function bodyPath(c,k,sp){const wd=ewd(k),C=sp.length;c.beginPath();
+  for(let i=0;i<C;i++){const w=wd*widthAt(sp[i].t),x=sp[i].x+sp[i].nx*w,y=sp[i].y+sp[i].ny*w;i?c.lineTo(x,y):c.moveTo(x,y);}
+  for(let i=C-1;i>=0;i--){const w=wd*widthAt(sp[i].t);c.lineTo(sp[i].x-sp[i].nx*w,sp[i].y-sp[i].ny*w);}c.closePath();}
+function tailFin(c,k,sp){const e=sp[sp.length-1],p=sp[sp.length-2];let tx=e.x-p.x,ty=e.y-p.y;const l=Math.hypot(tx,ty)||1;tx/=l;ty/=l;
+  const nx=-ty,ny=tx,fl=elen(k)*.32,fw=ewd(k)*1.45,sw=Math.sin(k.phase+.5)*fw*.65;c.beginPath();c.moveTo(e.x,e.y);
+  c.quadraticCurveTo(e.x+tx*fl*.6+nx*(fw+sw),e.y+ty*fl*.6+ny*(fw+sw),e.x+tx*fl+nx*sw,e.y+ty*fl+ny*sw);
+  c.quadraticCurveTo(e.x+tx*fl*.7,e.y+ty*fl*.7,e.x+tx*fl-nx*sw,e.y+ty*fl-ny*sw);
+  c.quadraticCurveTo(e.x+tx*fl*.6-nx*(fw-sw),e.y+ty*fl*.6-ny*(fw-sw),e.x,e.y);c.closePath();}
+function pecFins(c,k,sp){const i=Math.round(sp.length*.26),p=sp[i],fw=elen(k)*.15,sw=Math.sin(k.finph)*.5,dx=Math.cos(k.ang),dy=Math.sin(k.ang),wd=ewd(k);
+  for(const s of[1,-1]){const bx=p.x+p.nx*wd*widthAt(p.t)*s,by=p.y+p.ny*wd*widthAt(p.t)*s,ax=p.nx*s,ay=p.ny*s;
+    c.beginPath();c.moveTo(bx,by);
+    c.quadraticCurveTo(bx+ax*fw-dx*fw*.3,by+ay*fw-dy*fw*.3,bx+ax*fw*(.5+sw*.4)-dx*fw,by+ay*fw*(.5+sw*.4)-dy*fw);
+    c.quadraticCurveTo(bx-dx*fw*.5,by-dy*fw*.5,bx,by);c.closePath();c.fill();}}
+
+// ---------- koi markings (show-accurate: sashi/kiwa edges, per-variety placement) ----------
+function sampleSpineN(sp,t){t=clamp(t,0,1);for(let i=0;i<sp.length-1;i++){if(t<=sp[i+1].t){const f=(t-sp[i].t)/((sp[i+1].t-sp[i].t)||1);
+  return {x:lerp(sp[i].x,sp[i+1].x,f),y:lerp(sp[i].y,sp[i+1].y,f),nx:lerp(sp[i].nx,sp[i+1].nx,f),ny:lerp(sp[i].ny,sp[i+1].ny,f)};}}
+  const e=sp[sp.length-1];return {x:e.x,y:e.y,nx:e.nx,ny:e.ny};}
+function pcolor(v,key){return key==='hi'?v.accent:key==='sumi'?(v.sumi||'#1b1510'):key==='shiro'?(v.shiro||'#efe7d6'):key;}
+// nudge a hi colour's brightness (l) and warmth (warm: 0 crimson -> 1 orange) for per-patch variation
+function toneHex(hex,l,warm){const n=hex.replace('#','');let r=parseInt(n.substr(0,2),16),g=parseInt(n.substr(2,2),16),b=parseInt(n.substr(4,2),16);
+  const wf=warm-.5;g+=wf*30;b-=wf*16;r*=l;g*=l;b*=l;
+  return `rgb(${clamp(r|0,0,255)},${clamp(g|0,0,255)},${clamp(b|0,0,255)})`;}
+// per-koi pattern: jitter the template + scatter extra hi patches so real koi wear MANY varied patches
+function srand(seed){let s=(seed|0)*9301+49297;return()=>{s=(s*9301+49297)%233280;return s/233280;};}
+function buildPattern(v,seed){const rnd=srand(seed),out=[];const hiTone=()=>({l:.86+rnd()*.26,w:rnd()});
+  for(const p of (v.patches||[])){
+    const ja=clamp(p.a+(rnd()-.5)*.05,0,.96),jb=clamp(p.b+(rnd()-.5)*.05,ja+.05,1);
+    const top=p.top?[p.top[0],clamp(p.top[1]+(rnd()-.5)*.18,.2,1.06)]:null;
+    const bot=p.bot?[p.bot[0],clamp(p.bot[1]+(rnd()-.5)*.18,.2,1.06)]:null;
+    out.push({c:p.c,a:ja,b:jb,top,bot,soft:p.soft,tone:p.c==='hi'?hiTone():null});
+    if(p.c==='hi'&&v.extraHi&&rnd()<.6){               // split a patch -> a second smaller one trailing it
+      const ca=clamp(jb+rnd()*.05,0,.92),cb=clamp(ca+.05+rnd()*.07,0,1);
+      out.push({c:'hi',a:ca,b:cb,top:[0,.34+rnd()*.46],bot:rnd()<.5?[0,.28+rnd()*.36]:null,soft:1,tone:hiTone()});}
+  }
+  if(v.extraHi){const n=1+(rnd()*2|0);                 // 1-2 scattered secondary hi flecks
+    for(let i=0;i<n;i++){const a=.16+rnd()*.62,ln=.05+rnd()*.07;
+      let top=rnd()<.55?[0,.3+rnd()*.4]:null,bot=rnd()<.55?[0,.3+rnd()*.4]:null;if(!top&&!bot)top=[0,.42];
+      out.push({c:'hi',a,b:a+ln,top,bot,soft:1,tone:hiTone()});}}
+  return out;
+}
+// a patch strip on one flank, with an organic wobbling edge (returns a Path2D)
+function stripPath(k,sp,a,b,side,inner,outer,seed){const steps=Math.max(4,Math.round((b-a)/.045)+2),P=new Path2D();
+  for(let j=0;j<=steps;j++){const tt=a+(b-a)*j/steps,s=sampleSpineN(sp,tt),wob=1+.11*Math.sin(tt*26+seed)+.05*Math.sin(tt*59+seed*1.7);
+    const w=ewd(k)*widthAt(tt)*outer*wob,x=s.x+s.nx*w*side,y=s.y+s.ny*w*side;j?P.lineTo(x,y):P.moveTo(x,y);}
+  for(let j=steps;j>=0;j--){const tt=a+(b-a)*j/steps,s=sampleSpineN(sp,tt),wob=1+.11*Math.sin(tt*26+seed+3)+.05*Math.sin(tt*59+seed*1.3);
+    const w=ewd(k)*widthAt(tt)*inner*wob,x=s.x+s.nx*w*side,y=s.y+s.ny*w*side;P.lineTo(x,y);}
+  P.closePath();return P;}
+function drawPatch(c,k,sp,dim,v,p){const col=(p.c==='hi'&&p.tone)?toneHex(v.accent,p.tone.l*dim,p.tone.w):shade(pcolor(v,p.c),dim),seed=p.a*53+p.b*17+p.c.length*7;
+  for(const sd of[['top',1],['bot',-1]]){const band=p[sd[0]];if(!band)continue;
+    const path=stripPath(k,sp,p.a,p.b,sd[1],band[0],band[1],seed+sd[1]*4);
+    c.fillStyle=col;c.fill(path);
+    if(p.soft){c.save();c.clip(path);                                  // sashi: feather the leading edge into the base
+      const A=sampleSpineN(sp,p.a),B=sampleSpineN(sp,Math.min(p.b,p.a+.12));
+      const g=c.createLinearGradient(A.x,A.y,B.x,B.y);g.addColorStop(0,shade(v.base,dim));g.addColorStop(1,hexA(v.base,0));
+      c.fillStyle=g;c.fill(path);c.restore();}}}
+// reticulated scale net (Asagi/Shusui) — fukurin scallops over the back
+function netBack(c,k,sp,dim){c.strokeStyle='rgba(24,36,54,.32)';c.lineWidth=.7;
+  for(let i=2;i<sp.length-1;i++){const s=sp[i],sw=ewd(k)*widthAt(s.t);
+    for(let u=-.85;u<=.85;u+=.34){const cx=s.x+s.nx*sw*u,cy=s.y+s.ny*sw*u,r=Math.max(1.3,sw*.2);
+      c.beginPath();c.arc(cx,cy,r,k.ang+Math.PI*.25,k.ang+Math.PI*.78);c.stroke();}}}
+// scale shimmer for solid/metallic koi — so an orange or gold body reads as scaled, not flat paint
+function bodyScales(c,k,sp,dim,strong){const a=strong?.11:.06;
+  for(let i=2;i<sp.length-1;i++){const s=sp[i],sw=ewd(k)*widthAt(s.t);
+    for(let u=-.8;u<=.8;u+=.3){const cx=s.x+s.nx*sw*u,cy=s.y+s.ny*sw*u,r=Math.max(1.4,sw*.22);
+      c.strokeStyle=`rgba(255,255,255,${a})`;c.lineWidth=.7;c.beginPath();c.arc(cx,cy,r,k.ang+Math.PI*.18,k.ang+Math.PI*.82);c.stroke();
+      c.strokeStyle=`rgba(0,0,0,${a*.5})`;c.beginPath();c.arc(cx,cy,r,k.ang+Math.PI*1.0,k.ang+Math.PI*1.4);c.stroke();}}}
+function headMark(c,k,sp,dim,v){const h=sampleSpineN(sp,.07),w=ewd(k)*widthAt(.07);
+  if(v.head.type==='dot'){c.fillStyle=shade(v.accent,dim);c.beginPath();c.ellipse(h.x,h.y,w*1.05,w*1.18,k.ang,0,TAU);c.fill();}
+  else if(v.head.type==='blotch'){c.fillStyle=shade(v.accent,dim);c.beginPath();c.ellipse(h.x,h.y,w*.95,w*1.12,k.ang,0,TAU);c.fill();
+    if(v.menware){c.strokeStyle=shade(v.base,dim);c.lineWidth=Math.max(1.6,w*.42);c.lineCap='round';
+      c.beginPath();c.moveTo(h.x-Math.cos(k.ang)*w*.6,h.y-Math.sin(k.ang)*w*.6);c.lineTo(h.x+Math.cos(k.ang)*w*.85,h.y+Math.sin(k.ang)*w*.85);c.stroke();c.lineCap='butt';}}}
+// straight-ish pose for the codex (head to the right) — feeds the live koi renderer
+function staticSpine(cx,cy,len,count,curve){const pts=[];
+  for(let i=0;i<count;i++){const t=i/(count-1);pts.push({x:cx+len*(.5-t),y:cy+Math.sin(t*Math.PI*1.1)*curve,t});}
+  for(let i=0;i<count;i++){const a=pts[Math.max(0,i-1)],b=pts[Math.min(count-1,i+1)];let tx=b.x-a.x,ty=b.y-a.y;const l=Math.hypot(tx,ty)||1;tx/=l;ty/=l;pts[i].nx=-ty;pts[i].ny=tx;}
+  return pts;}
+
+// ---------- caustic light blobs (shared, cheap) ----------
+const blobs=[];for(let i=0;i<7;i++)blobs.push({x:Math.random(),y:Math.random(),r:rand(.18,.4),sp:rand(.01,.03),ph:rand(0,TAU)});
+// soft round sprite reused for wakes/light (cheap: drawImage instead of per-dot gradients)
+const softSprite=(function(){const s=document.createElement('canvas');s.width=s.height=64;const g=s.getContext('2d');
+  const rg=g.createRadialGradient(32,32,0,32,32,32);rg.addColorStop(0,'rgba(255,255,255,1)');rg.addColorStop(.5,'rgba(255,255,255,.38)');rg.addColorStop(1,'rgba(255,255,255,0)');
+  g.fillStyle=rg;g.fillRect(0,0,64,64);return s;})();
+function drawWakes(c){c.save();c.globalCompositeOperation='screen';
+  for(const k of Pond.koi){const dimk=lerp(.5,1,1-k.depth);
+    for(const w of k.wake){const p=w.age/1.5;if(p>=1)continue;
+      const r=4+w.age*9, a=(1-p)*(1-p)*.13*dimk;          // disturbance spreads out and fades
+      c.globalAlpha=a;c.drawImage(softSprite,w.x-r,w.y-r*.72,r*2,r*1.44);}}
+  c.globalAlpha=1;c.restore();}
+function drawSparkles(c){if(!Pond.sparkles.length)return;c.save();c.globalCompositeOperation='screen';
+  for(const s of Pond.sparkles){const tw=Math.sin(s.age/s.life*Math.PI), a=tw*tw*s.mag; if(a<=0)continue;
+    const r=2+tw*3*s.mag;
+    c.globalAlpha=a*.7;c.drawImage(softSprite,s.x-r,s.y-r,r*2,r*2);
+    if(s.mag>.72){c.globalAlpha=a;c.strokeStyle='rgba(255,255,255,1)';c.lineWidth=.8;const L=r*2.4;
+      c.beginPath();c.moveTo(s.x-L,s.y);c.lineTo(s.x+L,s.y);c.moveTo(s.x,s.y-L);c.lineTo(s.x,s.y+L);c.stroke();}}
+  c.globalAlpha=1;c.restore();}
+function caustics(c,w,h,t,color,blend){c.globalCompositeOperation=blend;
+  for(const b of blobs){const x=(b.x+Math.sin(t*b.sp+b.ph)*.12)*w,y=(b.y+Math.cos(t*b.sp*.8+b.ph)*.1)*h,R=b.r*Math.min(w,h);
+    const g=c.createRadialGradient(x,y,0,x,y,R);g.addColorStop(0,color);g.addColorStop(1,'transparent');
+    c.fillStyle=g;c.beginPath();c.arc(x,y,R,0,TAU);c.fill();}c.globalCompositeOperation='source-over';}
+
+// ---------- plants (shared natural draw) ----------
+function drawPad(c,p,tint){let R=18+(p.size??.4)*46*(p.grow??1);if(!isFinite(R)||R<2)R=18;const ry=R*.72;c.save();c.translate(p.rx??p.x,p.ry??p.y);c.rotate(p.rrot??p.rot);
+  // floor shadow
+  c.fillStyle='rgba(6,20,16,.22)';c.beginPath();c.ellipse(3,5,R,ry,0,0,TAU);c.fill();
+  // pad body
+  const g=c.createRadialGradient(-R*.2,-ry*.2,2,0,0,R);
+  g.addColorStop(0, tint? tint[0] : '#3f6e3a');g.addColorStop(.7, tint? tint[1] : '#2d5630');g.addColorStop(1, tint? tint[2] : '#1f3f25');
+  c.fillStyle=g;c.beginPath();c.ellipse(0,0,R,ry,0,0,TAU);c.fill();
+  // notch (painted cleft, not an erase — safe on opaque canvas)
+  c.fillStyle='rgba(12,28,20,.5)';
+  c.beginPath();c.moveTo(0,0);c.lineTo(R*1.04,-ry*.15);c.lineTo(R*1.04,ry*.15);c.closePath();c.fill();
+  // rim sheen + veins
+  c.strokeStyle='rgba(150,200,140,.18)';c.lineWidth=1.4;c.beginPath();c.ellipse(0,0,R-1,ry-1,0,0,TAU);c.stroke();
+  c.strokeStyle='rgba(20,45,30,.3)';c.lineWidth=1;for(let i=0;i<7;i++){const a=i/7*TAU;c.beginPath();c.moveTo(0,0);c.lineTo(Math.cos(a)*R*.9,Math.sin(a)*ry*.9);c.stroke();}
+  c.restore();}
+function drawLotus(c,p,pal){const s=p.grow,px=p.rx??p.x,py=p.ry??p.y,pr=p.rrot??p.rot;
+  const padTint=pal?pal.pad:null, pTop=pal?pal.petalTop:'#f6dfe8', pBot=pal?pal.petalBot:'#e98fb0', ctr=pal?pal.center:'#f3d27a';
+  drawPad(c,{x:px-16,y:py+6,size:.4,grow:s,rot:pr},padTint);drawPad(c,{x:px+18,y:py-4,size:.34,grow:s,rot:pr+1},padTint);
+  if(p.bloom>0){const b=p.bloom,cx=px,cy=py- 6*b, R=10+18*b;c.save();c.translate(cx,cy);
+    for(let ring=2;ring>=0;ring--){const rr=R*(.5+ring*.28),pet=6+ring*2;
+      for(let i=0;i<pet;i++){const a=i/pet*TAU+ring*.4;c.save();c.rotate(a);
+        const g=c.createLinearGradient(0,0,0,-rr);g.addColorStop(0,pTop);g.addColorStop(1,hexA(pBot,.95));
+        c.fillStyle=g;c.beginPath();c.moveTo(0,0);c.quadraticCurveTo(rr*.34,-rr*.6,0,-rr);c.quadraticCurveTo(-rr*.34,-rr*.6,0,0);c.fill();c.restore();}}
+    c.fillStyle=ctr;c.beginPath();c.arc(0,0,R*.34*b+2,0,TAU);c.fill();c.restore();}}
+
+// buoyant floating: idle bob (spring), slow rotation, rides passing waves
+function floatPlant(p,dt){const t=Pond._t;
+  const tx=Math.sin(t*.55+p.bp)*p.amp, ty=Math.cos(t*.42+p.bp*1.3)*p.amp*.7;   // gentle bob rest target
+  for(const r of Pond.ripples){ if(r.s<=1) continue;                            // strong ripples lift/push
+    const ddx=p.x-r.x, ddy=p.y-r.y, d=Math.hypot(ddx,ddy)||1;
+    if(Math.abs(r.r-d)<14 && r.r<r.max*.92){ const f=(1-r.age/r.life)*18*dt/d; p.vx+=ddx*f; p.vy+=ddy*f; p.rv+=(Math.random()-.5)*.5*dt; } }
+  const k=11, dmp=Math.pow(.1,dt);                                              // buoyant spring toward bob target
+  p.vx+=(tx-p.dx)*k*dt; p.vy+=(ty-p.dy)*k*dt; p.vx*=dmp; p.vy*=dmp;
+  p.dx+=p.vx*dt; p.dy+=p.vy*dt;
+  p.rv=clamp(p.rv+Math.sin(t*.2+p.bp)*.03*dt,-.09,.09); p.rv*=Math.pow(.55,dt); p.rot+=p.rv*dt;
+  p.rx=p.x+p.dx; p.ry=p.y+p.dy; p.rrot=p.rot;
+}
+// =================================================================
+// SKIN REGISTRY
+// =================================================================
+const SKINS={};
+
+// ---- NATURAL (the canonical, reference-accurate core) ----
+SKINS.natural={
+  water(c,t){const g=c.createRadialGradient(W*.5,H*.42,Math.min(W,H)*.1,W*.5,H*.5,Math.max(W,H)*.8);
+    g.addColorStop(0,'#3c7d68');g.addColorStop(.55,'#235448');g.addColorStop(1,'#0f2a23');
+    c.fillStyle=g;c.fillRect(0,0,W,H);
+    // layered sun-dapple caustics drifting at different rates/tints -> depth & motion
+    caustics(c,W,H,t,'rgba(150,210,150,.10)','screen');
+    caustics(c,W,H,t*1.3,'rgba(220,200,120,.06)','screen');
+    caustics(c,W,H,t*.7+11,'rgba(120,180,210,.05)','screen');
+    c.globalCompositeOperation='screen';
+    // direct sunbeam pooling on the surface, slowly wandering
+    const sbR=Math.max(W,H)*.34, sbA=.05+.035*Math.sin(t*.6);
+    const bm=c.createRadialGradient(Pond.sun.x,Pond.sun.y,0,Pond.sun.x,Pond.sun.y,sbR);
+    bm.addColorStop(0,`rgba(228,240,205,${sbA})`);bm.addColorStop(.6,`rgba(200,225,180,${sbA*.4})`);bm.addColorStop(1,'transparent');
+    c.fillStyle=bm;c.beginPath();c.arc(Pond.sun.x,Pond.sun.y,sbR,0,TAU);c.fill();
+    // whole-surface shimmer breathing slowly
+    c.globalAlpha=.04+.03*Math.sin(t*.4);
+    const sg=c.createRadialGradient(W*.4,H*.35,0,W*.5,H*.5,Math.max(W,H)*.7);
+    sg.addColorStop(0,'rgba(200,230,210,1)');sg.addColorStop(1,'rgba(200,230,210,0)');
+    c.fillStyle=sg;c.fillRect(0,0,W,H);c.globalAlpha=1;
+    // soft surface ripple lines
+    c.strokeStyle='rgba(180,220,200,.05)';c.lineWidth=1;
+    for(let i=0;i<5;i++){const yy=((t*8+i*70)%(H+80))-40;c.beginPath();for(let x=0;x<=W;x+=24)c.lineTo(x,yy+Math.sin(x*.02+t+i)*5);c.stroke();}
+    c.globalCompositeOperation='source-over';
+    drawWakes(c);},
+  koi(c,k,sp,dim){const v=k.V;
+    // floor shadow (depth realism)
+    c.save();c.globalAlpha=.16+.16*k.depth;c.filter='blur(3px)';c.fillStyle='#08160f';
+    c.translate(5+k.depth*8,7+k.depth*9);bodyPath(c,k,sp);c.fill();c.restore();
+    // fins under body
+    c.fillStyle=hexA(v.metal? v.accent:'#e9e2d2',.22*dim);tailFin(c,k,sp);c.fill();pecFins(c,k,sp);
+    // body base
+    bodyPath(c,k,sp);
+    if(v.metal){const g=c.createLinearGradient(k.x-ewd(k)*2,k.y-ewd(k)*2,k.x+ewd(k)*2,k.y+ewd(k)*2);
+      g.addColorStop(0,shade(v.base,Math.min(1,dim*1.25)));g.addColorStop(.5,shade(v.base,dim));g.addColorStop(1,shade(v.base,dim*.7));c.fillStyle=g;}
+    else c.fillStyle=shade(v.base,dim);
+    c.fill();
+    // markings (clipped to body)
+    c.save();bodyPath(c,k,sp);c.clip();
+    if(v.net) netBack(c,k,sp,dim);
+    const pats=k.pattern||v.patches||[]; for(const p of pats) drawPatch(c,k,sp,dim,v,p);
+    if(v.cheeks){const h=sp[2],w=ewd(k)*widthAt(h.t);for(const s of[1,-1]){c.fillStyle=hexA(v.cheeks,.7);c.beginPath();c.arc(h.x+h.nx*w*.7*s,h.y+h.ny*w*.7*s,w*.42,0,TAU);c.fill();}}
+    if(v.head) headMark(c,k,sp,dim,v);
+    if(v.motoguro){const pp=sampleSpineN(sp,.26),w=ewd(k)*widthAt(.26);for(const s of[1,-1]){c.fillStyle=hexA('#15110d',.78*dim);c.beginPath();c.ellipse(pp.x+pp.nx*w*s,pp.y+pp.ny*w*s,w*.5,w*.32,k.ang,0,TAU);c.fill();}}
+    if(v.solid||v.metal) bodyScales(c,k,sp,dim,v.metal);
+    // dorsal sheen
+    const hd=sp[1],tl=sp[sp.length-2];const sg=c.createLinearGradient(hd.x,hd.y,tl.x,tl.y);
+    sg.addColorStop(0,'rgba(255,255,255,.16)');sg.addColorStop(.4,'rgba(255,255,255,.05)');sg.addColorStop(1,'rgba(0,0,0,.08)');
+    c.fillStyle=sg;bodyPath(c,k,sp);c.fill();
+    c.restore();
+    // crisp rim light — sharpens the silhouette against the water
+    c.lineWidth=1;c.strokeStyle=`rgba(248,253,246,${.12*dim})`;bodyPath(c,k,sp);c.stroke();
+    // eyes + barbels
+    const hd2=sp[1],w2=ewd(k)*widthAt(hd2.t);c.fillStyle='rgba(20,16,12,.85)';
+    for(const s of[1,-1]){c.beginPath();c.arc(hd2.x+hd2.nx*w2*.55*s,hd2.y+hd2.ny*w2*.55*s,1.6+ewd(k)*.06,0,TAU);c.fill();}},
+  plant(c,p){p.type==='lotus'?drawLotus(c,p):drawPad(c,p,null);},
+  overlay(c,t){
+    // --- Pass 3: glassy reflection & depth ---
+    c.globalCompositeOperation='screen';
+    // broad sky-sheen reflected on the surface, drifting slowly (counter to the sunbeam)
+    const shx=W*(.5-.3*Math.sin(Pond._t*.04)), shy=H*(.32+.2*Math.cos(Pond._t*.03));
+    const sh=c.createRadialGradient(shx,shy,0,shx,shy,Math.max(W,H)*.6);
+    sh.addColorStop(0,`rgba(150,186,196,${.05+.02*Math.sin(t*.3)})`);sh.addColorStop(1,'transparent');
+    c.fillStyle=sh;c.fillRect(0,0,W,H);
+    // fresnel rim — water reflects more light at its grazing edges (glassy ring)
+    const fr=c.createRadialGradient(W/2,H/2,Math.min(W,H)*.5,W/2,H/2,Math.max(W,H)*.82);
+    fr.addColorStop(0,'transparent');fr.addColorStop(.5,'rgba(155,185,182,.06)');fr.addColorStop(1,'transparent');
+    c.fillStyle=fr;c.fillRect(0,0,W,H);
+    c.globalCompositeOperation='source-over';
+    // drifting petals (life)
+    c.fillStyle='rgba(245,210,224,.5)';for(const pt of Pond.petals){c.save();c.translate(pt.x,pt.y);c.rotate(pt.r);c.beginPath();c.ellipse(0,0,3.2,1.6,0,0,TAU);c.fill();c.restore();}
+    // depth — cooler, deeper darkening framing the pond
+    const g=c.createRadialGradient(W/2,H*.46,Math.min(W,H)*.3,W/2,H*.54,Math.max(W,H)*.74);
+    g.addColorStop(0,'transparent');g.addColorStop(1,'rgba(2,14,14,.55)');c.fillStyle=g;c.fillRect(0,0,W,H);}
+};
+
+// ---- LIQUID METAL ----
+SKINS.metal={
+  water(c,t){const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0e1116');g.addColorStop(.5,'#1a1f27');g.addColorStop(1,'#0b0d11');
+    c.fillStyle=g;c.fillRect(0,0,W,H);c.globalCompositeOperation='screen';
+    for(let i=0;i<3;i++){const yy=(((t*.03*(i+1)+i*.33)%1.4)-.2)*H;const lg=c.createLinearGradient(0,yy-120,0,yy+120);
+      lg.addColorStop(0,'transparent');lg.addColorStop(.5,`rgba(180,196,214,${.1-i*.02})`);lg.addColorStop(1,'transparent');c.fillStyle=lg;c.fillRect(0,yy-120,W,240);}
+    c.globalCompositeOperation='source-over';const hue=(t*8)%360;
+    caustics(c,W,H,t,hsl(hue,70,60,.1),'screen');caustics(c,W,H,t*1.3,hsl((hue+120)%360,70,58,.07),'screen');drawWakes(c);},
+  koi(c,k,sp,dim){const hue=(Pond._t*8+(k.x+k.y))%360;
+    c.fillStyle=`rgba(200,212,226,${.18*dim})`;pecFins(c,k,sp);tailFin(c,k,sp);c.fillStyle=`rgba(190,205,222,${.22*dim})`;c.fill();
+    bodyPath(c,k,sp);const bg=c.createLinearGradient(k.x-ewd(k)*2,k.y-ewd(k)*2,k.x+ewd(k)*2,k.y+ewd(k)*2);
+    bg.addColorStop(0,`rgba(${235*dim|0},${242*dim|0},${250*dim|0},1)`);bg.addColorStop(.45,`rgba(${120*dim|0},${134*dim|0},${150*dim|0},1)`);
+    bg.addColorStop(.62,`rgba(${30*dim|0},${36*dim|0},${44*dim|0},1)`);bg.addColorStop(1,`rgba(${150*dim|0},${164*dim|0},${182*dim|0},1)`);
+    c.fillStyle=bg;c.fill();c.globalCompositeOperation='overlay';c.fillStyle=k.V.accent+'66';c.fill();c.globalCompositeOperation='source-over';
+    c.lineWidth=1.4;c.strokeStyle=hsl(hue%360,90,72,.5*dim);c.stroke();},
+  plant(c,p){if(p.type==='lotus')drawLotus(c,p,{pad:['#9fb6c2','#5d7785','#33424d'],petalTop:'#e7edf2',petalBot:'#9fb2c0',center:'#cfe0e6'});else drawPad(c,p,['#9fb6c2','#5d7785','#33424d']);},
+  overlay(c,t){const g=c.createRadialGradient(W/2,H/2,Math.min(W,H)*.3,W/2,H/2,Math.max(W,H)*.72);g.addColorStop(0,'transparent');g.addColorStop(1,'rgba(0,0,0,.5)');c.fillStyle=g;c.fillRect(0,0,W,H);}
+};
+
+// ---- SUMI INK ----
+SKINS.ink={
+  water(c,t){c.fillStyle='#0a0a0c';c.fillRect(0,0,W,H);caustics(c,W,H,t*.5,'rgba(40,40,48,.5)','screen');
+    drawWakes(c);},
+  koi(c,k,sp,dim){const col=k.V.metal?'#d8d2c4':k.V.accent;c.save();c.globalCompositeOperation='screen';c.lineJoin='round';
+    bodyPath(c,k,sp);                                   // cheap stroke-halo glow (no costly shadowBlur)
+    c.lineWidth=9;c.strokeStyle=hexA(col,.09*dim);c.stroke();
+    c.lineWidth=5;c.strokeStyle=hexA(col,.15*dim);c.stroke();
+    const cg=c.createLinearGradient(k.x-elen(k)*.4,k.y,k.x+elen(k)*.4,k.y);cg.addColorStop(0,hexA(col,.9*dim));cg.addColorStop(1,hexA(col,.4*dim));
+    c.fillStyle=cg;c.fill();
+    tailFin(c,k,sp);c.fillStyle=hexA(col,.3*dim);c.fill();c.fillStyle=hexA(col,.3*dim);pecFins(c,k,sp);
+    c.globalCompositeOperation='source-over';c.strokeStyle='rgba(8,8,10,.5)';c.lineWidth=1;c.beginPath();sp.forEach((s,i)=>i?c.lineTo(s.x,s.y):c.moveTo(s.x,s.y));c.stroke();c.restore();},
+  plant(c,p){c.save();c.globalCompositeOperation='screen';if(p.type==='lotus')drawLotus(c,p,{pad:['#39393e','#26262b','#17171a'],petalTop:'#efe9da',petalBot:'#9a958a',center:'#d8d2c4'});else drawPad(c,p,['#39393e','#26262b','#17171a']);c.restore();},
+  overlay(c,t){const g=c.createRadialGradient(W/2,H/2,Math.min(W,H)*.3,W/2,H/2,Math.max(W,H)*.72);g.addColorStop(0,'transparent');g.addColorStop(1,'rgba(0,0,0,.6)');c.fillStyle=g;c.fillRect(0,0,W,H);}
+};
+
+// ---- RAIN ON GLASS (renders the NATURAL pond into a blurred buffer, then fogs + droplets) ----
+let pond=null,pondCtx=null,fog=null,fogCtx=null,drops=[],PS=.5;
+function buildBuffers(){if(!W)return;pond=document.createElement('canvas');pond.width=Math.max(2,W*PS|0);pond.height=Math.max(2,H*PS|0);pondCtx=pond.getContext('2d');
+  fog=document.createElement('canvas');fog.width=W;fog.height=H;fogCtx=fog.getContext('2d');drops=[];for(let i=0;i<70;i++)drops.push({x:rand(0,W),y:rand(-H,H),r:rand(2.5,8),vy:0,trail:rand(.4,1)});}
+SKINS.rain={
+  full:true, // draws everything itself
+  render(c,t){const w=pond.width,h=pond.height;pondCtx.save();pondCtx.clearRect(0,0,w,h);
+    pondCtx.scale(PS,PS);SKINS.natural.water(pondCtx,t);
+    for(const k of Pond.koi){const sp=spine(k,18);SKINS.natural.koi(pondCtx,k,sp,lerp(.62,1,1-k.depth));}
+    for(const p of Pond.plants)SKINS.natural.plant(pondCtx,p);
+    for(const f of Pond.food){if(f.r<=0)continue;pondCtx.fillStyle='#c39a5e';pondCtx.beginPath();pondCtx.ellipse(f.x,f.y,f.r,f.r*.84,0,0,TAU);pondCtx.fill();}
+    pondCtx.restore();
+    c.imageSmoothingEnabled=true;c.filter='blur(2px)';c.drawImage(pond,0,0,W,H);c.filter='none';
+    c.fillStyle='rgba(40,30,20,.12)';c.fillRect(0,0,W,H);
+    fogCtx.clearRect(0,0,W,H);fogCtx.fillStyle='rgba(205,212,210,.5)';fogCtx.fillRect(0,0,W,H);fogCtx.globalCompositeOperation='destination-out';
+    for(const d of drops){fogCtx.beginPath();fogCtx.ellipse(d.x,d.y,d.r*.7,d.r,0,0,TAU);fogCtx.fill();if(d.vy>4)fogCtx.fillRect(d.x-d.r*.4*d.trail,d.y-d.vy*.5,d.r*.8*d.trail,d.vy*.5);}
+    fogCtx.globalCompositeOperation='source-over';c.drawImage(fog,0,0);
+    for(const d of drops){const hg=c.createRadialGradient(d.x-d.r*.3,d.y-d.r*.3,0,d.x,d.y,d.r);hg.addColorStop(0,'rgba(255,255,255,.5)');hg.addColorStop(.6,'rgba(255,255,255,.06)');hg.addColorStop(1,'rgba(0,0,0,.1)');
+      c.fillStyle=hg;c.beginPath();c.ellipse(d.x,d.y,d.r*.78,d.r,0,0,TAU);c.fill();}
+    for(const d of drops){d.r+=(Math.random()<.02?rand(0,1.2):0);if(d.r>6||Math.random()<.01)d.vy+=.5;d.vy*=.96;d.y+=d.vy;if(d.vy>1)d.r*=.992;
+      if(d.y>H+10||d.r<1.6)Object.assign(d,{x:rand(0,W),y:rand(-40,-5),r:rand(2.5,8),vy:0,trail:rand(.4,1)});}
+    for(const r of Pond.ripples)if(r.age<.05&&r.s>1)for(let i=0;i<3;i++)drops.push({x:r.x+rand(-12,12),y:r.y+rand(-12,12),r:rand(3,7),vy:0,trail:rand(.4,1)});}
+};
+
+// ---------- generic fx (ripples + food) for non-rain skins ----------
+function drawFX(c){
+  for(const r of Pond.ripples){const p=r.age/r.life;if(p>=1)continue;const fade=1-p;
+    const rings=r.s>1?3:2;                                  // a little wave train, not one ring
+    for(let n=0;n<rings;n++){const rr=r.r-n*7;if(rr<2)continue;const rf=fade*(1-n*.3);
+      c.globalCompositeOperation='screen';c.lineWidth=1.6;c.strokeStyle=`rgba(218,238,228,${.17*rf*Math.min(1.4,r.s)})`;
+      c.beginPath();c.arc(r.x,r.y,rr,0,TAU);c.stroke();                         // crest catches light
+      c.globalCompositeOperation='source-over';c.lineWidth=1.4;c.strokeStyle=`rgba(6,26,20,${.08*rf})`;
+      c.beginPath();c.arc(r.x,r.y,rr+2.4,0,TAU);c.stroke();}}                   // trough = bent light just outside
+  c.globalCompositeOperation='source-over';
+  for(const f of Pond.food){if(f.r<=0)continue;
+    c.fillStyle='rgba(18,12,6,.28)';c.beginPath();c.ellipse(f.x+.8,f.y+1.1,f.r,f.r*.84,0,0,TAU);c.fill();
+    c.fillStyle=`hsl(${33+(f.hue||0)},44%,57%)`;c.beginPath();c.ellipse(f.x,f.y,f.r,f.r*.84,0,0,TAU);c.fill();
+    c.fillStyle='rgba(255,244,222,.55)';c.beginPath();c.arc(f.x-f.r*.3,f.y-f.r*.32,f.r*.34,0,TAU);c.fill();}
+  if(drag){const p=drag.plant,R=(p.type==='lotus'?48:24+p.size*46*p.grow);
+    c.strokeStyle='rgba(244,238,224,.4)';c.lineWidth=1.5;c.beginPath();c.arc(p.rx??p.x,p.ry??p.y,R,0,TAU);c.stroke();}
+}
+
+// =================================================================
+// SIMULATION (skin-agnostic)
+// =================================================================
+function updateKoi(k,dt){
+  k.turn+=(Math.sin(Pond._t*.4+k.phase)*.6+rand(-.4,.4))*dt;k.turn=clamp(k.turn,-1.2,1.2);let desired=k.turn;
+  let bf=null,bd=1e9;for(const f of Pond.food){const d=(f.x-k.x)**2+(f.y-k.y)**2;if(d<bd){bd=d;bf=f;}}
+  if(bf&&bd<280*280){const a=Math.atan2(bf.y-k.y,bf.x-k.x);let da=((a-k.ang+Math.PI*3)%TAU)-Math.PI;desired+=clamp(da,-2,2)*1.6;}
+  for(const r of Pond.ripples)if(r.s>1&&r.age<.5){const dx=k.x-r.x,dy=k.y-r.y,d=Math.hypot(dx,dy);if(d<150){const a=Math.atan2(dy,dx);let da=((a-k.ang+Math.PI*3)%TAU)-Math.PI;desired+=da*(1-d/150)*1.3;}}
+  const m=90,toC=Math.atan2(H/2-k.y,W/2-k.x);
+  if(k.x<m||k.x>W-m||k.y<m||k.y>H-m){let da=((toC-k.ang+Math.PI*3)%TAU)-Math.PI;desired+=da*1.2;}
+  k.ang+=clamp(desired,-2.4,2.4)*dt*.9;
+  const eat=bf&&bd<160*160?1.5:1;k.x+=Math.cos(k.ang)*k.spd*eat*dt;k.y+=Math.sin(k.ang)*k.spd*eat*dt;
+  if(bf&&bd<13*13){bf.r-=dt*7;k.hunger=Math.max(0,k.hunger-dt*.5);k.wellfed=4;k.age=Math.min(1,k.age+dt*.02);}
+  k.hunger=Math.min(1,k.hunger+dt*.012);k.wellfed=Math.max(0,k.wellfed-dt);
+  k.trail.unshift({x:k.x,y:k.y});const mx=Math.ceil(elen(k)*1.25/4)+4;if(k.trail.length>mx)k.trail.length=mx;
+  // wake: drop a disturbance point behind the tail when it has moved enough
+  const tlx=k.x-Math.cos(k.ang)*elen(k)*.82, tly=k.y-Math.sin(k.ang)*elen(k)*.82;
+  const lw=k.wake[0];
+  if(!lw||((tlx-lw.x)**2+(tly-lw.y)**2)>30) k.wake.unshift({x:tlx,y:tly,age:0,nx:-Math.sin(k.ang),ny:Math.cos(k.ang)});
+  for(const w of k.wake) w.age+=dt;
+  while(k.wake.length && k.wake[k.wake.length-1].age>1.5) k.wake.pop();
+  k.phase+=dt*6*k.wig;k.finph+=dt*5;
+}
+function thriving(){let f=0;for(const k of Pond.koi)f+=k.wellfed>0?1:.3;f/=Math.max(1,Pond.koi.length);
+  let pg=0;for(const p of Pond.plants)pg+=p.grow;pg/=Math.max(1,Pond.plants.length);return clamp(f*.7+pg*.3,0,1);}
+function feed(x,y){const n=6+(Math.random()*4|0);
+  for(let i=0;i<n;i++){const a=Math.random()*TAU,d=Math.random()*24;
+    Pond.food.push({x:x+Math.cos(a)*d,y:y+Math.sin(a)*d,r:rand(2.2,3.2),life:rand(12,16),hue:rand(-12,12)});}
+  Pond.ripples.push({x,y,r:3,max:120,age:0,life:2,s:1.4});}
+
+function step(dt){Pond._t+=dt;
+  if(drag){const p=drag.plant,r=Math.min(1,dt*3.5),ox=p.x,oy=p.y;   // slow watery glide
+    p.x+=(drag.tx-p.x)*r;p.y+=(drag.ty-p.y)*r;
+    if(Math.hypot(p.x-ox,p.y-oy)>1.3&&Math.random()<dt*10)Pond.ripples.push({x:ox,y:oy,r:3,max:52,age:0,life:1.1,s:1});}
+  for(const k of Pond.koi)updateKoi(k,dt);
+  for(const r of Pond.ripples){r.age+=dt;r.r=lerp(r.r,r.max,1-Math.pow(.001,dt));}
+  for(let i=Pond.ripples.length-1;i>=0;i--)if(Pond.ripples[i].age>Pond.ripples[i].life)Pond.ripples.splice(i,1);
+  if(Pond.ripples.length>40) Pond.ripples.splice(0,Pond.ripples.length-40);
+  for(const f of Pond.food)f.life-=dt;for(let i=Pond.food.length-1;i>=0;i--)if(Pond.food[i].life<=0||Pond.food[i].r<=0)Pond.food.splice(i,1);
+  const th=thriving();
+  for(const p of Pond.plants){p.grow=Math.min(1,p.grow+dt*.02*(.4+th));if(p.type==='lotus'&&p.grow>.9)p.bloom=Math.min(1,p.bloom+dt*.05*(.4+th));
+    floatPlant(p,dt);}
+  // petals drift from blooming lotuses
+  if(Math.random()<dt*.5){const lo=Pond.plants.find(p=>p.type==='lotus'&&p.bloom>.5);if(lo&&Pond.petals.length<40)Pond.petals.push({x:lo.x,y:lo.y,vx:rand(-6,6),vy:rand(4,12),r:rand(0,TAU),vr:rand(-1,1),life:rand(6,12)});}
+  for(const pt of Pond.petals){pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.r+=pt.vr*dt;pt.life-=dt;}
+  for(let i=Pond.petals.length-1;i>=0;i--)if(Pond.petals[i].life<=0||Pond.petals[i].y>H+10)Pond.petals.splice(i,1);
+  // economy: serenity accrues with thriving
+  Pond.econ.serenity+=dt*(.12+.7*th);
+  // wandering sunbeam + surface sparkle glints
+  Pond.sun.x=W*(.5+.34*Math.sin(Pond._t*.05)); Pond.sun.y=H*(.42+.26*Math.sin(Pond._t*.037+1));
+  const sw=REDUCE?.4:1;
+  if(Math.random()<dt*9*sw){ let sx,sy; if(Math.random()<.62){sx=Pond.sun.x+rand(-130,130);sy=Pond.sun.y+rand(-95,95);} else {sx=rand(0,W);sy=rand(0,H);}
+    Pond.sparkles.push({x:sx,y:sy,age:0,life:rand(.4,.9),mag:rand(.5,1)}); }
+  for(const r of Pond.ripples) if(r.s>1&&r.age<.4&&Math.random()<dt*4){const a=Math.random()*TAU;Pond.sparkles.push({x:r.x+Math.cos(a)*r.r,y:r.y+Math.sin(a)*r.r,age:0,life:rand(.3,.6),mag:rand(.6,1)});}
+  for(const s of Pond.sparkles) s.age+=dt;
+  for(let i=Pond.sparkles.length-1;i>=0;i--) if(Pond.sparkles[i].age>Pond.sparkles[i].life) Pond.sparkles.splice(i,1);
+  if(Pond.sparkles.length>80) Pond.sparkles.splice(0,Pond.sparkles.length-80);
+}
+
+// =================================================================
+// RENDER
+// =================================================================
+let skin='natural';
+function render(t){
+  // hard-reset canvas state each frame so no blend/blur/alpha can leak between skins or frames
+  ctx.filter='none';ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.shadowColor='transparent';
+  const S=SKINS[skin];ctx.save();
+  try{
+    if(S.full){S.render(ctx,t);}
+    else{S.water(ctx,t);
+      const ks=Pond.koi.slice().sort((a,b)=>b.depth-a.depth);
+      for(const k of ks){const sp=spine(k,18);S.koi(ctx,k,sp,lerp(.6,1,1-k.depth));}
+      for(const p of Pond.plants)(S.plant||SKINS.natural.plant)(ctx,p);
+      drawFX(ctx);(S.overlay||(()=>{}))(ctx,t);drawSparkles(ctx);}
+  }catch(e){if(!render._warned){console.warn('skin render error:',e);render._warned=1;}}
+  ctx.restore();
+  // belt & suspenders: leave state clean for the next frame no matter what a skin did
+  ctx.filter='none';ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.shadowBlur=0;
+}
+
+// =================================================================
+// INPUT + CHROME
+// =================================================================
+const P={x:-999,y:-999,px:0,py:0};let lastMove=0, drag=null;
+function plantAt(x,y){for(let i=Pond.plants.length-1;i>=0;i--){const p=Pond.plants[i];
+  const R=(p.type==='lotus'?46:18+p.size*46*p.grow)+10;if((x-p.x)**2+(y-p.y)**2<R*R)return p;}return null;}
+function move(x,y){P.px=P.x;P.py=P.y;P.x=x;P.y=y;
+  if(drag){drag.tx=clamp(x,40,W-40);drag.ty=clamp(y,40,H-40);cv.style.cursor='grabbing';showUI();return;}
+  const now=performance.now();
+  if(now-lastMove>34){const dx=x-P.px,dy=y-P.py;if(dx*dx+dy*dy>9)Pond.ripples.push({x,y,r:2,max:90,age:0,life:1.5,s:1});lastMove=now;}
+  cv.style.cursor=plantAt(x,y)?'grab':'crosshair';showUI();}
+cv.addEventListener('pointermove',e=>move(e.clientX,e.clientY));
+cv.addEventListener('pointerdown',e=>{const hit=plantAt(e.clientX,e.clientY);
+  if(hit){const i=Pond.plants.indexOf(hit);if(i>=0){Pond.plants.splice(i,1);Pond.plants.push(hit);}  // lift to top
+    drag={plant:hit,tx:clamp(e.clientX,40,W-40),ty:clamp(e.clientY,40,H-40)};cv.style.cursor='grabbing';showUI();}
+  else feed(e.clientX,e.clientY);});
+addEventListener('pointerup',()=>{if(drag){persist();drag=null;cv.style.cursor='crosshair';}});
+cv.addEventListener('pointerleave',()=>{P.x=-999;P.y=-999;});
+const ser=document.getElementById('serN');
+const skinsBar=document.getElementById('skins'),tendBar=document.getElementById('tend'),hint=document.getElementById('hint');
+let uiTimer=null;function showUI(){[skinsBar,tendBar].forEach(e=>e.classList.remove('hide'));hint.style.opacity='1';clearTimeout(uiTimer);
+  uiTimer=setTimeout(()=>{[skinsBar,tendBar].forEach(e=>e.classList.add('hide'));hint.style.opacity='0';},3000);}
+showUI();setTimeout(()=>hint.style.opacity='0',5500);
+document.querySelectorAll('.pill').forEach(p=>p.addEventListener('click',()=>{const s=p.dataset.skin;if(s===skin)return;
+  veil.style.opacity='1';setTimeout(()=>{skin=s;document.querySelectorAll('.pill').forEach(q=>q.classList.toggle('on',q.dataset.skin===s));veil.style.opacity='0';},220);}));
+// shop
+const cKoi=document.getElementById('cKoi'),cLotus=document.getElementById('cLotus'),bKoi=document.getElementById('buyKoi'),bLotus=document.getElementById('buyLotus');
+function koiCost(){return 5+Pond.koi.length*4;}function lotusCost(){return 8+Pond.plants.filter(p=>p.type==='lotus').length*6;}
+function syncShop(){const s=Math.floor(Pond.econ.serenity);ser.textContent=s;cKoi.textContent=koiCost();cLotus.textContent=lotusCost();
+  bKoi.disabled=s<koiCost();bLotus.disabled=s<lotusCost();codexTick();}
+bKoi.addEventListener('click',()=>{if(Pond.econ.serenity<koiCost())return;Pond.econ.serenity-=koiCost();
+  const pool=(Pond.unlocked&&Pond.unlocked.length)?Pond.unlocked:STARTERS;const v=pool[(Math.random()*pool.length)|0];const k=makeKoi(v,rand(W*.3,W*.7),rand(H*.3,H*.7),.3);Pond.koi.push(k);
+  Pond.ripples.push({x:k.x,y:k.y,r:3,max:140,age:0,life:2.4,s:1.6});persist();showUI();});
+bLotus.addEventListener('click',()=>{if(Pond.econ.serenity<lotusCost())return;Pond.econ.serenity-=lotusCost();
+  Pond.plants.push(makeLotus(rand(W*.25,W*.75),rand(H*.3,H*.72)));persist();showUI();});
+
+// ---- Koi Codex (first node of the pond-management nav; doubles as a QA view) ----
+const KOIDEX=[
+ {id:'kohaku',name:'Kohaku',jp:'紅白',cost:0,desc:'White body, stepped red (hi). The original koi.'},
+ {id:'asagi',name:'Asagi',jp:'浅黄',cost:0,desc:'Blue-grey net back, red rising up the flanks.'},
+ {id:'ogon',name:'Ogon',jp:'黄金',cost:0,desc:'Solid metallic gold with scale shimmer.'},
+ {id:'platinum',name:'Platinum Ogon',jp:'白金',cost:40,desc:'Solid metallic white — luminous and clean.'},
+ {id:'sanke',name:'Taisho Sanke',jp:'大正三色',cost:55,desc:'Red plus black above the lateral line; a clean white face.'},
+ {id:'benigoi',name:'Benigoi',jp:'緋鯉',cost:60,desc:'Solid red-orange with scale shimmer, never flat.'},
+ {id:'showa',name:'Showa Sanshoku',jp:'昭和三色',cost:75,desc:'Black-based; red and white over it, sumi wrapping the body.'},
+ {id:'tancho',name:'Tancho',jp:'丹頂',cost:120,desc:'Pure white with a single red crown. Rare.'},
+];
+const codexEl=document.getElementById('codex'),cxList=document.getElementById('cxList'),codexBtn=document.getElementById('codexBtn');
+function cxOwned(e){return e.cost===0||(Pond.unlocked||[]).includes(e.id);}
+function buildCodex(){cxList.innerHTML='';
+  for(const e of KOIDEX){const owned=cxOwned(e);
+    const row=document.createElement('div');row.className='cx';
+    row.innerHTML=`<canvas></canvas><div class="info"><div class="nm">${e.name} <span class="jp">${e.jp}</span></div>`+
+      `<div class="ds">${e.desc}</div><div class="act">${owned?'<span class="own">✓ in your pond</span>':`<button class="ul" data-id="${e.id}" data-cost="${e.cost}">unlock · ${e.cost} ❀</button>`}</div></div>`;
+    cxList.appendChild(row);
+    const cv2=row.querySelector('canvas'),dpr=Math.min(2,devicePixelRatio||1),cw=104,ch=60;
+    cv2.width=cw*dpr;cv2.height=ch*dpr;cv2.style.background='radial-gradient(80% 120% at 50% 40%,#1d4035,#10271f)';
+    const cc=cv2.getContext('2d');cc.scale(dpr,dpr);if(!owned)cc.globalAlpha=.5;
+    try{const k=makeKoi(e.id,cw*.5,ch*.5,1,e.id.length*37+11);k.ang=0;k.phase=.4;k.finph=.4;k.depth=0;k.trail=[];
+      const sp=staticSpine(cw*.5,ch*.5,84,18,5);SKINS.natural.koi(cc,k,sp,1);}catch(err){console.warn('codex',e.id,err);}
+  }
+  cxList.querySelectorAll('.ul').forEach(b=>b.addEventListener('click',()=>{const id=b.dataset.id,cost=+b.dataset.cost;
+    if(Pond.econ.serenity<cost)return;Pond.econ.serenity-=cost;(Pond.unlocked||(Pond.unlocked=[])).push(id);persist();syncShop();buildCodex();}));
+  refreshCodexButtons();}
+function refreshCodexButtons(){cxList.querySelectorAll('.ul').forEach(b=>{b.disabled=Pond.econ.serenity< +b.dataset.cost;});}
+function codexTick(){if(codexEl.classList.contains('open'))refreshCodexButtons();}
+codexBtn.addEventListener('click',()=>{const open=codexEl.classList.toggle('open');if(open)buildCodex();});
+document.getElementById('codexX').addEventListener('click',()=>codexEl.classList.remove('open'));
+
+// =================================================================
+// LOOP + BOOT
+// =================================================================
+let last=performance.now(),frame=1000/40,saveT=0;
+function resize(){DPR=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);buildBuffers();}
+addEventListener('resize',resize);
+function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;return;}if(now-last<frame)return;
+  let dt=(now-last)/1000;last=now;if(dt>.1)dt=.1;
+  step(dt);render(now/1000);syncShop();
+  saveT+=dt;if(saveT>5){saveT=0;persist();}}
+addEventListener('beforeunload',persist);
+
+resize();const saved=Store.load();if(saved&&saved.koi&&saved.koi.length)restore(saved);else seedDefault();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>
