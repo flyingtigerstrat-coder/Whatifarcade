@@ -659,5 +659,8 @@ addEventListener('beforeunload',persist);
 resize();const saved=Store.load();if(saved&&saved.koi&&saved.koi.length)restore(saved);else seedDefault();
 requestAnimationFrame(tick);
 </script>
+<!-- analytics: record an open ("times played") via the shared studio hook.
+     Added by POD_ARCADE for base analytics during koi's provisional hosting; flagged to POD_KOI. -->
+<script src="/shared/play-counter.js" data-game="koi"></script>
 </body>
 </html>
