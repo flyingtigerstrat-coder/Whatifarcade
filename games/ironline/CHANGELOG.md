@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-06-23 · session 5 — depth-band canon + The Railhead restaged
+DECIDED: Landed the depth-band staging ladder in DESIGN.md (descriptive of draw()'s existing order; the one rule — a new drawable names its band before it's drawn). Restaged The Railhead per BRIEF v0.4: architecture (water tower / signal mast / depot building) pushed UP-AND-BACK into band 4 and haze-dimmed by aerial perspective; name-board promoted to a band-9 UI banner; platform + Dispatcher + lanterns kept as the band-6 front strip. Train now alone on band 5 — clean unbroken silhouette (pass/fail test passes).
+TRIED: First bracket vs shed prototypes — director's pass: ART/FIT/PROCEDURAL PASSED, STAGING FAILED (station was drawn at the train's depth). Gantry/canopy retired (caged the rig); built from the tower/mast frame.
+PARKED: Shed/canopy variant removed (recoverable from git) — possible future "grand city-node" look. Bitmap origin resolved toward procedural.
+CHANGED: BRIEF v0.3 -> v0.4 (COMPOSITION/DEPTH requirement + restage scope); added DESIGN.md; ironline-export.js railhead subject drops --style.
+OPEN: Bless the restaged dusk still before animating the arrival choreography (spd->0 at rest, begin-at-origin, Dispatcher's ticker voice).
+FEELING: Now it reads like a place — the rig parked at the edge of the world, the depot hazed behind it, the name up in lights.
+
 ## 2026-06-23 · session 4 — builder pickup: tooling + docs promoted, dusk exporter proven
 DECIDED: Restored IRONLINE's standing tooling from Drive into the repo (`ironline-export.js`, `ironline-import.py`) — the migration had moved the game but left the tools in Drive. Promoted the pod docs (BRIEF, this changelog, nested CLAUDE, plus HANDOFF/TOOLS/deep-changelog) so the game is self-contained in git, not just Drive.
 TRIED: Ran the recovered exporter against the migrated game — `scene --T=0` rendered a true 1:1 dusk frame (1280×720), confirming the tool works post-migration and that T=0 = sunset. Baseline frame sent to the human (current open-track world; The Railhead not built yet).
