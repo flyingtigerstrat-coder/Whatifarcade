@@ -143,6 +143,11 @@
     color:var(--amber); text-shadow:0 0 18px rgba(240,207,134,.45); padding:0 18px; letter-spacing:.01em;
     animation:cardflk 5.5s steps(1) infinite}
   @keyframes cardflk{0%,94%,100%{opacity:1}96%{opacity:.5}}
+  /* firefly cabinet screen — procedural placeholder (swap for a real asset later) */
+  .screen--firefly{position:relative; overflow:hidden; background:radial-gradient(120% 130% at 50% 120%, #16241c 0%, #0e0b16 72%)}
+  .screen--firefly i{position:absolute; width:5px; height:5px; border-radius:50%; background:var(--amber); box-shadow:0 0 8px 2px rgba(240,207,134,.7); opacity:.2; animation:firefly 3.4s ease-in-out infinite}
+  @keyframes firefly{0%,100%{opacity:.12; transform:scale(.75)}50%{opacity:1; transform:scale(1.15)}}
+  @media(prefers-reduced-motion:reduce){.screen--firefly i{animation:none; opacity:.8}}
   .cab__body{padding:14px 6px 4px; flex:1 1 auto; display:flex; flex-direction:column}
   .cab__title{font-family:var(--display); font-weight:700; font-size:1.32rem; letter-spacing:.01em}
   .cab__line{color:var(--muted); font-size:.95rem; margin-top:5px; min-height:2.7em}
@@ -295,10 +300,10 @@
   <div class="wrap">
     <div class="arcade__head">
       <div class="rise">
-        <div class="eyebrow">Now playing · soon playing</div>
+        <div class="eyebrow">Now playing · coming soon</div>
         <h2>The arcade</h2>
       </div>
-      <p class="rise d1">One cabinet's already warm. The rest are still being built — wishes turning into worlds.</p>
+      <p class="rise d1" id="arcade-blurb">Three cabinets are already warm. The rest are still being built — wishes turning into worlds.</p>
     </div>
 
     <div class="shelf">
@@ -323,7 +328,7 @@
       <!-- Firefly Jar -->
       <article class="cab rise">
         <div class="cab__marquee">FIREFLY JAR</div>
-        <div class="screen screen--card"><span class="titlecard">Firefly Jar</span></div>
+        <div class="screen screen--firefly" aria-hidden="true"><i style="left:20%;top:32%"></i><i style="left:38%;top:62%;animation-delay:1.1s"></i><i style="left:55%;top:24%;animation-delay:.5s"></i><i style="left:68%;top:54%;animation-delay:1.7s"></i><i style="left:82%;top:38%;animation-delay:.9s"></i><i style="left:30%;top:78%;animation-delay:2.2s"></i></div>
         <div class="cab__body">
           <div class="cab__title">Firefly Jar</div>
           <p class="cab__line">Every summer had a last hour before someone called you in. I never wanted it to end. …Did you?</p>
@@ -595,6 +600,18 @@
     // longer writes plays.
   })();
 })();
+</script>
+<script>
+  /* keep the arcade blurb's live-cabinet count in sync with the shelf (counts non-"coming soon" cabinets) */
+  (function(){
+    var el=document.getElementById('arcade-blurb');
+    var live=document.querySelectorAll('.shelf .cab:not(.cab--soon)').length;
+    if(!el||!live) return;
+    var W=['','One','Two','Three','Four','Five','Six','Seven','Eight','Nine'];
+    var n=W[live]||String(live);
+    var first=(live===1)?"One cabinet's already warm.":(n+" cabinets are already warm.");
+    el.textContent=first+" The rest are still being built — wishes turning into worlds.";
+  })();
 </script>
 </body>
 </html>
