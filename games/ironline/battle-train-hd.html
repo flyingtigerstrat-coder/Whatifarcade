@@ -1575,7 +1575,7 @@ eachCell(0.6,52,71,(k,sx)=>{if(hash(k*131+71)>0.5)return;const x=sx,y=150+Math.f
 for(const rr of [reg,reg+1]){if(hash(rr*97+9)<0.45){const sx=(rr+0.3)*BIOME_LEN-S.off*0.6;if(sx>-40&&sx<360)storyAt(sx,Math.floor(hash(rr*61+9)*3))}}
 const o4=Math.floor(S.off*0.6)%480;drawFgWreck(-o4);drawFgWreck(480-o4);
 ambientLife(cur);
-if(S.origin)drawRailhead(S.stationX==null?STATION_HOME:S.stationX);
+if(S.origin)drawRailhead(S.stationX==null?STATION_HOME:S.stationX,S.stationStyle||'bracket');
 }
 function storyAt(x,v){
 if(v==0){ctx.save();ctx.translate(x,0);ctx.rotate(-0.08);
@@ -1602,62 +1602,94 @@ const RH_FONT={ // 3x5 micro-glyphs for the hand-painted name-board (row bits: 4
  'T':[7,2,2,2,2],'H':[5,5,7,5,5],'E':[7,4,7,4,7],'R':[6,5,6,5,5],'A':[2,5,7,5,5],
  'I':[7,2,2,2,7],'L':[4,4,4,4,7],'D':[6,5,5,5,6],' ':[0,0,0,0,0]};
 function rhText(str,x,y,col){let cx=x;for(const ch of str){const g=RH_FONT[ch]||RH_FONT[' '];for(let r=0;r<5;r++)for(let c=0;c<3;c++)if(g[r]&(4>>c))px(cx+c,y+r,1,1,col);cx+=4}}
-function drawRailhead(sx){
- const PLW=140, deckY=129, AO='#241a12';
- const PK0='#5a4128',PK1='#74542f',PK2='#8c6a3e',PK3='#a07c4e'; // weathered planks, dark->lit (echoes THE RUST FLATS)
- const IR=MAT[0], gun=MAT[1];
- const glow=Math.max(0.32,1.06-dnLight); // lanterns swell as the daylight fails
- // --- empty rails running west into the haze (the road ahead, implied) ---
- for(let i=0;i<6;i++)pxa(sx-16-i*8,137,5,1,'rgba(46,34,24,'+Math.max(0,0.5-i*0.08)+')');
- // --- water/fuel gantry over the rails (right end, where the engine takes on water) ---
- {const gxL=sx+PLW+6, beam=100;
-  box(gxL,beam,3,46,gun[1]); box(gxL+30,beam,3,46,gun[1]);             // two legs planted to the rail
-  box(gxL,beam-3,36,4,gun[2]); px(gxL+2,beam-2,32,1,gun[4]);           // top beam, lit edge
-  px(gxL+8,beam-9,20,7,IR[2]);px(gxL+8,beam-9,20,1,IR[4]);px(gxL+9,beam-8,18,1,IR[3]); // header tank
-  streak(gxL+12,beam-2,6,7); streak(gxL+25,beam-2,5,9); rustPatch(gxL+18,beam-6,13);
-  px(gxL+24,beam+2,2,12,gun[1]); px(gxL+22,beam+13,6,2,gun[2]); px(gxL+25,beam+15,2,5,IR[0]); // swing spout toward the engine
-  pxa(gxL+25,beam+19,2,1,'rgba(159,216,216,0.5)');                      // one teal drip-glint (the AI's single shimmer)
+function rhFig(x,fy,kind){ // a station figure, feet at fy (reused on the platform AND the shed catwalk)
+ if(kind=='kid'){pxa(x-1,fy,4,1,'rgba(10,8,6,0.3)');px(x,fy-1,1,1,'#241a12');px(x+1,fy-1,1,1,'#241a12');px(x,fy-6,2,5,'#3a2e22');px(x,fy-8,2,2,'#6a553a');px(x,fy-7,2,1,'#46382a');return}
+ const co=kind=='worker'?['#37402f','#52604a']:['#3a3026','#5a4a36'];
+ pxa(x-1,fy,6,1,'rgba(10,8,6,0.32)');                       // foot shadow
+ px(x+1,fy-5,1,5,'#241a12');px(x+3,fy-5,1,5,'#241a12');     // legs
+ px(x,fy-12,5,7,co[0]);px(x,fy-12,5,1,co[1]);               // coat / torso
+ px(x+1,fy-15,3,3,'#b08a5a');px(x+2,fy-14,1,1,'#2a201a');   // head
+ if(kind=='worker'){px(x+1,fy-16,3,1,'#23211a');px(x,fy-15,1,1,'#9fd8ff')} // welding cap + goggle glint
+ else{px(x,fy-16,5,1,'#241a12');px(x-1,fy-15,7,1,'#2a201a');px(x-1,fy-11,1,5,'#2f261d');pxa(x+1,fy-10,1,2,'rgba(224,140,60,0.85)')} // dispatcher: brim hat + propped arm + cigarette ember
+}
+function rhBoard(bx,by,bw){ // the cream hand-painted name-board
+ box(bx-2,by-2,bw+4,15,'#3a2c1c');
+ px(bx,by,bw,13,'#f0ddb0');px(bx,by,bw,1,'#f6e7c4');px(bx,by+12,bw,1,'#cdb48a');
+ rhText('THE RAILHEAD',bx+3,by+4,'#7a3322');
+}
+function rhLantern(lx,topY,poolY,glow,pole){ // amber lantern (pole + ground pool optional)
+ const gun=MAT[1],IR=MAT[0];
+ if(pole)box(lx,topY+2,2,Math.max(2,poolY-topY-2),gun[1]);
+ px(lx-1,topY,4,3,IR[1]);px(lx,topY-1,2,1,IR[3]);
+ const lg=ctx.createRadialGradient(lx+1,topY+1,1,lx+1,topY+1,17);
+ lg.addColorStop(0,'rgba(240,207,134,'+(0.85*glow)+')');lg.addColorStop(0.45,'rgba(224,163,58,'+(0.4*glow)+')');lg.addColorStop(1,'rgba(224,163,58,0)');
+ ctx.fillStyle=lg;ctx.fillRect(lx-16,topY-15,34,34);
+ px(lx,topY,2,2,'#f0cf86');                                 // hot core
+ if(poolY)pxa(lx-2,poolY,5,1,'rgba(224,163,58,'+(0.5*glow)+')');
+}
+// THE RAILHEAD — BACK pass (drawn in drawBackdrop, BEHIND the train): tall architecture that reads over
+// ANY train length by using the airspace the train never covers. style: 'bracket' | 'shed'.
+function drawRailhead(sx,style){
+ const SW=236,cx=sx+SW/2,IR=MAT[0],gun=MAT[1],glow=Math.max(0.34,1.08-dnLight),AO='#241a12';
+ for(let i=0;i<6;i++)pxa(sx-14-i*8,137,5,1,'rgba(46,34,24,'+Math.max(0,0.5-i*0.08)+')'); // empty rails west into the haze
+ if(style=='shed'){
+  // ===== overhead train-shed: a truss canopy the rig pulls in UNDER =====
+  const roofY=60;
+  for(const colx of [sx+6,cx-2,sx+SW-8]){box(colx,roofY+8,3,146-(roofY+8),gun[1]);streak(colx+1,roofY+22,9,colx);px(colx-1,140,5,1,AO)} // columns (train covers their lower half)
+  px(sx,roofY,SW,3,gun[1]);px(sx,roofY,SW,1,gun[3]);px(sx,roofY+8,SW,2,gun[1]);   // top + bottom chords
+  for(let tx=sx;tx<sx+SW;tx+=12){px(tx,roofY+3,1,5,gun[0]);px(tx+6,roofY+3,1,5,gun[0])} // truss verticals
+  for(let tx=sx;tx<sx+SW-6;tx+=12)for(let d=0;d<6;d++)px(tx+d,roofY+3+d,1,1,gun[2]);    // diagonals
+  px(sx-3,roofY-3,SW+6,3,IR[1]);px(sx-3,roofY-3,SW+6,1,IR[3]);                          // corrugated roof cap (overhang)
+  for(let d=sx;d<sx+SW;d+=7)px(d,roofY-3,1,3,IR[0]);
+  px(cx-29,roofY+10,1,6,'#2a2018');px(cx+28,roofY+10,1,6,'#2a2018');rhBoard(cx-29,roofY+16,58); // sign hung from the canopy
+  // catwalk under the canopy — ROBUST, with crew that read clearly above the train
+  const cwY=98,cwL=cx-54,cwR=cx+54;
+  px(cwL,cwY,cwR-cwL,2,gun[2]);px(cwL,cwY,cwR-cwL,1,gun[4]);px(cwL,cwY-7,cwR-cwL,1,gun[1]); // deck + handrail
+  for(let bp=cwL;bp<=cwR;bp+=9)px(bp,cwY-6,1,6,gun[0]);                                       // balusters
+  for(let hb=cwL+8;hb<cwR;hb+=20)px(hb,roofY+10,1,cwY-7-(roofY+10),'#2a2018');                // hangers up to the canopy
+  rhFig(cwL+12,cwY,'disp');rhFig(cwL+38,cwY,'worker');rhFig(cwR-22,cwY,'kid');                // the catwalk crew
+  for(const lx of [cx-70,cx-24,cx+22,cx+68]){px(lx,roofY+10,1,8,'#2a2018');rhLantern(lx,roofY+18,0,glow,false)} // hung lanterns over the cars
+ } else {
+  // ===== bracket: tall depot architecture ABOVE; the people go in the FRONT pass =====
+  {const wx=sx+8,tankY=74,tw=26;                                                              // water tower (left)
+   box(wx,tankY,tw,20,IR[2]);px(wx,tankY,tw,1,IR[4]);px(wx,tankY+1,tw,1,IR[3]);px(wx,tankY+18,tw,1,IR[0]);
+   px(wx+2,tankY-4,tw-4,4,IR[1]);px(wx+5,tankY-7,tw-10,3,IR[1]);                              // conical top
+   streak(wx+6,tankY+3,12,wx);streak(wx+18,tankY+3,10,wx+9);rustPatch(wx+12,tankY+9,wx);
+   for(const lx of [wx+1,wx+tw-3])box(lx,tankY+20,2,146-(tankY+20),IR[1]);                    // legs
+   for(let b=tankY+26;b<140;b+=16){px(wx+1,b,tw-2,1,IR[0]);px(wx+2,b+8,tw-4,1,IR[0])}         // cross-braces
+   px(wx+tw-2,tankY+18,5,2,IR[1]);px(wx+tw+2,tankY+18,1,12,IR[0]);                            // spout over the rail
+  }
+  {const dbx=sx+SW-78,dbw=70,wallY=88;                                                        // depot building (right)
+   px(dbx+12,wallY-2,dbw-24,54,'#74542f');px(dbx+12,wallY-2,dbw-24,1,'#8c6a3e');              // wall (runs down behind the train)
+   px(dbx+8,wallY-2,dbw-16,3,IR[1]);px(dbx+8,wallY-2,dbw-16,1,IR[3]);                         // eave
+   px(dbx+18,wallY-9,dbw-36,7,'#6e5236');px(dbx+24,wallY-13,dbw-48,5,'#6e5236');              // stepped gable
+   box(dbx+24,wallY+8,8,9,'#241a12');pxa(dbx+25,wallY+9,6,7,'rgba(240,180,90,'+(0.45+0.45*glow)+')'); // lit amber window
+   streak(dbx+18,wallY+4,9,dbx);rustPatch(dbx+40,wallY+6,dbx+3);
+  }
+  {const aw=58,ax=Math.round(cx-aw/2),archY=72;                                               // central name-board on a tall arch
+   box(ax-4,archY+13,2,138-(archY+13),'#2a2018');box(ax+aw+2,archY+13,2,138-(archY+13),'#2a2018');
+   px(ax-4,archY+12,aw+8,1,gun[1]);rhBoard(ax,archY,aw);
+  }
+  {const smx=sx+58;box(smx,80,2,58,gun[1]);px(smx-3,84,8,1,gun[1]);                           // signal mast
+   px(smx-3,86,3,3,'#c83028');px(smx-3,91,3,3,'#e0a33a');px(smx-3,96,3,3,'#7fd07a');pxa(smx-4,90,5,6,'rgba(224,163,58,'+(0.4*glow)+')')}
  }
- // --- the platform: low weathered-plank deck, bottom-anchored to the rail (BASE grammar) ---
- for(let p=sx+4;p<sx+PLW;p+=22){box(p,deckY+2,3,9,PK0);px(p,deckY+10,3,1,AO)} // support posts under the deck
- box(sx,deckY,PLW,9,PK1);                                               // deck slab + hard AO frame
- px(sx,deckY,PLW,1,PK3);px(sx,deckY+1,PLW,1,PK2);                       // top-lit plank face
- for(let pk=sx+3;pk<sx+PLW-2;pk+=9){px(pk,deckY+1,1,7,PK0);if(hash(pk*3)<0.5)rustPatch(pk-1,deckY+5,pk)} // plank seams + rust
- px(sx,deckY+7,PLW,1,PK0);px(sx,deckY+8,PLW,1,AO);                      // grimy bottom sill
- px(sx+2,deckY-5,PLW-4,1,gun[2]);                                       // a low railing along the front edge
- for(let rp=sx+6;rp<sx+PLW-4;rp+=16)px(rp,deckY-5,1,5,gun[1]);          // balusters
- // --- lantern poles with warm amber pools ---
- [sx+8,sx+PLW-12].forEach(lx=>{
-  box(lx,100,2,deckY-100,gun[1]);                                       // pole
-  px(lx-1,98,4,3,IR[1]);px(lx,97,2,1,IR[3]);                            // lamp housing
-  const lg=ctx.createRadialGradient(lx+1,99,1,lx+1,99,18);
-  lg.addColorStop(0,'rgba(240,207,134,'+(0.85*glow)+')');
-  lg.addColorStop(0.45,'rgba(224,163,58,'+(0.4*glow)+')');
-  lg.addColorStop(1,'rgba(224,163,58,0)');
-  ctx.fillStyle=lg;ctx.fillRect(lx-17,82,36,36);                        // amber pool of light
-  px(lx,98,2,2,'#f0cf86');                                              // hot lamp core
-  pxa(lx-1,deckY-1,4,1,'rgba(224,163,58,'+(0.5*glow)+')');              // amber spill on the planks
- });
- // --- the cream name-board: THE RAILHEAD ---
- {const bw=54,bx=Math.round(sx+(PLW-bw)/2),by=88;
-  box(bx-2,by-2,bw+4,15,'#3a2c1c');                                     // board frame
-  px(bx,by,bw,13,'#f0ddb0');px(bx,by,bw,1,'#f6e7c4');px(bx,by+12,bw,1,'#cdb48a'); // cream board, top-lit
-  rhText('THE RAILHEAD',bx+3,by+4,'#7a3322');                          // hand-painted rust lettering
-  box(bx+6,by+13,2,deckY-(by+13),'#2a2018');box(bx+bw-8,by+13,2,deckY-(by+13),'#2a2018'); // two posts to the deck
+}
+// THE RAILHEAD — FRONT pass (drawn AFTER the train): the near platform + people, in FRONT of the rig.
+function drawRailheadFront(sx,style){
+ const SW=236,cx=sx+SW/2,gun=MAT[1],glow=Math.max(0.34,1.08-dnLight),AO='#241a12';
+ if(style=='shed'){ // the shed keeps its crew up on the catwalk; foreground stays sparse
+  box(cx-72,172,9,8,'#4a3526');px(cx-71,173,7,1,'#74542f');px(cx-60,176,7,4,'#46382a');       // a couple of crates
+  rhLantern(cx+62,166,178,glow,true);
+  return;
  }
- // --- platform silhouettes ---
- {const kx=sx+22,ky=deckY-1;                                           // a kid on the deck edge, legs dangling
-  px(kx,ky-7,3,4,'#3a2e22');px(kx+1,ky-9,1,2,'#6a553a');px(kx,ky-8,3,1,'#46382a');
-  px(kx,ky,1,4,'#241a12');px(kx+2,ky,1,4,'#241a12');
- }
- {const dx=sx+72,fy=deckY;                                             // THE DISPATCHER, leaning on the rail
-  pxa(dx-1,fy,6,1,'rgba(10,8,6,0.35)');                                // foot shadow
-  px(dx+3,fy-6,1,6,'#241a12');px(dx+1,fy-3,2,3,'#2a2018');             // legs (one propped)
-  px(dx,fy-13,4,8,'#3a3026');px(dx,fy-13,4,1,'#5a4a36');               // long coat
-  px(dx+1,fy-15,2,2,'#b08a5a');px(dx+1,fy-16,3,1,'#2a201a');           // head + brimmed hat
-  px(dx-1,fy-12,1,5,'#2f261d');                                        // forearm resting on the rail
-  pxa(dx+1,fy-9,1,2,'rgba(224,140,60,0.7)');                           // the ember of a slow smoke
- }
+ // bracket: a low near platform along the foreground apron + the Dispatcher & kid IN FRONT of the rig
+ const pL=Math.round(cx-86),pR=Math.round(cx+74),deck=170;
+ for(let p=pL+6;p<pR;p+=20)box(p,deck+4,3,8,'#46382a');                                        // pilings into the apron
+ box(pL,deck,pR-pL,8,'#5a4128');px(pL,deck,pR-pL,1,'#a07c4e');px(pL,deck+1,pR-pL,1,'#8c6a3e'); // plank deck, top-lit
+ for(let pk=pL+3;pk<pR-2;pk+=9){px(pk,deck+1,1,6,'#3a2a18');if(hash(pk*3)<0.5)rustPatch(pk-1,deck+4,pk)}
+ px(pL,deck+7,pR-pL,1,AO);                                                                     // grimy sill
+ rhLantern(pL+10,150,deck,glow,true);
+ rhFig(pL+30,deck,'kid');rhFig(pL+52,deck,'disp');rhFig(pR-26,deck,'worker');                  // the people of the stop
 }
 function drawOverlays(){
 ctx.fillStyle='rgba(184,92,40,'+(0.06*dnLight)+')';ctx.fillRect(0,0,320,180);
@@ -1677,6 +1709,7 @@ lane(138);
 ctx.fillStyle='rgba(24,12,6,0.22)';ctx.fillRect(16,139,294,4);
 drawTrain();
 lane(166);
+if(S.origin)drawRailheadFront(S.stationX==null?STATION_HOME:S.stationX,S.stationStyle||'bracket');
 if(S.mode=='idle'){
 const tw=S.tw;
 px(tw.x,160+Math.round(Math.abs(Math.sin(S.T*7))*-4),5,5,'#a8773e');
