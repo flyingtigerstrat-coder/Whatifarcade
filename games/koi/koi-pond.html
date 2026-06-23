@@ -107,6 +107,11 @@ const TAU=Math.PI*2, clamp=(v,a,b)=>v<a?a:v>b?b:v, lerp=(a,b,t)=>a+(b-a)*t, rand
 function hexA(hex,a){const n=hex.replace('#','');return `rgba(${parseInt(n.substr(0,2),16)},${parseInt(n.substr(2,2),16)},${parseInt(n.substr(4,2),16)},${a})`;}
 function shade(hex,m){const n=hex.replace('#','');return `rgb(${parseInt(n.substr(0,2),16)*m|0},${parseInt(n.substr(2,2),16)*m|0},${parseInt(n.substr(4,2),16)*m|0})`;}
 function hsl(h,s,l,a){return `hsla(${h},${s}%,${l}%,${a==null?1:a})`;}
+// blend two #rrggbb toward t (0..1) -> #rrggbb (used for brass->verdigris patina)
+function mixHex(a,b,t){const A=a.replace('#',''),B=b.replace('#',''),h=n=>('0'+(clamp(n|0,0,255)).toString(16)).slice(-2);
+  return '#'+h(lerp(parseInt(A.substr(0,2),16),parseInt(B.substr(0,2),16),t))
+           +h(lerp(parseInt(A.substr(2,2),16),parseInt(B.substr(2,2),16),t))
+           +h(lerp(parseInt(A.substr(4,2),16),parseInt(B.substr(4,2),16),t));}
 
 // ---------- persistence (pond you keep) ----------
 const Store={save(o){try{localStorage.setItem('koipond_v2',JSON.stringify(o));}catch(e){}},
@@ -301,7 +306,8 @@ function caustics(c,w,h,t,color,blend){c.globalCompositeOperation=blend;
     c.fillStyle=g;c.beginPath();c.arc(x,y,R,0,TAU);c.fill();}c.globalCompositeOperation='source-over';}
 
 // ---------- plants (shared natural draw) ----------
-function drawPad(c,p,tint){let R=18+(p.size??.4)*46*(p.grow??1);if(!isFinite(R)||R<2)R=18;const ry=R*.72;c.save();c.translate(p.rx??p.x,p.ry??p.y);c.rotate(p.rrot??p.rot);
+function drawPad(c,p,tint,opts){let R=18+(p.size??.4)*46*(p.grow??1);if(!isFinite(R)||R<2)R=18;const ry=R*.72;const metal=opts&&opts.metal;
+  c.save();c.translate(p.rx??p.x,p.ry??p.y);c.rotate(p.rrot??p.rot);
   // floor shadow
   c.fillStyle='rgba(6,20,16,.22)';c.beginPath();c.ellipse(3,5,R,ry,0,0,TAU);c.fill();
   // pad body
@@ -311,13 +317,24 @@ function drawPad(c,p,tint){let R=18+(p.size??.4)*46*(p.grow??1);if(!isFinite(R)|
   // notch (painted cleft, not an erase — safe on opaque canvas)
   c.fillStyle='rgba(12,28,20,.5)';
   c.beginPath();c.moveTo(0,0);c.lineTo(R*1.04,-ry*.15);c.lineTo(R*1.04,ry*.15);c.closePath();c.fill();
-  // rim sheen + veins
-  c.strokeStyle='rgba(150,200,140,.18)';c.lineWidth=1.4;c.beginPath();c.ellipse(0,0,R-1,ry-1,0,0,TAU);c.stroke();
-  c.strokeStyle='rgba(20,45,30,.3)';c.lineWidth=1;for(let i=0;i<7;i++){const a=i/7*TAU;c.beginPath();c.moveTo(0,0);c.lineTo(Math.cos(a)*R*.9,Math.sin(a)*ry*.9);c.stroke();}
+  if(metal){const rim=opts.rim||'#fff0c4';
+    // metal finish: bright mirror rim + dark underside, a blown specular hotspot, NO machined pinwheel veins
+    c.strokeStyle=hexA(rim,.5);c.lineWidth=1.5;c.beginPath();c.ellipse(0,0,R-1,ry-1,0,0,TAU);c.stroke();
+    c.strokeStyle='rgba(0,0,0,.34)';c.lineWidth=1.2;c.beginPath();c.ellipse(.8,1,R-1,ry-1,0,0,TAU);c.stroke();
+    c.globalCompositeOperation='screen';
+    const hg=c.createRadialGradient(-R*.32,-ry*.36,1,-R*.28,-ry*.3,R*.8);
+    hg.addColorStop(0,hexA(rim,.65));hg.addColorStop(.5,hexA(rim,.12));hg.addColorStop(1,'transparent');
+    c.fillStyle=hg;c.beginPath();c.ellipse(0,0,R,ry,0,0,TAU);c.fill();
+    c.globalCompositeOperation='source-over';
+  }else{
+    // rim sheen + veins (organic pad)
+    c.strokeStyle='rgba(150,200,140,.18)';c.lineWidth=1.4;c.beginPath();c.ellipse(0,0,R-1,ry-1,0,0,TAU);c.stroke();
+    c.strokeStyle='rgba(20,45,30,.3)';c.lineWidth=1;for(let i=0;i<7;i++){const a=i/7*TAU;c.beginPath();c.moveTo(0,0);c.lineTo(Math.cos(a)*R*.9,Math.sin(a)*ry*.9);c.stroke();}
+  }
   c.restore();}
-function drawLotus(c,p,pal){const s=p.grow,px=p.rx??p.x,py=p.ry??p.y,pr=p.rrot??p.rot;
+function drawLotus(c,p,pal,opts){const s=p.grow,px=p.rx??p.x,py=p.ry??p.y,pr=p.rrot??p.rot;
   const padTint=pal?pal.pad:null, pTop=pal?pal.petalTop:'#f6dfe8', pBot=pal?pal.petalBot:'#e98fb0', ctr=pal?pal.center:'#f3d27a';
-  drawPad(c,{x:px-16,y:py+6,size:.4,grow:s,rot:pr},padTint);drawPad(c,{x:px+18,y:py-4,size:.34,grow:s,rot:pr+1},padTint);
+  drawPad(c,{x:px-16,y:py+6,size:.4,grow:s,rot:pr},padTint,opts);drawPad(c,{x:px+18,y:py-4,size:.34,grow:s,rot:pr+1},padTint,opts);
   if(p.bloom>0){const b=p.bloom,cx=px,cy=py- 6*b, R=10+18*b;c.save();c.translate(cx,cy);
     for(let ring=2;ring>=0;ring--){const rr=R*(.5+ring*.28),pet=6+ring*2;
       for(let i=0;i<pet;i++){const a=i/pet*TAU+ring*.4;c.save();c.rotate(a);
@@ -419,22 +436,75 @@ SKINS.natural={
 };
 
 // ---- LIQUID METAL ----
+// Principle: metal is a FINISH, not a palette. Each element keeps its real koi-pond hue
+// but is cast in its ORGANIC metal — read from specular behaviour (blown highlights on a
+// dark mirror), full-frame: substrate, light, ripples, pads, koi.
+// map a koi's variety to its organic metal {base,accent,sumi,shiro,rim, cool?}
+function koiMetal(v){
+  if(v===V.platinum) return {cool:1,base:'#dfe7ec',accent:'#aebcc6',sumi:'#5b6770',shiro:'#f2f6f8',rim:'#ffffff'}; // cool silver — the focal accent
+  if(v===V.ogon)     return {base:'#e7b85a',accent:'#f6d98a',sumi:'#7a5320',shiro:'#f6e6b0',rim:'#fff0c4'};        // molten brass / gold
+  if(v===V.benigoi)  return {base:'#c66a3a',accent:'#e89a5e',sumi:'#6e2e16',shiro:'#f0b07a',rim:'#ffd8a8'};        // copper-red
+  const n=v.base.replace('#',''),lum=(parseInt(n.substr(0,2),16)+parseInt(n.substr(2,2),16)+parseInt(n.substr(4,2),16))/3;
+  if(lum<90)         return {base:'#33271a',accent:'#c87a44',sumi:'#1a130c',shiro:'#caa86a',rim:'#ffe0a8'};        // dark-based (Showa) -> dark bronze
+  return {base:'#e9ddc6',accent:'#c87a44',sumi:'#5a4632',shiro:'#f3ead6',rim:'#ffe9c4'};                           // copper-and-silver (Kohaku/Sanke/Tancho/Asagi)
+}
 SKINS.metal={
-  water(c,t){const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0e1116');g.addColorStop(.5,'#1a1f27');g.addColorStop(1,'#0b0d11');
+  rip:{crest:[255,234,196,.26],trough:[10,6,3,.12],cw:1.7},   // mercury beading: bright warm specular crest, deep dark trough
+  // --- mercury substrate: warm-tinted dark mirror with specular contrast (bright pools by deep darks) ---
+  water(c,t){const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#241a12');g.addColorStop(.5,'#15100a');g.addColorStop(1,'#0b0805');
     c.fillStyle=g;c.fillRect(0,0,W,H);c.globalCompositeOperation='screen';
-    for(let i=0;i<3;i++){const yy=(((t*.03*(i+1)+i*.33)%1.4)-.2)*H;const lg=c.createLinearGradient(0,yy-120,0,yy+120);
-      lg.addColorStop(0,'transparent');lg.addColorStop(.5,`rgba(180,196,214,${.1-i*.02})`);lg.addColorStop(1,'transparent');c.fillStyle=lg;c.fillRect(0,yy-120,W,240);}
-    c.globalCompositeOperation='source-over';const hue=(t*8)%360;
-    caustics(c,W,H,t,hsl(hue,70,60,.1),'screen');caustics(c,W,H,t*1.3,hsl((hue+120)%360,70,58,.07),'screen');drawWakes(c);},
-  koi(c,k,sp,dim){const hue=(Pond._t*8+(k.x+k.y))%360;
-    c.fillStyle=`rgba(200,212,226,${.18*dim})`;pecFins(c,k,sp);tailFin(c,k,sp);c.fillStyle=`rgba(190,205,222,${.22*dim})`;c.fill();
-    bodyPath(c,k,sp);const bg=c.createLinearGradient(k.x-ewd(k)*2,k.y-ewd(k)*2,k.x+ewd(k)*2,k.y+ewd(k)*2);
-    bg.addColorStop(0,`rgba(${235*dim|0},${242*dim|0},${250*dim|0},1)`);bg.addColorStop(.45,`rgba(${120*dim|0},${134*dim|0},${150*dim|0},1)`);
-    bg.addColorStop(.62,`rgba(${30*dim|0},${36*dim|0},${44*dim|0},1)`);bg.addColorStop(1,`rgba(${150*dim|0},${164*dim|0},${182*dim|0},1)`);
-    c.fillStyle=bg;c.fill();c.globalCompositeOperation='overlay';c.fillStyle=k.V.accent+'66';c.fill();c.globalCompositeOperation='source-over';
-    c.lineWidth=1.4;c.strokeStyle=hsl(hue%360,90,72,.5*dim);c.stroke();},
-  plant(c,p){if(p.type==='lotus')drawLotus(c,p,{pad:['#9fb6c2','#5d7785','#33424d'],petalTop:'#e7edf2',petalBot:'#9fb2c0',center:'#cfe0e6'});else drawPad(c,p,['#9fb6c2','#5d7785','#33424d']);},
-  overlay(c,t){const g=c.createRadialGradient(W/2,H/2,Math.min(W,H)*.3,W/2,H/2,Math.max(W,H)*.72);g.addColorStop(0,'transparent');g.addColorStop(1,'rgba(0,0,0,.5)');c.fillStyle=g;c.fillRect(0,0,W,H);}
+    // bright specular pool where the light strikes the mirror (warm — reflecting a dusk sky)
+    const sbR=Math.max(W,H)*.5,bm=c.createRadialGradient(Pond.sun.x,Pond.sun.y,0,Pond.sun.x,Pond.sun.y,sbR);
+    bm.addColorStop(0,'rgba(255,230,186,.22)');bm.addColorStop(.4,'rgba(214,150,84,.10)');bm.addColorStop(1,'transparent');
+    c.fillStyle=bm;c.fillRect(0,0,W,H);
+    // mirror-warp: slow molten ripples warping reflected light (warm specular, never rainbow/teal)
+    caustics(c,W,H,t*.5,'rgba(255,224,176,.10)','screen');
+    caustics(c,W,H,t*.7+11,'rgba(196,118,58,.07)','screen');
+    // rolling specular sheets sliding across the mirror
+    for(let i=0;i<3;i++){const yy=(((t*.04*(i+1)+i*.33)%1.5)-.2)*H;const lg=c.createLinearGradient(0,yy-110,0,yy+110);
+      lg.addColorStop(0,'transparent');lg.addColorStop(.5,`rgba(255,224,180,${.09-i*.02})`);lg.addColorStop(1,'transparent');c.fillStyle=lg;c.fillRect(0,yy-110,W,220);}
+    c.globalCompositeOperation='source-over';drawWakes(c);},
+  // --- warm wet-metal koi (the real pattern, cast in metal), one cool silver focal ---
+  koi(c,k,sp,dim){const m=koiMetal(k.V),vm={...k.V,base:m.base,accent:m.accent,sumi:m.sumi,shiro:m.shiro};
+    // fins under the body
+    c.fillStyle=hexA(m.base,.24*dim);tailFin(c,k,sp);c.fill();pecFins(c,k,sp);
+    // body: a directional mirror gradient across the flanks (dark mirror -> blown specular band -> dark)
+    bodyPath(c,k,sp);const mid=sp[sp.length>>1],wd=ewd(k)*2.1;
+    const bg=c.createLinearGradient(mid.x-mid.nx*wd,mid.y-mid.ny*wd,mid.x+mid.nx*wd,mid.y+mid.ny*wd);
+    bg.addColorStop(0,shade(m.sumi,dim));bg.addColorStop(.4,shade(m.base,dim));
+    bg.addColorStop(.54,shade(m.rim,Math.min(1,dim*1.1)));bg.addColorStop(.68,shade(m.base,dim));bg.addColorStop(1,shade(m.sumi,dim));
+    c.fillStyle=bg;c.fill();
+    // the koi's real markings, rendered in metal tones (clipped to body)
+    c.save();bodyPath(c,k,sp);c.clip();
+    if(k.V.net) netBack(c,k,sp,dim);
+    const pats=k.pattern||k.V.patches||[]; for(const p of pats) drawPatch(c,k,sp,dim,vm,p);
+    if(k.V.cheeks){const h=sp[2],w=ewd(k)*widthAt(h.t);for(const s of[1,-1]){c.fillStyle=hexA(m.accent,.7);c.beginPath();c.arc(h.x+h.nx*w*.7*s,h.y+h.ny*w*.7*s,w*.42,0,TAU);c.fill();}}
+    if(k.V.head) headMark(c,k,sp,dim,vm);
+    if(k.V.motoguro){const pp=sampleSpineN(sp,.26),w=ewd(k)*widthAt(.26);for(const s of[1,-1]){c.fillStyle=hexA(m.sumi,.8*dim);c.beginPath();c.ellipse(pp.x+pp.nx*w*s,pp.y+pp.ny*w*s,w*.5,w*.32,k.ang,0,TAU);c.fill();}}
+    bodyScales(c,k,sp,dim,1);                                          // strong scale shimmer — metal reads scaled
+    // a bright specular hotspot sliding slowly along the back (moving highlight)
+    const hs=sampleSpineN(sp,clamp(.5+.2*Math.sin(Pond._t*.6+k.phase),.12,.9)),hr=ewd(k)*1.7;
+    c.globalCompositeOperation='screen';const hg=c.createRadialGradient(hs.x,hs.y,0,hs.x,hs.y,hr);
+    hg.addColorStop(0,hexA(m.rim,.5*dim));hg.addColorStop(1,'transparent');
+    c.fillStyle=hg;c.beginPath();c.arc(hs.x,hs.y,hr,0,TAU);c.fill();c.globalCompositeOperation='source-over';
+    c.restore();
+    // sharp leading-edge highlight — wet metal catches the light crisply on its silhouette
+    c.lineWidth=1.4;c.strokeStyle=hexA(m.rim,.5*dim);bodyPath(c,k,sp);c.stroke();
+    // eyes
+    const e=sp[1],ew=ewd(k)*widthAt(e.t);c.fillStyle='rgba(12,10,8,.9)';
+    for(const s of[1,-1]){c.beginPath();c.arc(e.x+e.nx*ew*.55*s,e.y+e.ny*ew*.55*s,1.6+ewd(k)*.06,0,TAU);c.fill();}},
+  // --- pads: polished brass when young -> verdigris patina as they mature (over EXISTING growth) ---
+  plant(c,p){const g=clamp(p.grow??0,0,1);
+    const tint=[mixHex('#f0d68a','#bcd9ad',g),mixHex('#caa24a','#5f9e7a',g),mixHex('#8a6a28','#2e5a44',g)];
+    const rim=mixHex('#fff0c4','#dff3df',g);
+    if(p.type==='lotus') drawLotus(c,p,{pad:tint,petalTop:'#ffe9b0',petalBot:'#d8a24a',center:'#ffd86a'},{metal:1,rim});
+    else drawPad(c,p,tint,{metal:1,rim});},
+  overlay(c,t){c.globalCompositeOperation='screen';                    // faint warm dusk sky reflected on the mirror
+    const shx=W*(.5-.3*Math.sin(Pond._t*.04)),shy=H*.3,sh=c.createRadialGradient(shx,shy,0,shx,shy,Math.max(W,H)*.6);
+    sh.addColorStop(0,`rgba(255,204,148,${.06+.02*Math.sin(t*.3)})`);sh.addColorStop(1,'transparent');
+    c.fillStyle=sh;c.fillRect(0,0,W,H);c.globalCompositeOperation='source-over';
+    const g=c.createRadialGradient(W/2,H/2,Math.min(W,H)*.3,W/2,H/2,Math.max(W,H)*.74);
+    g.addColorStop(0,'transparent');g.addColorStop(1,'rgba(0,0,0,.58)');c.fillStyle=g;c.fillRect(0,0,W,H);}    // deep vignette boosts mirror contrast
 };
 
 // ---- SUMI INK ----
@@ -479,12 +549,14 @@ SKINS.rain={
 
 // ---------- generic fx (ripples + food) for non-rain skins ----------
 function drawFX(c){
+  // per-skin ripple styling — metal beads into bright specular mercury; others stay watery
+  const RIP=(SKINS[skin]&&SKINS[skin].rip)||{crest:[218,238,228,.17],trough:[6,26,20,.08],cw:1.6};
   for(const r of Pond.ripples){const p=r.age/r.life;if(p>=1)continue;const fade=1-p;
     const rings=r.s>1?3:2;                                  // a little wave train, not one ring
     for(let n=0;n<rings;n++){const rr=r.r-n*7;if(rr<2)continue;const rf=fade*(1-n*.3);
-      c.globalCompositeOperation='screen';c.lineWidth=1.6;c.strokeStyle=`rgba(218,238,228,${.17*rf*Math.min(1.4,r.s)})`;
+      c.globalCompositeOperation='screen';c.lineWidth=RIP.cw;c.strokeStyle=`rgba(${RIP.crest[0]},${RIP.crest[1]},${RIP.crest[2]},${RIP.crest[3]*rf*Math.min(1.4,r.s)})`;
       c.beginPath();c.arc(r.x,r.y,rr,0,TAU);c.stroke();                         // crest catches light
-      c.globalCompositeOperation='source-over';c.lineWidth=1.4;c.strokeStyle=`rgba(6,26,20,${.08*rf})`;
+      c.globalCompositeOperation='source-over';c.lineWidth=1.4;c.strokeStyle=`rgba(${RIP.trough[0]},${RIP.trough[1]},${RIP.trough[2]},${RIP.trough[3]*rf})`;
       c.beginPath();c.arc(r.x,r.y,rr+2.4,0,TAU);c.stroke();}}                   // trough = bent light just outside
   c.globalCompositeOperation='source-over';
   for(const f of Pond.food){if(f.r<=0)continue;

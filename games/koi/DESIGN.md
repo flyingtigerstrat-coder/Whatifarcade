@@ -28,6 +28,8 @@ Lily pads and lotus **drag** through the water with watery lag and trailing ripp
 ## Skins — one engine, interchangeable looks
 **natural · liquid metal · sumi ink · rain on glass.** Canvas state is **hardened** so a skin can never leak blend/blur into the next (hard reset + per-frame guard).
 
+A skin is a faithful *performance* of the shared pond — it must treat the **whole frame** (substrate, light, ripples, pads, koi), not just repaint props. **liquid metal** is built on this rule (BRIEF v0.4): warm-tinted dark **mercury** substrate with specular contrast; **mirror-warp** caustics; koi render their real pattern cast in their **organic metal** (copper/brass/bronze; Platinum the one cool silver focal); pads **patina brass→verdigris over their growth state**; ripples bead into bright specular crests (`SKINS[skin].rip`). Metal is a *finish* (specular highlights on a dark mirror), never a grey palette. `drawPad`/`drawLotus` take an optional finish-options arg so a metal pad can drop the organic veins and add a hotspot without affecting other skins.
+
 ## In-game Koi Codex
 A **hideable side panel** (the first node of the pond-management nav) that renders every variety **live through the real engine**, with unlock badges priced in **serenity**; unlocked varieties join the release pool. Doubles as a QA surface.
 
