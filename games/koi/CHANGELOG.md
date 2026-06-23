@@ -1,6 +1,22 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-06-23 — metal skin refinement: dynamic range + temperature split (BRIEF v0.5)
+DECIDED: ran the v0.5 refinement on the liquid-metal skin (promoted to BRIEF.md). v0.4 fixed the *structure* (whole frame is one bronze material); v0.5 fixes the *finish* — it read muddy because it was nearly all warm mid-tones. Metal-skin-only, all in `games/koi/`. v0.4 direction kept (warm bodies, full-frame metal); these are deltas.
+
+CHANGED (metal skin only):
+- **Dynamic range pushed** from the grade (not a filter): deeper substrate darks (`#2a1d12→#120c07→#060403`), a deeper vignette, and genuinely bright blown speculars — so the surface reads wet/reflective, not matte varnish.
+- **Temperature split** — the unlock: warm bronze **mids** kept (warm caustics), but the **speculars are now cool silver-blue** (`METAL_COOL`), as if the mirror reflects a dusk sky. Applied consistently to the water pool/sheets, the koi rim + moving hotspot + body band, the ripple crests, and the overlay sky-sheen. Cool-on-warm is the "real metal" cue.
+- **Pads converted off green** — brass-when-young → **muted, oxidized verdigris** when mature (desaturated grey-green, not jade), interpolated over existing `grow`; pad specular toned down so foliage no longer out-shouts the water speculars (focal hierarchy fixed).
+- **Koi separation** — bright cool rim/leading-edge + cool hotspot so koi sit ON the mirror; the **Platinum reads pure-white / brightest fish** (the cool focal point) among the warm koi.
+- **Ripples** beaded brighter and cooler (`SKINS.metal.rip`) to register as a reflective surface.
+
+KEPT / didn't regress: full-frame bronze substrate + warm koi palette (v0.4); koi shape & pattern model untouched (tonal/material only); per-frame canvas reset + try/catch; analytics hook (`play-counter.js`) and the arcade cabinet (`index.html`, `assets/cabinet.png`) untouched. No `ctx.filter` contrast/brightness in the draw loop — contrast comes from gradient stops/values per the guardrail.
+
+TRIED / VERIFIED: node parse-check clean; headless smoke test drives all four skins + the codex with zero render warnings.
+
+OPEN / for screenshot review: focal-hierarchy check (speculars → silver koi → warm-koi edges → pads); whether the cool highlights want to be cooler/stronger; the silver focal still needs a Platinum in the pond to be visible (default pond seeds none).
+
 ## 2026-06-23 — metal skin polish pass (BRIEF v0.4 pilot)
 DECIDED: ran the first build pass on the **liquid-metal skin** under BRIEF_koi v0.4 (promoted to BRIEF.md). Two governing principles: a skin treats the WHOLE frame, and metal is a FINISH (specular behaviour), not a grey palette. Entirely within `games/koi/`; v0.1 blended-growth stays PARKED.
 

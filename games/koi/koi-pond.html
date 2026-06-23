@@ -319,11 +319,11 @@ function drawPad(c,p,tint,opts){let R=18+(p.size??.4)*46*(p.grow??1);if(!isFinit
   c.beginPath();c.moveTo(0,0);c.lineTo(R*1.04,-ry*.15);c.lineTo(R*1.04,ry*.15);c.closePath();c.fill();
   if(metal){const rim=opts.rim||'#fff0c4';
     // metal finish: bright mirror rim + dark underside, a blown specular hotspot, NO machined pinwheel veins
-    c.strokeStyle=hexA(rim,.5);c.lineWidth=1.5;c.beginPath();c.ellipse(0,0,R-1,ry-1,0,0,TAU);c.stroke();
-    c.strokeStyle='rgba(0,0,0,.34)';c.lineWidth=1.2;c.beginPath();c.ellipse(.8,1,R-1,ry-1,0,0,TAU);c.stroke();
+    c.strokeStyle=hexA(rim,.4);c.lineWidth=1.5;c.beginPath();c.ellipse(0,0,R-1,ry-1,0,0,TAU);c.stroke();
+    c.strokeStyle='rgba(0,0,0,.4)';c.lineWidth=1.3;c.beginPath();c.ellipse(.8,1,R-1,ry-1,0,0,TAU);c.stroke();
     c.globalCompositeOperation='screen';
     const hg=c.createRadialGradient(-R*.32,-ry*.36,1,-R*.28,-ry*.3,R*.8);
-    hg.addColorStop(0,hexA(rim,.65));hg.addColorStop(.5,hexA(rim,.12));hg.addColorStop(1,'transparent');
+    hg.addColorStop(0,hexA(rim,.42));hg.addColorStop(.5,hexA(rim,.08));hg.addColorStop(1,'transparent');
     c.fillStyle=hg;c.beginPath();c.ellipse(0,0,R,ry,0,0,TAU);c.fill();
     c.globalCompositeOperation='source-over';
   }else{
@@ -448,31 +448,37 @@ function koiMetal(v){
   if(lum<90)         return {base:'#33271a',accent:'#c87a44',sumi:'#1a130c',shiro:'#caa86a',rim:'#ffe0a8'};        // dark-based (Showa) -> dark bronze
   return {base:'#e9ddc6',accent:'#c87a44',sumi:'#5a4632',shiro:'#f3ead6',rim:'#ffe9c4'};                           // copper-and-silver (Kohaku/Sanke/Tancho/Asagi)
 }
+// the temperature split (v0.5): warm bronze MIDS, but the speculars (a reflected dusk sky) are COOL
+// silver-blue — cool-on-warm is the single biggest "real metal" cue. Bodies warm, highlights cool.
+const METAL_COOL='#dce8ff';
 SKINS.metal={
-  rip:{crest:[255,234,196,.26],trough:[10,6,3,.12],cw:1.7},   // mercury beading: bright warm specular crest, deep dark trough
-  // --- mercury substrate: warm-tinted dark mirror with specular contrast (bright pools by deep darks) ---
-  water(c,t){const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#241a12');g.addColorStop(.5,'#15100a');g.addColorStop(1,'#0b0805');
-    c.fillStyle=g;c.fillRect(0,0,W,H);c.globalCompositeOperation='screen';
-    // bright specular pool where the light strikes the mirror (warm — reflecting a dusk sky)
-    const sbR=Math.max(W,H)*.5,bm=c.createRadialGradient(Pond.sun.x,Pond.sun.y,0,Pond.sun.x,Pond.sun.y,sbR);
-    bm.addColorStop(0,'rgba(255,230,186,.22)');bm.addColorStop(.4,'rgba(214,150,84,.10)');bm.addColorStop(1,'transparent');
-    c.fillStyle=bm;c.fillRect(0,0,W,H);
-    // mirror-warp: slow molten ripples warping reflected light (warm specular, never rainbow/teal)
-    caustics(c,W,H,t*.5,'rgba(255,224,176,.10)','screen');
-    caustics(c,W,H,t*.7+11,'rgba(196,118,58,.07)','screen');
-    // rolling specular sheets sliding across the mirror
+  rip:{crest:[214,232,255,.36],trough:[5,4,3,.15],cw:1.9},    // mercury beading: bright COOL specular crest, deep dark trough
+  // --- mercury substrate: warm bronze mids, genuinely deep darks, COOL blown speculars (high dynamic range) ---
+  water(c,t){const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#2a1d12');g.addColorStop(.45,'#120c07');g.addColorStop(1,'#060403');
+    c.fillStyle=g;c.fillRect(0,0,W,H);
+    // warm caustics keep the bronze mids molten (the WARM half of the split)
+    caustics(c,W,H,t*.5,'rgba(216,150,82,.12)','screen');
+    caustics(c,W,H,t*.7+11,'rgba(150,84,38,.08)','screen');
+    c.globalCompositeOperation='screen';
+    // COOL specular pool where the mirror catches the dusk sky — the hottest light is cool and blows out
+    const sbR=Math.max(W,H)*.46,bm=c.createRadialGradient(Pond.sun.x,Pond.sun.y,0,Pond.sun.x,Pond.sun.y,sbR);
+    bm.addColorStop(0,'rgba(234,241,255,.44)');bm.addColorStop(.2,'rgba(176,198,236,.18)');
+    bm.addColorStop(.55,'rgba(150,116,84,.06)');bm.addColorStop(1,'transparent');
+    c.fillStyle=bm;c.beginPath();c.arc(Pond.sun.x,Pond.sun.y,sbR,0,TAU);c.fill();
+    // rolling COOL specular sheets sliding across the mirror (front sheet bright enough to blow out)
     for(let i=0;i<3;i++){const yy=(((t*.04*(i+1)+i*.33)%1.5)-.2)*H;const lg=c.createLinearGradient(0,yy-110,0,yy+110);
-      lg.addColorStop(0,'transparent');lg.addColorStop(.5,`rgba(255,224,180,${.09-i*.02})`);lg.addColorStop(1,'transparent');c.fillStyle=lg;c.fillRect(0,yy-110,W,220);}
+      lg.addColorStop(0,'transparent');lg.addColorStop(.5,`rgba(206,224,255,${.17-i*.045})`);lg.addColorStop(1,'transparent');c.fillStyle=lg;c.fillRect(0,yy-110,W,220);}
     c.globalCompositeOperation='source-over';drawWakes(c);},
   // --- warm wet-metal koi (the real pattern, cast in metal), one cool silver focal ---
   koi(c,k,sp,dim){const m=koiMetal(k.V),vm={...k.V,base:m.base,accent:m.accent,sumi:m.sumi,shiro:m.shiro};
     // fins under the body
     c.fillStyle=hexA(m.base,.24*dim);tailFin(c,k,sp);c.fill();pecFins(c,k,sp);
-    // body: a directional mirror gradient across the flanks (dark mirror -> blown specular band -> dark)
+    // body: warm metal flanks, a COOL specular band, genuinely dark edges (cool-on-warm, high contrast)
     bodyPath(c,k,sp);const mid=sp[sp.length>>1],wd=ewd(k)*2.1;
+    const cool=m.cool?'#ffffff':METAL_COOL;                            // platinum gets the whitest/brightest highlight
     const bg=c.createLinearGradient(mid.x-mid.nx*wd,mid.y-mid.ny*wd,mid.x+mid.nx*wd,mid.y+mid.ny*wd);
-    bg.addColorStop(0,shade(m.sumi,dim));bg.addColorStop(.4,shade(m.base,dim));
-    bg.addColorStop(.54,shade(m.rim,Math.min(1,dim*1.1)));bg.addColorStop(.68,shade(m.base,dim));bg.addColorStop(1,shade(m.sumi,dim));
+    bg.addColorStop(0,shade(m.sumi,dim*.7));bg.addColorStop(.38,shade(m.base,dim));
+    bg.addColorStop(.54,cool);bg.addColorStop(.7,shade(m.base,dim));bg.addColorStop(1,shade(m.sumi,dim*.7));
     c.fillStyle=bg;c.fill();
     // the koi's real markings, rendered in metal tones (clipped to body)
     c.save();bodyPath(c,k,sp);c.clip();
@@ -482,29 +488,30 @@ SKINS.metal={
     if(k.V.head) headMark(c,k,sp,dim,vm);
     if(k.V.motoguro){const pp=sampleSpineN(sp,.26),w=ewd(k)*widthAt(.26);for(const s of[1,-1]){c.fillStyle=hexA(m.sumi,.8*dim);c.beginPath();c.ellipse(pp.x+pp.nx*w*s,pp.y+pp.ny*w*s,w*.5,w*.32,k.ang,0,TAU);c.fill();}}
     bodyScales(c,k,sp,dim,1);                                          // strong scale shimmer — metal reads scaled
-    // a bright specular hotspot sliding slowly along the back (moving highlight)
-    const hs=sampleSpineN(sp,clamp(.5+.2*Math.sin(Pond._t*.6+k.phase),.12,.9)),hr=ewd(k)*1.7;
+    // a bright COOL specular hotspot sliding along the back (cool-on-warm reads as wet metal)
+    const hs=sampleSpineN(sp,clamp(.5+.2*Math.sin(Pond._t*.6+k.phase),.12,.9)),hr=ewd(k)*1.8;
     c.globalCompositeOperation='screen';const hg=c.createRadialGradient(hs.x,hs.y,0,hs.x,hs.y,hr);
-    hg.addColorStop(0,hexA(m.rim,.5*dim));hg.addColorStop(1,'transparent');
+    hg.addColorStop(0,hexA(cool,(m.cool?.9:.62)*dim));hg.addColorStop(1,'transparent');
     c.fillStyle=hg;c.beginPath();c.arc(hs.x,hs.y,hr,0,TAU);c.fill();c.globalCompositeOperation='source-over';
     c.restore();
-    // sharp leading-edge highlight — wet metal catches the light crisply on its silhouette
-    c.lineWidth=1.4;c.strokeStyle=hexA(m.rim,.5*dim);bodyPath(c,k,sp);c.stroke();
+    // sharp COOL leading-edge rim — separates the koi as a polished object sitting ON the warm mirror
+    c.lineWidth=1.7;c.strokeStyle=hexA(cool,(m.cool?.9:.66)*dim);bodyPath(c,k,sp);c.stroke();
     // eyes
     const e=sp[1],ew=ewd(k)*widthAt(e.t);c.fillStyle='rgba(12,10,8,.9)';
     for(const s of[1,-1]){c.beginPath();c.arc(e.x+e.nx*ew*.55*s,e.y+e.ny*ew*.55*s,1.6+ewd(k)*.06,0,TAU);c.fill();}},
-  // --- pads: polished brass when young -> verdigris patina as they mature (over EXISTING growth) ---
+  // --- pads: polished brass when young -> MUTED verdigris patina as they mature (oxidized bronze-green, NOT jade) ---
   plant(c,p){const g=clamp(p.grow??0,0,1);
-    const tint=[mixHex('#f0d68a','#bcd9ad',g),mixHex('#caa24a','#5f9e7a',g),mixHex('#8a6a28','#2e5a44',g)];
-    const rim=mixHex('#fff0c4','#dff3df',g);
+    // desaturated, grey-leaning patina so foliage no longer out-shouts the speculars (focal hierarchy)
+    const tint=[mixHex('#f3d886','#9aa99a',g),mixHex('#c79a44','#5d7261',g),mixHex('#7a5a20','#2f3d35',g)];
+    const rim=mixHex('#ffe6a6','#9fb4ad',g);   // brass sheen young -> cool muted patina mature
     if(p.type==='lotus') drawLotus(c,p,{pad:tint,petalTop:'#ffe9b0',petalBot:'#d8a24a',center:'#ffd86a'},{metal:1,rim});
     else drawPad(c,p,tint,{metal:1,rim});},
-  overlay(c,t){c.globalCompositeOperation='screen';                    // faint warm dusk sky reflected on the mirror
+  overlay(c,t){c.globalCompositeOperation='screen';                    // a cool dusk sky reflected on the mirror (cool highlights)
     const shx=W*(.5-.3*Math.sin(Pond._t*.04)),shy=H*.3,sh=c.createRadialGradient(shx,shy,0,shx,shy,Math.max(W,H)*.6);
-    sh.addColorStop(0,`rgba(255,204,148,${.06+.02*Math.sin(t*.3)})`);sh.addColorStop(1,'transparent');
+    sh.addColorStop(0,`rgba(198,214,255,${.07+.025*Math.sin(t*.3)})`);sh.addColorStop(1,'transparent');
     c.fillStyle=sh;c.fillRect(0,0,W,H);c.globalCompositeOperation='source-over';
-    const g=c.createRadialGradient(W/2,H/2,Math.min(W,H)*.3,W/2,H/2,Math.max(W,H)*.74);
-    g.addColorStop(0,'transparent');g.addColorStop(1,'rgba(0,0,0,.58)');c.fillStyle=g;c.fillRect(0,0,W,H);}    // deep vignette boosts mirror contrast
+    const g=c.createRadialGradient(W/2,H/2,Math.min(W,H)*.28,W/2,H/2,Math.max(W,H)*.74);
+    g.addColorStop(0,'transparent');g.addColorStop(1,'rgba(0,0,0,.62)');c.fillStyle=g;c.fillRect(0,0,W,H);}    // deeper vignette boosts mirror contrast
 };
 
 // ---- SUMI INK ----
