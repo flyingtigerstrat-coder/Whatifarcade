@@ -451,10 +451,20 @@ function koiMetal(v){
 // the temperature split (v0.5): warm bronze MIDS, but the speculars (a reflected dusk sky) are COOL
 // silver-blue — cool-on-warm is the single biggest "real metal" cue. Bodies warm, highlights cool.
 const METAL_COOL='#dce8ff';
+// a flowing chrome reflection ribbon (v0.6): a bright COOL band whose edges undulate and travel,
+// like liquid mercury catching a moving environment. Cheap: one wavy filled path, screen-blended.
+function chromeRibbon(c,yc,thick,t,seed,a){const step=Math.max(16,W/90|0);
+  c.beginPath();
+  for(let x=-24;x<=W+24;x+=step){const y=yc-thick/2+Math.sin(x*.011+t*.8+seed)*16+Math.sin(x*.005-t*.5+seed*1.7)*9;x<=-24?c.moveTo(x,y):c.lineTo(x,y);}
+  for(let x=W+24;x>=-24;x-=step){const y=yc+thick/2+Math.sin(x*.011+t*.8+seed+.6)*16+Math.sin(x*.005-t*.5+seed*1.7+.6)*9;c.lineTo(x,y);}
+  c.closePath();
+  const g=c.createLinearGradient(0,yc-thick,0,yc+thick);
+  g.addColorStop(0,'transparent');g.addColorStop(.5,`rgba(210,226,255,${a})`);g.addColorStop(1,'transparent');
+  c.fillStyle=g;c.fill();}
 SKINS.metal={
   rip:{crest:[214,232,255,.36],trough:[5,4,3,.15],cw:1.9},    // mercury beading: bright COOL specular crest, deep dark trough
   // --- mercury substrate: warm bronze mids, genuinely deep darks, COOL blown speculars (high dynamic range) ---
-  water(c,t){const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#2a1d12');g.addColorStop(.45,'#120c07');g.addColorStop(1,'#060403');
+  water(c,t){const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#241a10');g.addColorStop(.5,'#0e0905');g.addColorStop(1,'#050302');
     c.fillStyle=g;c.fillRect(0,0,W,H);
     // warm caustics keep the bronze mids molten (the WARM half of the split)
     caustics(c,W,H,t*.5,'rgba(216,150,82,.12)','screen');
@@ -462,12 +472,13 @@ SKINS.metal={
     c.globalCompositeOperation='screen';
     // COOL specular pool where the mirror catches the dusk sky — the hottest light is cool and blows out
     const sbR=Math.max(W,H)*.46,bm=c.createRadialGradient(Pond.sun.x,Pond.sun.y,0,Pond.sun.x,Pond.sun.y,sbR);
-    bm.addColorStop(0,'rgba(234,241,255,.44)');bm.addColorStop(.2,'rgba(176,198,236,.18)');
+    bm.addColorStop(0,'rgba(234,241,255,.40)');bm.addColorStop(.2,'rgba(176,198,236,.16)');
     bm.addColorStop(.55,'rgba(150,116,84,.06)');bm.addColorStop(1,'transparent');
     c.fillStyle=bm;c.beginPath();c.arc(Pond.sun.x,Pond.sun.y,sbR,0,TAU);c.fill();
-    // rolling COOL specular sheets sliding across the mirror (front sheet bright enough to blow out)
-    for(let i=0;i<3;i++){const yy=(((t*.04*(i+1)+i*.33)%1.5)-.2)*H;const lg=c.createLinearGradient(0,yy-110,0,yy+110);
-      lg.addColorStop(0,'transparent');lg.addColorStop(.5,`rgba(206,224,255,${.17-i*.045})`);lg.addColorStop(1,'transparent');c.fillStyle=lg;c.fillRect(0,yy-110,W,220);}
+    // FLOWING CHROME (v0.6): a reflected horizon glow + ribbons that undulate and travel like liquid mercury
+    chromeRibbon(c,H*(.46+.03*Math.sin(t*.25)),H*.34,t*.6,0,.10);            // broad slow reflected horizon
+    const fs=REDUCE?.4:1;
+    for(let i=0;i<3;i++){const yc=(((t*22*(i+1)*fs+i*230)%(H+260))-130);chromeRibbon(c,yc,46+i*14,t*(1+i*.3),i*2.1,.13-i*.025);}
     c.globalCompositeOperation='source-over';drawWakes(c);},
   // --- warm wet-metal koi (the real pattern, cast in metal), one cool silver focal ---
   koi(c,k,sp,dim){const m=koiMetal(k.V),vm={...k.V,base:m.base,accent:m.accent,sumi:m.sumi,shiro:m.shiro};
@@ -476,9 +487,13 @@ SKINS.metal={
     // body: warm metal flanks, a COOL specular band, genuinely dark edges (cool-on-warm, high contrast)
     bodyPath(c,k,sp);const mid=sp[sp.length>>1],wd=ewd(k)*2.1;
     const cool=m.cool?'#ffffff':METAL_COOL;                            // platinum gets the whitest/brightest highlight
+    const tb=clamp(.5+.24*Math.sin(Pond._t*.9+k.phase*1.3),.2,.8);     // the cool reflection SLIDES across the flank (chrome flow)
     const bg=c.createLinearGradient(mid.x-mid.nx*wd,mid.y-mid.ny*wd,mid.x+mid.nx*wd,mid.y+mid.ny*wd);
-    bg.addColorStop(0,shade(m.sumi,dim*.7));bg.addColorStop(.38,shade(m.base,dim));
-    bg.addColorStop(.54,cool);bg.addColorStop(.7,shade(m.base,dim));bg.addColorStop(1,shade(m.sumi,dim*.7));
+    bg.addColorStop(0,shade(m.sumi,dim*.7));
+    bg.addColorStop(clamp(tb-.18,.04,.74),shade(m.base,dim));
+    bg.addColorStop(tb,cool);
+    bg.addColorStop(clamp(tb+.18,.26,.96),shade(m.base,dim));
+    bg.addColorStop(1,shade(m.sumi,dim*.7));
     c.fillStyle=bg;c.fill();
     // the koi's real markings, rendered in metal tones (clipped to body)
     c.save();bodyPath(c,k,sp);c.clip();
