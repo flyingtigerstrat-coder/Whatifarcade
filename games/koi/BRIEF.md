@@ -1,60 +1,38 @@
-# BRIEF - Koi: skin polish pass (METAL pilot)
-**v0.4 . 2026-06-22 . STATUS: READY** · koi pod. Supersedes v0.3-DRAFT (archive v0.2/v0.3 when convenient). CHANGE from v0.3: pads now **age with growth** (polished brass when young -> verdigris patina as they mature); one **cool silver koi** added as a focal accent among the warm metal. Active pass; v0.1 blended-growth work stays PARKED. Entirely the koi builder's lane (`games/koi/` only) - no storefront/brand entanglement, so promote to `games/koi/BRIEF.md` and run.
+# BRIEF - Koi: METAL polish, refinement pass (v0.5)
+**v0.5 . 2026-06-22 . STATUS: READY** · koi pod. Focused refinement on top of v0.4 (which partly shipped - see "What shipped"). Same lane (`games/koi/` only), same two principles (full-frame world; metal is a finish, not a palette). This brief lists only the DELTAS - everything in v0.4 still stands unless contradicted here.
 
-> Refine before adding. Zero new content this pass. Two principles govern it: **(1) a skin must treat the WHOLE frame, not just repaint props; (2) metal is a finish, not a palette.**
+> The frame went from "pond with grey pads" to a real bronze metal field - structure fixed. Now the finish is underbaked: it reads muddy because it's nearly all warm mid-tones. v0.5 is a **dynamic-range + finish** pass, plus the deferred pad conversion.
 
-## Why this pass
-Four skins ride one engine (natural / liquid metal / sumi ink / rain on glass). Ink and rain read finished; metal reads half-finished. The skins that work treat the **entire frame** (rain blurs+fogs; ink washes near-black); metal only repaints the props (grey pads over still-teal water, koi still warm/natural), so it reads "a pond with grey-painted lily pads," not "a world of liquid metal." Fix metal first as the cleanest test of both principles.
+## What shipped in v0.4 (KEEP - do not regress)
+- **Substrate converted** to a warm bronze metallic field with a soft specular sheen - the whole frame now reads as one material (Principle 1 achieved). Keep this.
+- **Koi warmed** to copper/bronze/tan. Palette direction is right. Keep warm.
 
-## PRINCIPLE 1 - full-frame world
-The metal treatment covers the whole frame: substrate, light, ripples, pads, koi. No element keeps the natural-pond look.
+## What's still off (the v0.5 job)
+1. **Muddy / low dynamic range.** The field is almost entirely warm mid-brown - too little that's genuinely bright, too little genuinely dark. Metal sells on **specular contrast**; without hot highlights and deep darks, bronze reads as varnish/mud, not mercury.
+2. **No temperature split.** It's monochrome-warm. Real liquid metal reflecting a dusk sky has **warm mids + COOL (silver-blue) highlights.** That cool-on-warm in the speculars is the single biggest "real metal" cue and it's missing.
+3. **Pads never converted** - still the natural jade-green lily pads. They're now the brightest, most-saturated thing in the frame, which breaks the focal hierarchy (foliage should not out-shout the speculars). Bring them into the metal world.
+4. **Koi camouflage.** Several koi sink into the bronze mid-frame - too little separation. They should read as polished objects sitting ON the mirror.
+5. **Ripples + glints too faint** to sell a reflective surface.
 
-## PRINCIPLE 2 - metal is a finish, not a palette
-"Metal" does not mean "grey." The eye reads metal from **specular behavior** - sharp blown highlights against dark mirror surrounds - **not desaturation.** So **keep the koi pond's real colors and cast each element in its ORGANIC metal.** This keeps it a true koi pond *in a liquid-metal theme*, not an alien mercury pool:
-- **Koi -> warm metal: copper, rose-gold, bronze** (NOT cold steel). Truer to koi, not a stylization - metallic koi are the prized real varieties (Ogon, Platinum, Yamabuki). A red-white Kohaku reads copper-and-silver; the gold koi reads molten brass. Warm, wet, bright specular hotspots; the most reflective objects in the field. **One exception for contrast (see target 5).**
-- **Lily pads -> brass that ages to verdigris** (see "Dynamic material" below). Green like a lily pad, but as a real metal behavior (patina is something only metal does). Lotus blooms -> polished **brass / gold**.
-- **Water/substrate -> tinted dark mercury** (a hint of warmth = metal reflecting a dusk sky), NOT dead-neutral steel. Neutral grey is what tips it into "alien"; the tint keeps it a pond.
+## Focused targets (v0.5)
+1. **PUSH DYNAMIC RANGE (primary).** Raise contrast in the metal grade: let specular hotspots blow out genuinely bright, let shadow/edge areas sink genuinely dark. The surface should look wet and reflective, not matte. (Do this in the grade/gradient/draw VALUES - see guardrail; not a per-frame full-canvas filter.)
+2. **TEMPERATURE SPLIT (the unlock).** Keep the warm bronze mids, but make the **highlights cool - silver / steel-blue**, as if the metal reflects a dusk sky. Warm body, cool speculars. Avoid uniform brown. This is the difference between "molten" and "varnish."
+3. **Pads -> brass-aging-to-verdigris** (the deferred v0.4 item): convert them now. Young/new = polished brass, mature = verdigris patina, interpolated over the plant's existing growth state; strong specular hotspot + dark rim; brass/gold lotus blooms. Per v0.4 phasing: if the growth hookup is fiddly, ship **static verdigris** now, aging as fast-follow - but get them OFF green this pass.
+4. **Koi separation.** Add bright (cool) specular rim/leading-edge highlights so koi pop off the substrate. Ensure the **silver/platinum Ogon** is clearly the cool focal point among the warm koi - it should be the brightest fish.
+5. **Ripples -> brighter mercury beading; let a few glints actually blow out** on the specular band. Currently too subtle to register as a reflective surface.
 
-The metal read comes from FINISH (specular highlights + mirror contrast, full-frame); the HUE stays loyal to a real koi pond.
+## Focal hierarchy (the test for "did the temperature/DR work land")
+Brightest things in frame, in order: **specular hotspots on the water -> the silver koi -> warm-koi edge highlights.** The pads should NOT be the brightest/most-saturated element anymore. If the green pads still draw the eye first, the pass isn't done.
 
-## Dynamic material - the pond ages in metal (the signature idea)
-The pads' finish is **not static** - it **ages with the plant's growth**:
-- A **young / freshly placed** pad reads **polished, shiny brass** (new metal).
-- As the plant **matures**, the finish **patinas toward verdigris** (aged, oxidized bronze-green).
-- **Interpolate the finish across the plant's EXISTING growth state** - no new growth system; this is independent of the parked v0.1 growth-curve work.
-Payoff: tending the pond literally patinates it. A mature pond wears its history in verdigris while new growth still gleams brass - the tend-and-grow loop made visible in the material. (Fits koi's "a thing you keep" identity: the skin records the time you put in.)
-- **Phasing / de-risk:** if wiring the finish to growth proves fiddly, **ship static verdigris pads first** (the coherent metal world is the must-have) and add the brass->patina aging as a fast follow. The aging is the target; it must not block the core skin polish.
+## Guardrails (engine-aware - important for THIS pass)
+- **Get contrast from the GRADE, not a filter.** Achieve the dynamic-range push via gradient stops / fill values / the specular draw - **do NOT** add a per-frame full-canvas `ctx.filter = 'contrast()'/'brightness()'` or any full-res post filter in the draw loop (that's the expensive class of op that crashed ink). Cool highlights = cooler color stops + cool specular sprite tint, not a filter.
+- **Stay featherlight:** ~40fps cap, pause-when-hidden, reduced-motion; reuse the existing sprite blob; if a true full-frame treatment is needed, follow the rain skin's low-res-buffer pattern.
+- **Keep the per-frame canvas-state reset / try-catch.**
+- Tonal/material only - **do not** touch koi shape or the pattern model.
 
-## What I see now (live screenshot) - the gap to close
-- **Substrate still pond** (same dark blue-teal as natural) - biggest tell.
-- **Pads read machined** - flat matte-pewter discs with a mechanical pinwheel seam.
-- **Koi still read warm/natural** with no metal finish.
-- **Light passes read underwater** - soft/diffuse; on a mirror they should be sharper, brighter, higher-contrast.
+## In / out
+- **In:** metal skin only - dynamic range, temperature split, pad conversion (brass/verdigris), koi separation, ripple/glint punch.
+- **Out:** natural / ink / rain; any new content; growth-curve (parked v0.1); anything outside `games/koi/`.
 
-## Concrete targets (judge against these)
-1. **Mercury substrate (tinted).** Replace the teal field grade with reflective dark mercury + faint warm tint, built on **specular contrast** (bright hotspots adjacent to deep darks). Never teal; never dead-neutral grey.
-2. **Caustics -> mirror-warp.** Drifting layers read as slow molten ripples warping reflected light, not soft underwater dapple.
-3. **Ripple wave-trains -> mercury beading.** Crests = bright specular highlights, dark troughs just outside; sharper/brighter than watery.
-4. **Pads -> brass-aging-to-verdigris** (per "Dynamic material"): young = polished brass, mature = verdigris patina, interpolated over growth state; strong specular hotspot + dark rim; brass/gold lotus blooms. Lose the machined pinwheel-seam read.
-5. **Koi -> warm wet metal** (copper / rose-gold / bronze): bright moving hotspots, sharp leading-edge highlights. **EXCEPT one cool focal accent:** keep a single **Platinum / silver Ogon** rendered cool silver-white - one cold note among the warm metal, the eye's focal point. Don't desaturate the rest to match it.
-
-## Keep / don't regress
-- Keep the sparkle/glint system (suits metal more than any skin).
-- Keep the wake system, retuned to specular.
-- Do NOT touch the koi *shape* or pattern model - tonal/material pass only. (A Kohaku is still a Kohaku, rendered copper-and-silver.)
-
-## In scope / out of scope
-- **In:** the **metal skin only** - mercury substrate, caustics/ripple retune, brass->verdigris pads + brass lotus, warm-metal koi + one silver accent.
-- **Out:** natural, ink, rain (later passes); any new skin / variety / plant / feature; blended-growth-curve (parked v0.1); anything touching `index.html` / `/shared` / storefront (POD_ARCADE).
-
-## Guardrails (engine-aware)
-- **Stay featherlight:** ~40fps cap, pause-when-hidden, reduced-motion respected. **No new per-frame expensive ops** (no large `shadowBlur`, no full-res filters in the draw loop) - we crashed ink once on an expensive `shadowBlur` glow; don't reintroduce that cost.
-- **Reuse what's there.** Lean on the reusable sprite blob + established cheap techniques. If metal needs a true full-frame treatment, **follow the rain skin's pattern** (low-res buffer, then treat), not full-res filtering.
-- **Keep the per-frame canvas-state reset / try-catch** - cross-skin stability hardening is load-bearing.
-- **Where to look:** the metal entry in `SKINS`; the 3-pass water/overlay (caustics, sunbeam, sky-sheen, ripple trains); the reusable sprite helper; the pad/lotus draw (+ the plant growth-state value, for the patina); the koi material path. Metal currently inherits the natural substrate and must stop.
-
-## How we judge (the loop)
-Build in `games/koi/` -> deploy -> human screenshots the metal skin (a few frames, koi spread; include a young pad and a mature pad if possible) -> director reads pixels against targets -> refine. **Acceptance:** whole frame reads liquid metal, NO teal substrate; specular contrast present; pads read verdigris-molten not machined-grey, with new pads gleaming brass and mature pads patinaed; exactly one cool silver koi reads as focal point among warm metal; nobody would call it an "alien pond." Validate JS in node before deploy; the human's eyes (via screenshot) are final.
-
-## Lane check
-Entirely inside `games/koi/`. No shared/brand/storefront touch -> no keystone serialization. Ready to promote to `games/koi/BRIEF.md`.
+## How we judge (loop)
+Build -> deploy -> human screenshots the metal skin (a few frames; include a young pad and a mature pad if possible, and try to catch the silver koi in frame) -> director reads pixels. **Acceptance:** the frame reads molten/wet - clear bright (cool) speculars against deep darks, not uniform brown; warm mids + cool highlights present; pads are brass/verdigris, not green; koi separate cleanly from the substrate and the silver koi is the focal point; the word "muddy" no longer applies. Validate JS in node before deploy; the human's eyes (via screenshot) are final.
