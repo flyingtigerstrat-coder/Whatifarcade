@@ -333,6 +333,17 @@ const SUBJECTS = {
     S.ptrain = { kind: 'raider', elite: true, cars, guns, x: 28, state: 'mid', t: 0, gave: false, atkT: 1.2, muzzle: 0, hp: 300, max: 300, dead: false };
     G.drawPtrain(); return { scale: 6 }; },
   fortress() { G.drawFortress(10, 150); return { scale: 5 }; },
+  // railhead [--off=N --T=N] — the origin depot: full world frame with the rig docked AT REST at THE RAILHEAD.
+  railhead(o) {
+    S.off = o.off != null ? o.off : 0;        // origin biome (THE RUST FLATS) by default
+    S.T = o.T != null ? o.T : 0;              // sunset by default
+    // the FRESH begin-at-origin rig: short starting consist (engine 1, gun + farm, caboose) — not an endgame train
+    S.engine = 1; S.caboose = 1; S.maxSlots = 3; S.ex = 216; S.pan = 0; S.engineSkin = o.engine || null;
+    S.origin = true; S.stationX = null;       // settled-centered (STATION_HOME)
+    S.slots = [{ type: 'gun', wpn: 'cannon', port: 'auto', lvl: 1 }, { type: 'farm', lvl: 1 }, null];
+    G.drawBackdrop(); G.drawTrain();
+    return { scale: 4, fixedBox: { minx: 0, miny: 0, maxx: 319, maxy: 179 } };
+  },
   // scene <off> — full world frame (backdrop + train) at world-position off (→ biome) and time S.T.
   scene(o) {
     S.off = o.off != null ? o.off : 560;
