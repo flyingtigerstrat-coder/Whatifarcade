@@ -1,11 +1,12 @@
 # CLAUDE.md — Noodle Studios
-**v1.3 · 2026-06-20**
+**v1.4 · 2026-06-22**
 
 > This is the studio brain. In the repo it must live at the root, named exactly `CLAUDE.md`.
 > Claude Code reads it at the start of every session. It is the single source of truth for
 > who we are, how we work, and how the studio is built. If a one-off instruction conflicts
 > with this file, pause and ask.
 > Coordination across many agents/pods lives in its companion, `GOVERNANCE.md`.
+> v1.4: added the `[repo]`/`[drive]` reference convention (§2); acknowledged the studio may grow a **second shelf** beyond games — ambient companions (§1; brand architecture still an open Tier-0 call); recorded the **engine+skins / cosmetic-monetization leaning** as a working principle, not locked (§1); marked the repo migration done (§5).
 
 ---
 
@@ -19,8 +20,13 @@ You're the build partner for **Noodle Studios** — a tiny studio (one human + C
 - **What If Arcade** (whatifarcade.com) is the studio's storefront / arcade brand.
   - Tagline: **"The games you wish existed."**
   - Subline: *"Some you've wanted since you were a kid. Some you thought of last night. We build them anyway."*
-- **The catalog so far:** **IRONLINE** (shipped first) — a pixel-art idle game about an upgradeable armored battle-train crossing a post-apocalyptic rail-ocean. More cabinets are coming.
+- **The catalog so far:** **IRONLINE** (shipped first) — a pixel-art idle game about an upgradeable armored battle-train crossing a post-apocalyptic rail-ocean. **Firefly Jar** (shipped) — a cozy, no-fail firefly-catching game; the studio's proof of *range*. More cabinets are coming.
 - The feeling we're always building toward: **a dusk arcade at the end of the world.** Warm, wry, a little nostalgic, grounded in IRONLINE's sunset palette. Never corporate, never the AI-default cream-and-serif look.
+
+**The studio may grow beyond games.** What If Arcade is the *games shelf*. Noodle Studios is the **parent**, and it may open a **second shelf**: ambient **companions** — "things you live next to" rather than games you beat (the koi-garden "wallpaper you keep" is the lead candidate). The specific brand architecture — a **sibling brand** vs. a wing inside the arcade — and its naming are an **open Tier-0 decision the human has not made yet.** So: don't assume the koi-garden lives inside What If Arcade, don't assume the dusk-arcade *look* applies to it, and never treat the arcade frame as the whole studio. **Noodle Studios is bigger than any one shelf.**
+
+### How we think about money (a working leaning — not locked)
+Firefly Jar and the koi-garden surfaced a thesis worth holding — *loosely*: **build the hard part once (an engine), then offer variety on top (skins / style packs / expansions) — cosmetic and additive.** The part we hold **firmly**: a game's **core loop stays free of microtransactions that touch gameplay** — no pay-to-win, no pay-to-progress, nothing that taxes the very feeling the game sells (calm, wonder, momentum). Beyond that firm line, this is a **leaning, not a law** — a future game might earn a different, honest model (a one-time purchase, a paid expansion, something not yet imagined), and the studio stays open to it. Treat any monetization choice as a **proposal for the human** — it's Tier-0. *(Status: working principle, under active thought — deliberately not yet ratified as locked.)*
 
 ---
 
@@ -33,6 +39,7 @@ You're the build partner for **Noodle Studios** — a tiny studio (one human + C
 - **Validate game/JS changes** (e.g. run them through node) before declaring them done.
 - **Stay curious.** New tools, languages, and platforms are welcome guests — the architecture is built to grow into them (see §14). The studio's identity is permanent; its technology is not.
 - **Version your Drive docs.** Every chat or Design agent (no repo write access) must save its documents to Google Drive with a **date and version number in the filename — every time, no exceptions.** Drive has no git, so the filename carries the history; this is how the next session finds the latest. Format, folders, and the pod workflow: see `GOVERNANCE.md`. (Repo files are the opposite — stable names, history in git; never version a repo filename.)
+- **Name the surface: `[repo]` vs `[drive]`.** When a document points to another document, prefix which surface holds the canonical copy. **`[repo]`** = the canonical file in git (`CLAUDE.md`, `GOVERNANCE.md`, a game's `BRIEF.md`, code). **`[drive]`** = the working or mirror copy in Google Drive (in-progress briefs, kickoffs, handoffs, status snapshots, the brain mirror). The repo is canonical for the brain + code; Drive is the shared **read+create** coordination surface (`GOVERNANCE.md` §2, §9). The same content can exist in both — the bracket says which one is the source. *(Builders, per `GOVERNANCE.md` v1.4, can read `[drive]` directly and create dated files there; they still commit canonical truth to `[repo]`.)*
 
 ---
 
@@ -124,7 +131,7 @@ noodle-studios/
 
 A game folder is a **black box behind a contract**: it must wear the studio bumper and expose a cabinet to the arcade. *What's inside* — vanilla HTML/JS today, a Unity WebGL build tomorrow — is the game's business (see §14).
 
-**This tree is the migration target for the repo.** Claude Code's first organizing job is to take the *current* repo — where IRONLINE and the storefront sit flat together — and reorganize it into exactly this structure: move IRONLINE into `games/ironline/`, stand up `/shared`, `/tools`, and `/services`, keep stable filenames, and land it as one clean restructuring commit. Hand Code this tree as the destination map. (Pattern name for the briefing: a monorepo with a package-per-domain layout, Nx/Turborepo-style — see `GOVERNANCE.md` §5.)
+**This tree was the migration target — and the migration is DONE** (2026-06: IRONLINE moved into `games/ironline/`, `/shared` extracted, committed as one clean restructure by the keystone arcade pod). The repo is already in this shape. **Do not re-run the migration.** For *new* games, follow `[drive] PROCESS_new-game-bootup` (in `GOVERNANCE`'s folder) — that adds one clean package; it is not a migration. (Pattern name for reference: a monorepo with a package-per-domain layout, Nx/Turborepo-style — see `GOVERNANCE.md` §5.)
 
 ---
 
@@ -164,7 +171,7 @@ Split the **engine** from the **recipe**:
 - **Engine (shared, game-agnostic):** renders procedural definitions to PNGs, slices sheets, builds animations, handles transparency. Takes a spec, produces assets. Has no opinions about any specific game.
 - **Recipe (game-local):** each game's `art-spec/` holds its own sprite definitions and palette choices. The game says *what* to make; the shared engine knows *how*.
 
-Build game #2 by writing a new recipe, not a new pipeline. Generalize the engine once IRONLINE's pipeline is stable — don't over-engineer knobs no game needs yet (see §3.6).
+Build game #2 by writing a new recipe, not a new pipeline. Generalize the engine once IRONLINE's pipeline is stable — don't over-engineer knobs no game needs yet (see §3.6). *(Firefly Jar already produced a reusable image->pixel scene importer — baked, palette-locked, relightable layers — now part of this shared pipeline.)*
 
 This pipeline serves the *current* art style. A future game in a different medium (3D, Unity, hand-drawn) may not use it at all — that's fine; tools are per-medium, the brand is universal (see §14).
 
@@ -177,6 +184,7 @@ This pipeline serves the *current* art style. A future game in a different mediu
 - **GitHub Pages cannot run a backend.** Anything under `services/` or a game's `api/` is real backend and deploys to a **separate serverless target** (e.g. Cloudflare Workers/Vercel/Netlify functions). We already live in this hybrid: the wish console is a tiny backend bolted onto a static site.
 - **The wish console pattern:** the front-end fires a **fire-and-forget, no-cors POST** to an endpoint; the UI optimistically shows "filed." This avoids CORS on a static host, and it's also our reference **failsafe** (see §3.3) — if the endpoint is down, the page doesn't care. Reuse this pattern for lightweight capture.
 - **Contract before host (see §3.4):** define the endpoint shape first so the front-end depends on the interface, not the provider. That's what lets a service move hosts without touching the UI.
+- **Drive is a shared read+create surface (see `GOVERNANCE.md` §2, v1.4):** chat and Code can both read Drive and create dated files there; neither edits in place. Coordination docs live in `[drive]`; canonical truth (code + brain) lives in `[repo]`. Mutable/living docs belong in `[repo]` (git can edit in place); Drive holds dated snapshots.
 - **Future migration pin (not now):** once backend becomes central — or the storefront needs to be **dynamic** rather than static — consider moving the whole site onto a host that does static + serverless together (Cloudflare Pages + Workers is the natural fit, given the planned Workers+D1 wish wall). The monorepo is exactly what makes that migration painless — everything re-points at once. This is a §14 "ground shift": document the why, isolate it, update the brain.
 
 ---
@@ -184,6 +192,7 @@ This pipeline serves the *current* art style. A future game in a different mediu
 ## 10 · Conventions & gotchas
 - **Self-contained -> referenced.** Launch files were single self-contained HTML (base64 assets) — great for shipping fast, but "update once" is impossible if assets are copied into every file. As games adopt the shared library, slim them to **reference `/shared/*`** (`<link href="/shared/brand.css">`, shared ident/chrome scripts). The monorepo serves `/shared` alongside every game, so references Just Work.
 - **Versioning shared components — not yet.** Once games share an ident, changing it changes every game (usually what you want). If a shared change ever *breaks* an older game, the fix is a `v2` of that one component, **not** a copied fork.
+- **`[repo]` / `[drive]` references.** Disambiguate every doc pointer (see §2): `[repo]` = canonical in git, `[drive]` = working/mirror in Drive.
 - **Always honor** reduced-motion and visible focus states (already in the site).
 - **You can't render HTML headlessly** — the human's eyes are final.
 
@@ -194,20 +203,21 @@ This pipeline serves the *current* art style. A future game in a different mediu
 2. Point its files at `/shared/*` (brand, ident bumper, chrome, fx).
 3. Build the game's own `attract.html` + assets (its identity).
 4. If it needs art, add an `art-spec/` recipe and run the shared pipeline.
-5. Add the game's **cabinet** to the arcade shelf on `index.html` (title card -> `/games/<new-game>/`).
+5. Add the game's **cabinet** to the arcade shelf on `index.html` (title card -> `/games/<new-game>/`). *(This touches the storefront — a KEYSTONE/Tier-1 step; the arcade pod owns `index.html`. See `GOVERNANCE.md` §7.)*
 6. If it needs a backend, add a game `api/` (game-only) or extend `services/` (studio-wide) — deploy to the serverless target, not Pages.
 7. Give it a nested `games/<new-game>/CLAUDE.md`, `DESIGN.md`, `CHANGELOG.md`, and a `BRIEF.md` promoted from its pod's Drive folder.
 8. Confirm remote/branch, commit, push; verify the cabinet and the play flow live.
 
-*A game built in a different technology (Unity WebGL, a framework, etc.) follows the same checklist — it still wears the bumper (step 2, adapted), still exposes a cabinet (step 5), still documents itself (step 7). Only its internals differ. See §14.*
+*The full repeatable procedure (with the Drive pod folder, the two kickoffs, and the keystone cabinet gate) is `[drive] PROCESS_new-game-bootup`. A game built in a different technology (Unity WebGL, a framework, etc.) follows the same checklist — it still wears the bumper (step 2, adapted), still exposes a cabinet (step 5), still documents itself (step 7). Only its internals differ. See §14.*
 
 ---
 
 ## 12 · Pinned facts
-- **Domain:** whatifarcade.com (GitHub Pages). `CNAME` at repo root = `whatifarcade.com`.
+- **Domain:** whatifarcade.com (GitHub Pages). `CNAME` at repo root = `whatifarcade.com`. Repo: `github.com/flyingtigerstrat-coder/Whatifarcade`, branch `main`.
 - **Wish endpoint:** `https://script.google.com/macros/s/AKfycbyQbRGNnaqp1jOrYC79tetdUyh-UfTDgF1fAWyGLp5VO3E7rSULbr90_cozUWDNIlf2xw/exec`
 - **Wishes sheet:** "What If Arcade — Wishes", id `1NIJ0CBMbIyC7We6IV3JrVIQkL__UTtWzz4ix_Sgrm6I` (cols: Timestamp, Wish, Referrer, ClientTime). Apps Script already deployed — don't touch unless changing the capture contract.
 - **Google Drive working area:** the "IRONLINE" folder, id `1zfRouxOvRZgAhAFh89WeOMwLJncTS3Po` — organized by pod (`00_GOVERNANCE`, `01_BRAND`, `POD_<game>`, `99_ARCHIVE`). See `GOVERNANCE.md` §4.
+- **Pods stood up:** `POD_ARCADE` (keystone), `POD_IRONLINE`, `POD_FIREFLY`, `POD_KOI`.
 - **Upcoming cabinets (named):** "Game for Megan to practice Sailing", "Even more pixel war", "Something about Warhammer 100%", "A game about Noodle, duh."
 
 ---
@@ -220,7 +230,7 @@ Turn "I made a game" into "I have a machine that makes games" — without ever l
 ## 14 · When the ground shifts (growth & new technology)
 The studio is built to **grow into new tools, languages, and platforms** — Unity, a dynamic site, a framework, 3D, native apps, whatever a future game wants. Curiosity is a feature, not a risk, *because* the architecture separates what's permanent from what's replaceable.
 
-**What's permanent (the soul):** the brand (§4), the voice (§1–2), the share-by-identity rule (§6), and the studio promise — every game wears the bumper and slots a cabinet into the arcade.
+**What's permanent (the soul):** the brand (§4), the voice (§1–2), the share-by-identity rule (§6), and the studio promise — every game wears the bumper and slots a cabinet into the arcade. *(And the studio's range may grow a second shelf beyond games — §1 — without disturbing any of this.)*
 
 **What's replaceable (the stack):** static vs. dynamic, GitHub Pages vs. a serverless host, vanilla HTML/JS vs. a framework, an HTML game vs. a Unity WebGL build vs. something not yet invented. None of these are sacred. They serve the soul; they are not the soul.
 
