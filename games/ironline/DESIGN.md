@@ -24,7 +24,7 @@ The scene is composed in **depth bands**, far-to-near then on top. This is **des
 **Why it matters — the pass/fail test for any station/depot scene:** trace the train's outline. If you can't get around it without hitting a station part, the bands are collapsed (something behind-the-train is being drawn at the train's own depth). The fix is always the same: push it up-and-back into band 4 (haze-dimmed), drop it to the band-6 foreground strip, or promote it to the band-9 UI — never leave it on band 5 with the rig.
 
 ### Worked example — THE RAILHEAD (the origin depot)
-- **Band 4:** water tower, signal mast, depot building — beside the rail, planted on the far rail, haze-dimmed. No over-rail structures (a full-width canopy/gantry cages the rig — retired).
+- **Band 4:** the **station** (clock-cupola anchor) + water tower, silo, signal mast — beside the rail, planted on the far rail, haze-dimmed. No over-rail structures (a full-width canopy/gantry cages the rig — retired; the only awning is a small doorway canopy on the station itself).
 - **Band 5:** the rig, docked, alone on its rail.
 - **Band 6:** the plank platform + the Dispatcher + a kid + a worker + a lantern — a thin foreground strip.
 - **Band 9:** "THE RAILHEAD" as a top-of-frame banner (off the rail; scales to every future depot).
@@ -35,7 +35,7 @@ The scene is composed in **depth bands**, far-to-near then on top. This is **des
 
 ## Buildings — the structure grammar
 
-Station/depot structures are **entities, not one-off blobs**: a list (`RH_BUILDINGS`) of building entities, each drawn by a **recipe** (`bWaterTower`, `bDepot`, `bSilo`, `bSignal`, …) **composed of shared parts** (`bWall`, `bGable`, `bWindow`, `bDoor`, `bPipe`, `bLadder`, `bBraceX`, `bFoot`). Build a new structure by writing a recipe from the parts and adding an entry — not by hand-placing rectangles. (Same engine/recipe split as the art pipeline: parts are the *how*, recipes are the *what*.)
+Station/depot structures are **entities, not one-off blobs**: a list (`RH_BUILDINGS`) of building entities, each drawn by a **recipe** (`bStation`, `bWaterTower`, `bDepot`, `bSilo`, `bSignal`, …) **composed of shared parts** (`bWall`, `bGable`/`bHip` roofs, `bWindow` (height-aware), `bDoor`, `bAwning`, `bBay`, `bClock`, `bPipe`, `bLadder`, `bBraceX`, `bFoot`). Scale reads through the recipe: a `bDepot` is a one-room cabin (a small stop); a `bStation` is the railhead's anchor — taller hip-roofed massing, a **clock cupola**, a row of tall windows, a double-door with an entrance canopy, and a station-master **ticket bay**. Build a new structure by writing a recipe from the parts and adding an entry — not by hand-placing rectangles. (Same engine/recipe split as the art pipeline: parts are the *how*, recipes are the *what*.)
 
 **The realism principles every recipe follows** (so structures read as built things, not flat slabs):
 1. **Silhouette first** — a varied, readable outline (a pitched/stepped roof, a tank, a mast), never a plain box.

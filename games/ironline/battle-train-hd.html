@@ -1649,7 +1649,7 @@ function bGable(x,y,w,m){const ph=Math.min(12,Math.max(6,w>>2));   // pitched ro
   px(rx,y-r,rw,1,m[2]);px(rx,y-r,1,1,m[3]);px(rx+rw-1,y-r,1,1,m[0]);} // body + lit left rake + shadowed right rake
  px(x+(w>>1)-1,y-ph,2,1,m[4]);                                     // clean ridge highlight (no protruding cap)
 }
-function bWindow(x,y){box(x,y,4,5,'#160f08');pxa(x+1,y+1,2,3,'rgba(242,182,92,'+(0.38+0.5*bGlow())+')');px(x+1,y+2,2,1,'rgba(18,11,6,0.55)')} // lit pane + muntin
+function bWindow(x,y,h){h=h||5;box(x,y,4,h,'#160f08');pxa(x+1,y+1,2,h-2,'rgba(242,182,92,'+(0.38+0.5*bGlow())+')');px(x+1,y+1+((h-2)>>1),2,1,'rgba(18,11,6,0.55)')} // lit pane + muntin (h-tall)
 function bDoor(x,y){const h=RHGY-y;box(x,y,5,h,'#1c140d');px(x+1,y+1,3,h-2,'#332417');px(x+1,y+1,3,1,'#46341f');px(x+4,y+(h>>1),1,1,'#caa23a')} // plank door + knob
 function bPipe(x,topY,h){px(x,topY-h,2,h,'#2a2620');px(x,topY-h,2,1,'#3a342e');px(x-1,topY-h-2,4,2,'#3a342e');rustPatch(x,topY-h+3,x)} // stovepipe + cap
 function bLadder(x,y,h){px(x,y,1,h,'#2a2018');px(x+3,y,1,h,'#2a2018');for(let r=y+1;r<y+h;r+=3)px(x+1,r,2,1,'#3a342e')}
@@ -1692,8 +1692,37 @@ function bSignal(x){const my=82;                                                
  lamp(my+2,'#c83028');lamp(my+6,'#e0a33a');lamp(my+10,'#7fd07a');                       // red / amber / green, hooded
  px(x,my-2,2,2,BIRON[3]);                                                               // finial
 }
-// the depot cluster, as a list of building entities (offsets from the station anchor)
-const RH_BUILDINGS=[{f:bWaterTower,dx:8},{f:bSilo,dx:64},{f:bDepot,dx:120},{f:bSignal,dx:196}];
+// ---- station-grade parts (the railhead's anchor needs more than a cabin) ----
+function bHip(x,y,w,m,ph){const cut=w*0.3;                          // hip roof: trapezoid (wide eaves -> flat ridge) + overhang
+ px(x-2,y-1,w+4,2,m[2]);px(x-2,y-1,w+4,1,m[3]);pxa(x,y+1,w,1,'rgba(10,8,6,0.30)');
+ for(let r=1;r<=ph;r++){const ins=Math.round((r-1)*cut/(ph-1)),rx=x+ins,rw=w-2*ins;px(rx,y-r,rw,1,m[2]);px(rx,y-r,1,1,m[3]);px(rx+rw-1,y-r,1,1,m[0]);}
+ const tx=x+Math.round(cut);px(tx,y-ph,w-2*Math.round(cut),1,m[4]); // lit flat ridge
+}
+function bClock(cx,baseY){const w=11,y=baseY-11;                    // ridge cupola: body + pyramid cap + a cream clock face
+ px(cx-(w>>1),y,w,11,BWOOD[1]);px(cx-(w>>1),y,w,1,BWOOD[3]);px(cx-(w>>1),y,1,11,BWOOD[2]);px(cx+(w>>1),y+1,1,10,'#241a12');
+ for(let r=1;r<=5;r++)px(cx-(w>>1)+r,y-r,w-2*r+1,1,r<2?BIRON[3]:BIRON[1]);  // pyramid cap
+ px(cx,y-6,1,2,BIRON[3]);                                          // finial
+ box(cx-3,y+1,7,7,'#2a2018');px(cx-2,y+2,5,5,'#efe2c0');px(cx-2,y+2,1,1,'#2a2018');px(cx+2,y+2,1,1,'#2a2018');px(cx-2,y+6,1,1,'#2a2018');px(cx+2,y+6,1,1,'#2a2018');px(cx,y+4,1,1,'#7a3322');px(cx,y+3,1,1,'#3a2c1c');px(cx+1,y+4,1,1,'#3a2c1c'); // clock: bezel + rounded cream face + rust hub + two hands
+}
+function bAwning(x,y,w){px(x-1,y,w+2,1,BIRON[3]);px(x,y+1,w,1,BIRON[2]);px(x-1,y+2,w+2,1,BIRON[0]); // entrance canopy: lit top, body, shadow underside lip
+ px(x+1,y+3,1,2,BIRON[1]);px(x+w-2,y+3,1,2,BIRON[1]);}            // end brackets (a doorway canopy — never a canopy over the rig)
+function bBay(x,y){box(x,y,7,9,BWOOD[2]);px(x,y,7,1,BWOOD[4]);px(x+7,y+1,2,8,BWOOD[0]);  // station-master bay window (juts out to watch the line)
+ pxa(x+1,y+2,5,5,'rgba(242,182,92,'+(0.4+0.5*bGlow())+')');px(x+3,y+2,1,5,'#160f08');px(x-1,y+9,9,1,BIRON[1]);}
+function bStation(x){const w=64,y=80;
+ px(x-1,RHGY-5,w+2,5,'#48423a');px(x-1,RHGY-5,w+2,1,'#5f574c');for(let s=x+3;s<x+w;s+=7)px(s,RHGY-4,1,3,'#33302c'); // stone plinth + courses
+ bFoot(x,w);
+ bWall(x,y,w,BWOOD,true);
+ bHip(x,y,w,BIRON,8);
+ bClock(x+(w>>1),74);                                              // the station clock — reads "station" at a glance
+ bAwning(x+(w>>1)-9,y+12,18);                                      // entrance canopy over the double-door
+ bWindow(x+6,y+15,9);bWindow(x+16,y+15,9);                         // a row of tall windows ...
+ bDoor(x+(w>>1)-5,y+16);bDoor(x+(w>>1),y+16);                      // ... a central double-door entrance ...
+ bWindow(x+40,y+15,9);
+ bBay(x+52,y+14);                                                  // ... and the ticket/telegraph bay at the far end
+ bPipe(x+9,y-1,11);                                                // stovepipe
+}
+// the railhead cluster, as a list of building entities (offsets from the station anchor)
+const RH_BUILDINGS=[{f:bWaterTower,dx:6},{f:bStation,dx:50},{f:bSilo,dx:160},{f:bSignal,dx:188}];
 // THE RAILHEAD — BAND 4 (backdrop, BEHIND the train): the depot cluster, set on the far rail and
 // haze-dimmed by aerial perspective. No over-rail structures — the train stays alone on band 5.
 function drawRailhead(sx){
