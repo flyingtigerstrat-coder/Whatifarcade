@@ -1627,37 +1627,81 @@ function rhLantern(lx,topY,poolY,glow,pole){ // amber lantern (pole + ground poo
  px(lx,topY,2,2,'#f0cf86');                                 // hot core
  if(poolY)pxa(lx-2,poolY,5,1,'rgba(224,163,58,'+(0.5*glow)+')');
 }
-// THE RAILHEAD — BACK pass (drawn in drawBackdrop, BEHIND the train): tall architecture that reads over
-// ANY train length by using the airspace the train never covers. style: 'bracket' | 'shed'.
-// THE RAILHEAD — BAND 4 (backdrop, BEHIND the train): beside-the-rail infrastructure set back on the
-// FAR rail (the band the passing NPC trains use) and haze-dimmed by aerial perspective so it reads as
-// behind. No over-rail structures — the train stays an unbroken silhouette on its own rail (band 5).
+// ===== THE RAILHEAD — building grammar (band 4) =====================================================
+// Buildings are ENTITIES (RH_BUILDINGS) drawn by composable PARTS, per the principles in DESIGN.md:
+// strong silhouette · structural logic (footed, braced, load-bearing) · top-light + a right shadow-plane
+// for volume · weathering & asymmetry · function reads (water / door / window / signal). Each recipe
+// names its parts; everything is footed on RHGY and rises into the backdrop band, then haze-dimmed.
+const RHGY=112;                                                    // far-rail ground line (band 4)
+const BWOOD=['#2e2014','#48351f','#64492c','#80623c','#9c7a4e'];   // weathered plank, 5-value
+const BIRON=MAT[0], BSTL=MAT[1];                                   // rust iron · gunmetal steel
+const bGlow=()=>Math.max(0.34,1.08-dnLight);
+function bFoot(x,w){px(x-1,RHGY-2,w+2,2,'#463f37');px(x-1,RHGY-2,w+2,1,'#5d554a');pxa(x-2,RHGY,w+4,1,'rgba(10,8,6,0.32)')} // stone footing + contact shadow
+function bWall(x,y,w,m,seam){const h=RHGY-y;                       // footed wall: front face + lit top/left + a right shadow-plane (volume)
+ px(x,y,w,h,m[2]);px(x,y,w,1,m[4]);px(x,y+1,w,1,m[3]);px(x,y,1,h,m[3]);
+ px(x+w,y+2,2,h-2,m[0]);px(x+w-1,y+1,1,h-1,m[1]);
+ if(seam)for(let r=y+5;r<RHGY-3;r+=5){px(x+1,r,w-2,1,m[1]);px(x+1,r+1,w-2,1,m[3])} // plank/panel seams
+ for(let s=2;s<w;s+=6)if(hash((x+s)*7)<0.4)streak(x+s,y+3,2+((x+s)%3),x+s);        // weathering streaks
+}
+function bGable(x,y,w,m){const ph=Math.min(10,Math.max(5,w>>2));   // pitched roof + overhang + eave shadow
+ px(x-2,y,w+4,1,m[1]);pxa(x-2,y+1,w+4,1,'rgba(10,8,6,0.28)');
+ for(let r=1;r<=ph;r++){const ins=Math.round(r*(w/2)/ph);px(x+ins,y-r,w-2*ins,1,r<3?m[3]:m[1]);if(r<3)px(x+ins,y-r,Math.max(1,(w-2*ins)>>1),1,m[4])}
+ px(x+(w>>1)-1,y-ph,2,2,m[0]);                                     // ridge cap
+}
+function bWindow(x,y){box(x,y,4,5,'#160f08');pxa(x+1,y+1,2,3,'rgba(242,182,92,'+(0.38+0.5*bGlow())+')');px(x+1,y+2,2,1,'rgba(18,11,6,0.55)')} // lit pane + muntin
+function bDoor(x,y){const h=RHGY-y;box(x,y,5,h,'#1c140d');px(x+1,y+1,3,h-2,'#332417');px(x+1,y+1,3,1,'#46341f');px(x+4,y+(h>>1),1,1,'#caa23a')} // plank door + knob
+function bPipe(x,topY,h){px(x,topY-h,2,h,'#2a2620');px(x,topY-h,2,1,'#3a342e');px(x-1,topY-h-2,4,2,'#3a342e');rustPatch(x,topY-h+3,x)} // stovepipe + cap
+function bLadder(x,y,h){px(x,y,1,h,'#2a2018');px(x+3,y,1,h,'#2a2018');for(let r=y+1;r<y+h;r+=3)px(x+1,r,2,1,'#3a342e')}
+function bBraceX(x,y,w,h,m){for(let i=0;i<=h;i++){px(x+Math.round(i*w/h),y+i,1,1,m);px(x+w-Math.round(i*w/h),y+i,1,1,m)}} // X cross-brace
+// ---- recipes ----
+function bWaterTower(x){const tw=18,ty=78,th=15,legY=ty+th;
+ const L=x+1,R=x+tw-3;px(L,legY,2,RHGY-legY,BIRON[1]);px(R,legY,2,RHGY-legY,BIRON[1]); // four-leg trestle
+ px(x-1,RHGY-3,2,3,BIRON[1]);px(x+tw-1,RHGY-3,2,3,BIRON[1]);                            // splayed outer feet
+ for(let b=legY+2;b<RHGY-3;b+=8)bBraceX(L+1,b,R-L-2,6,BIRON[0]);                        // X cross-bracing (load-bearing read)
+ bFoot(x,tw);
+ px(x,ty,tw,th,BIRON[2]);px(x,ty,tw,1,BIRON[4]);px(x,ty+1,tw,1,BIRON[3]);px(x,ty+th-1,tw,1,BIRON[0]);px(x+tw,ty+2,2,th-2,BIRON[0]); // tank + shadow-plane
+ for(let bnd=ty+4;bnd<ty+th-1;bnd+=4){px(x,bnd,tw,1,BIRON[1]);for(let rv=x+2;rv<x+tw;rv+=4)px(rv,bnd,1,1,BIRON[4])} // riveted bands
+ px(x+2,ty-2,tw-4,2,BIRON[1]);px(x+5,ty-4,tw-10,2,BIRON[1]);px(x+(tw>>1)-1,ty-5,2,1,BIRON[3]);  // domed cap + finial
+ streak(x+4,ty+3,6,x);rustPatch(x+tw-6,ty+7,x+2);
+ box(x+3,ty+5,2,5,'#241a12');pxa(x+3,ty+6,2,3,'rgba(159,216,216,0.5)');                 // water-gauge glass (the single teal shimmer)
+ px(x+tw,ty+th-3,3,1,BIRON[1]);px(x+tw+2,ty+th-3,1,4,BIRON[0]);                         // fill-spout over the rail
+}
+function bDepot(x){const w=48,y=88;
+ {const aw=13,ay=RHGY-13;bFoot(x-aw,aw);px(x-aw,ay,aw,13,BWOOD[1]);px(x-aw,ay,aw,1,BWOOD[3]);px(x-aw-2,ay-1,aw+3,2,BIRON[1]);px(x-aw-2,ay-1,aw+3,1,BIRON[3]);box(x-aw+3,ay+4,4,5,'#160f08')} // lean-to annex (lower, scavenged)
+ bFoot(x,w);
+ bWall(x,y,w,BWOOD,true);
+ bGable(x,y,w,BIRON);
+ bWindow(x+6,y+5);bWindow(x+w-13,y+5);
+ bDoor(x+(w>>1)-2,y+7);px(x+(w>>1)-3,y+6,7,1,BIRON[1]);                                 // door + lintel
+ bPipe(x+w-8,y-1,11);                                                                   // stovepipe through the roof
+}
+function bSilo(x){const w=12,y=86;                                                      // corrugated fuel/grain silo
+ px(x,y,w,RHGY-y,BSTL[2]);px(x,y,w,1,BSTL[4]);px(x,y+1,w,1,BSTL[3]);px(x+w,y+2,2,RHGY-y-2,BSTL[0]);
+ for(let c=x+1;c<x+w;c+=2)px(c,y+2,1,RHGY-y-3,BSTL[1]);                                 // corrugation ribs
+ px(x-1,y-3,w+2,3,BIRON[1]);px(x+2,y-5,w-4,2,BIRON[1]);                                 // domed top
+ px(x+w,y+6,2,1,BIRON[1]);px(x+w+1,y+6,1,8,BIRON[0]);                                   // outlet pipe
+ streak(x+3,y+4,7,x);rustPatch(x+w-4,y+8,x+1);bFoot(x,w);
+}
+function bSignal(x){const my=82;                                                        // signal mast: latticed post + ladder + hooded lamps
+ px(x,my,2,RHGY-my,BSTL[1]);px(x+1,my,1,RHGY-my,BSTL[3]);bFoot(x-1,4);
+ for(let r=my+4;r<RHGY-3;r+=5)px(x,r,2,1,BSTL[0]);                                      // lattice
+ bLadder(x+3,my+6,RHGY-my-8);
+ px(x-4,my+1,5,1,BSTL[1]);                                                              // signal arm
+ const lamp=(ly,c)=>{px(x-5,ly,3,3,'#16110b');px(x-4,ly+1,2,2,c);px(x-6,ly,1,3,BSTL[1])};
+ lamp(my+2,'#c83028');lamp(my+6,'#e0a33a');lamp(my+10,'#7fd07a');                       // red / amber / green, hooded
+ px(x,my-2,2,2,BIRON[3]);                                                               // finial
+}
+// the depot cluster, as a list of building entities (offsets from the station anchor)
+const RH_BUILDINGS=[{f:bWaterTower,dx:8},{f:bSilo,dx:64},{f:bDepot,dx:120},{f:bSignal,dx:196}];
+// THE RAILHEAD — BAND 4 (backdrop, BEHIND the train): the depot cluster, set on the far rail and
+// haze-dimmed by aerial perspective. No over-rail structures — the train stays alone on band 5.
 function drawRailhead(sx){
- const SW=236,cx=sx+SW/2,IR=MAT[0],gun=MAT[1],glow=Math.max(0.34,1.08-dnLight),gY=112; // gY = the far rail (back-band ground)
  for(let i=0;i<6;i++)pxa(sx-14-i*8,137,5,1,'rgba(46,34,24,'+Math.max(0,0.5-i*0.08)+')'); // empty rails west into the haze
- // water tower (left) — planted on the far rail, rising above it
- {const wx=sx+10,tankY=84,tw=18;
-  box(wx,tankY,tw,11,IR[2]);px(wx,tankY,tw,1,IR[4]);px(wx,tankY+9,tw,1,IR[0]);
-  px(wx+2,tankY-3,tw-4,3,IR[1]);px(wx+5,tankY-5,tw-10,2,IR[1]);            // conical cap
-  streak(wx+5,tankY+2,7,wx);rustPatch(wx+9,tankY+5,wx);
-  for(const lx of [wx+1,wx+tw-3])box(lx,tankY+11,2,gY-(tankY+11),IR[1]);   // legs down to the far rail
-  px(wx+1,tankY+15,tw-2,1,IR[0]);px(wx+2,tankY+19,tw-4,1,IR[0]);           // cross-braces
- }
- // signal mast (center-left)
- {const smx=sx+84;box(smx,90,2,gY-90,gun[1]);px(smx-3,93,7,1,gun[1]);
-  px(smx-3,95,2,2,'#c83028');px(smx-3,98,2,2,'#e0a33a');px(smx-3,101,2,2,'#7fd07a');}
- // depot building (right)
- {const dbx=sx+150,dbw=58,wallY=94;
-  px(dbx+10,wallY,dbw-20,gY-wallY,'#74542f');px(dbx+10,wallY,dbw-20,1,'#8c6a3e'); // wall down to the rail
-  px(dbx+6,wallY-1,dbw-12,3,IR[1]);px(dbx+6,wallY-1,dbw-12,1,IR[3]);              // eave
-  px(dbx+15,wallY-7,dbw-30,6,'#6e5236');px(dbx+20,wallY-10,dbw-40,4,'#6e5236');   // stepped gable
-  box(dbx+22,wallY+4,6,6,'#241a12');pxa(dbx+23,wallY+5,4,4,'rgba(240,180,90,'+(0.4+0.45*glow)+')'); // lit amber window
-  streak(dbx+14,wallY+3,7,dbx);
- }
- // aerial-perspective haze veil — dims the architecture toward the far rail so it recedes behind the train
- {const a=0.4*(0.45+0.55*dnLight),hz=ctx.createLinearGradient(0,78,0,gY+2);
+ for(const b of RH_BUILDINGS)b.f(sx+b.dx);                                              // draw each building entity
+ // aerial-perspective haze veil — dims the cluster toward the far rail so it recedes behind the train
+ {const a=0.4*(0.45+0.55*dnLight),hz=ctx.createLinearGradient(0,76,0,RHGY+2);
   hz.addColorStop(0,'rgba(228,170,96,0)');hz.addColorStop(1,'rgba(228,170,96,'+a+')');
-  ctx.fillStyle=hz;ctx.fillRect(0,78,320,gY+2-78);}
+  ctx.fillStyle=hz;ctx.fillRect(0,76,320,RHGY+2-76);}
 }
 // THE RAILHEAD — BAND 6 (foreground, IN FRONT of the rail): a thin near platform + the people of the stop.
 // Kept low (apron level) so nothing crosses the train's silhouette.

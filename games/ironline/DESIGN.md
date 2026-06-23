@@ -30,3 +30,21 @@ The scene is composed in **depth bands**, far-to-near then on top. This is **des
 - **Band 9:** "THE RAILHEAD" as a top-of-frame banner (off the rail; scales to every future depot).
 
 > Reference note (Tiny Rails): borrowed for **spatial grammar only** — depth bands, train-alone-on-its-rail, place-name as a UI banner. **Not** its palette or mood; IRONLINE stays dusk + rust and never brightens toward the reference.
+
+---
+
+## Buildings — the structure grammar
+
+Station/depot structures are **entities, not one-off blobs**: a list (`RH_BUILDINGS`) of building entities, each drawn by a **recipe** (`bWaterTower`, `bDepot`, `bSilo`, `bSignal`, …) **composed of shared parts** (`bWall`, `bGable`, `bWindow`, `bDoor`, `bPipe`, `bLadder`, `bBraceX`, `bFoot`). Build a new structure by writing a recipe from the parts and adding an entry — not by hand-placing rectangles. (Same engine/recipe split as the art pipeline: parts are the *how*, recipes are the *what*.)
+
+**The realism principles every recipe follows** (so structures read as built things, not flat slabs):
+1. **Silhouette first** — a varied, readable outline (a pitched/stepped roof, a tank, a mast), never a plain box.
+2. **Structural logic** — it looks load-bearing: **footed** (`bFoot` — a stone footing + contact shadow where it meets the ground), with legs, **cross-braces** (`bBraceX`), beams, and lintels that carry weight.
+3. **Volume** — front face + a thin **right shadow-plane** so it reads 3D; roofs get an **overhang + eave shadow**.
+4. **One light direction** — top-lit (lit top/left edges, shadowed right/under), consistent with the train's material language.
+5. **Material language (locked)** — two-metal + rust: `BWOOD` (weathered plank), `BIRON` (rust iron), `BSTL` (gunmetal). 5-value ramps, hard AO seams, rust streaks + patches.
+6. **Weathering & asymmetry** — streaks under bolts, patched panels, scavenged add-ons (the depot's lean-to annex); nothing grid-perfect — the wonk sells it.
+7. **Function reads** — water tower = tank + bands + fill-spout + gauge; depot = door + lit windows + stovepipe; silo = corrugation + outlet; signal = ladder + hooded lamps. You can tell what each one *does*.
+8. **Cluster, don't scatter** — a depot is a *place*: a few structures of varied scale (the depot building anchors; tower / silo / signal are secondary), spaced so each reads.
+
+All depot buildings live in **band 4**: footed on `RHGY` (the far rail), rising into the backdrop, then **haze-dimmed** by the aerial-perspective veil so the cluster recedes behind the train. Adding a new depot type = new recipes + a new entity list; the bands and the veil come for free.
