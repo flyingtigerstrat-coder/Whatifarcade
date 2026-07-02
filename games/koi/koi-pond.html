@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v3.2.1 (living pond, B.2.1: per-entity sprite slots + bake budget — no re-bake hitches) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.2.2 (living pond, B.2.2: half-res water buffer + adaptive quality shed) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
@@ -992,6 +992,13 @@ function step(dt){Pond._t+=dt;
 // RENDER
 // =================================================================
 let skin='natural';
+// half-res water buffer (B.2.2): the water passes (bg grade + caustics + beams +
+// ribbons + wakes) are soft glows and the bulk of raster cost — paint them at WS
+// scale into a persistent buffer and upscale. On software-rasterizing machines
+// (human measured 11 fps live) this is the difference between slideshow and smooth.
+let wbuf=null,wctx=null,WS=.5;
+function buildWaterBuf(){wbuf=document.createElement('canvas');
+  wbuf.width=Math.max(2,W*WS|0);wbuf.height=Math.max(2,H*WS|0);wctx=wbuf.getContext('2d',{alpha:false});}
 // ---- day cycle (QA PREVIEW of Phase C — codex-forced, session-only, never persisted) ----
 // 'auto' = plain day until Phase C wires the real local-clock drift. Ink keeps its
 // eternal dusk (per-skin ruling). Cheap: two full-frame fills, no ctx.filter.
@@ -1015,7 +1022,9 @@ function render(t){
   const S=SKINS[skin];ctx.save();
   try{
     if(S.full){S.render(ctx,t);dayTint(ctx);}
-    else{S.water(ctx,t);
+    else{
+      wctx.setTransform(WS,0,0,WS,0,0);S.water(wctx,t);            // soft water at reduced res
+      ctx.imageSmoothingEnabled=true;ctx.drawImage(wbuf,0,0,W,H);  // upscale — glow doesn't mind
       const PL=S.plant||SKINS.natural.plant;
       for(const p of Pond.plants)if(BELOW_TYPES[p.type])PL(ctx,p);   // BELOW plane (submerged grass)
       for(const r of Pond.rocks)drawRock(ctx,r);                     // hardscape sits in the water, under the fish
@@ -1198,11 +1207,17 @@ document.getElementById('codexX').addEventListener('click',()=>codexEl.classList
 // LOOP + BOOT
 // =================================================================
 let last=performance.now(),frame=1000/40,saveT=0,_fpsN=0,_fpsT=0;
-function resize(){DPR=Math.min(devicePixelRatio||1,1.5);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);buildBuffers();}   // 1.5 cap: soft water doesn't need retina fill-rate (44% fewer pixels than 2.0)
+let DPR_CAP=1.5;   // 1.5: soft water doesn't need retina fill-rate; adaptive shed may lower it
+function resize(){DPR=Math.min(devicePixelRatio||1,DPR_CAP);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);buildBuffers();buildWaterBuf();}
 addEventListener('resize',resize);
+// one-shot adaptive quality: sample the first ~6s; if the machine can't hold a livable
+// rate, shed pixels once (DPR 1 + smaller water buffer) rather than stay a slideshow.
+let _adN=0,_adT=0,_adDone=false;
 function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;return;}if(now-last<frame)return;
   let dt=(now-last)/1000;last=now;if(dt>.1)dt=.1;
   step(dt);render(now/1000);syncShop();
+  if(!_adDone){_adN++;_adT+=dt;if(_adT>=6){_adDone=true;const f=_adN/_adT;
+    if(f<22){DPR_CAP=1;WS=.4;resize();}}}
   if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent=(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
   saveT+=dt;if(saveT>5){saveT=0;persist();}}
 addEventListener('beforeunload',persist);
