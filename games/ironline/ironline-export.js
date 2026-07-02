@@ -346,10 +346,12 @@ const SUBJECTS = {
     G.drawBackdrop(); G.drawTrain(); G.drawRailheadFront(S.stationX == null ? G.STATION_HOME : S.stationX); G.drawRailheadBanner(); // band 4 is inside drawBackdrop; front (6) + banner (9) go over the train
     return { scale: 4, fixedBox: { minx: 0, miny: 0, maxx: 319, maxy: 179 } };
   },
-  // scene <off> — full world frame (backdrop + train) at world-position off (→ biome) and time S.T.
+  // scene <off> [--reg=0..3] — full world frame (backdrop + train) at world-position off and time S.T.
+  // --reg pins the rig's map region (wave 1: the MAP owns the biome — 0 Rust Flats · 1 Dead City · 2 Bone Reef · 3 Cinder Seam).
   scene(o) {
     S.off = o.off != null ? o.off : 560;
     S.T = o.T != null ? o.T : 192;            // ~midday by default
+    if (o.reg != null) { S.nav = { seed: 1, reg: Math.max(0, Math.min(3, +o.reg)), col: 1, row: 0 }; S.origin = false; S.stop = null; S.stationX = null; }
     S.engine = 8; S.ex = 216; S.pan = 0; S.engineSkin = o.engine || null;
     S.slots = [{ type: 'oil', lvl: 8 }, { type: 'troop', lvl: 8 }, { type: 'gun', lvl: 8, wpn: 'cannon' }];
     G.drawBackdrop(); G.drawTrain();
@@ -421,6 +423,7 @@ function run(subject, arg, opt) {
     else if (a.startsWith('--T=')) opt.T = +a.slice(4);
     else if (a.startsWith('--sx=')) opt.sx = +a.slice(5);
     else if (a.startsWith('--lamp=')) opt.lamp = +a.slice(7);
+    else if (a.startsWith('--reg=')) opt.reg = +a.slice(6);
     else pos.push(a);
   }
   const subject = pos[0];

@@ -11,11 +11,11 @@ global.document={getElementById:()=>anyElCache,querySelector:()=>anyElCache,quer
 global.Image=class{set src(v){}};
 global.requestAnimationFrame=()=>{};
 const script=fs.readFileSync(__dirname+'/battle-train-hd.html','utf8').match(/<script>([\s\S]*)<\/script>/)[1]
- +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME};';
+ +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive};';
 eval(script);
 (async()=>{
 await new Promise(r=>setTimeout(r,20)); // let the async boot IIFE settle
-const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME}=globalThis.__T;
+const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive}=globalThis.__T;
 let t=0,fails=0;const step=n=>{for(let i=0;i<n;i++){t+=16;tick(t)}};
 const ok=(name,cond)=>{console.log((cond?'PASS':'FAIL')+'  '+name);if(!cond)fails++};
 
@@ -78,7 +78,8 @@ ok('v1 save: missing fuel gets default', S.fuel===30);
 ok('v1 save: gun slot normalized (wpn/port)', S.slots[0].wpn==='cannon'&&S.slots[0].port==='auto');
 ok('v1 save: no origin flag -> not docked', S.origin===false&&!S.stop);
 await save();
-ok('v1 save: re-saves stamped v2', JSON.parse(__getStore()).v===2);
+ok('v1 save: re-saves stamped current ('+JSON.parse(__getStore()).v+')', JSON.parse(__getStore()).v===3);
+ok('v1 save: 7 crossings land the veteran in region 1', S.nav.reg===1&&S.nav.col===0);
 
 // 7 · v2 round-trip preserves the rig
 S.scrap=321;S.engine=5;await save();S.scrap=0;S.engine=1;
@@ -95,6 +96,41 @@ __setStore(JSON.stringify({v:99,scrap:777,food:5,fuel:12,journeys:20,engine:9,ca
 const l9=await load();
 ok('future-version save: known fields load, rig preserved', l9===true&&S.scrap===777&&S.engine===9);
 ok('future-version save: migrate passes it through untouched', migrate({v:99,x:1}).v===99);
+ok('future-version save: missing nav defaults defensively', S.nav&&S.nav.reg===0&&S.nav.seed===1);
 
-console.log(fails? '\n'+fails+' FAILURES':'\nALL CHECKS PASS ('+((s=>s)(0)||'choreography + save schema')+')');process.exit(fails?1:0);
+// ===== THE SPINE: node graph + region difficulty (Wave 1) =====
+// 10 · the graph is seeded, deterministic, and shaped right
+S.nav={seed:7,reg:0,col:0,row:0};S.visited=['0:0:0'];S.sel=0;S.navT=null;
+ok('spine: the origin node is THE RAILHEAD', nodeName(0,0,0)==='THE RAILHEAD');
+ok('spine: 4 regions, Seam runs 7 columns', REGIONS.length===4&&REGIONS[3].cols===7);
+ok('spine: nodeType is deterministic', nodeType(1,3,1)===nodeType(1,3,1)&&['S','E','H','B'].includes(nodeType(1,3,1)));
+let edgesOK=true;
+for(let rg=0;rg<REGIONS.length;rg++)for(let c=0;c<REGIONS[rg].cols-1;c++)for(let rw=0;rw<navRows(rg,c);rw++){const E=nodeEdges(rg,c,rw);if(E.length<1||E.length>2)edgesOK=false;for(const e of E)if(e.reg!==rg||e.col!==c+1||e.row<0||e.row>=navRows(rg,c+1))edgesOK=false}
+ok('spine: every non-gate node has 1-2 valid forward edges', edgesOK);
+const g0=nodeEdges(0,REGIONS[0].cols-1,0);
+ok('spine: a gate opens the next region’s entry', g0.length===1&&g0[0].reg===1&&g0[0].col===0&&g0[0].row===0);
+ok('spine: the Terminus gate ends the line', nodeEdges(3,REGIONS[3].cols-1,0).length===0);
+// 11 · position drives threat (BRIEF v1.2 rule 6)
+S.nav={seed:7,reg:2,col:4,row:0};
+ok('spine: eff() = reg*6 + col', eff()===16);
+// 12 · a completed leg moves the rig on the map and the node speaks
+S.nav={seed:7,reg:0,col:0,row:0};S.visited=['0:0:0'];S.sel=0;S.mode='run';S.journeys=0;S.origin=false;S.stop=null;S.stationX=null;S.depot=null;
+S.navT={to:{reg:0,col:1,row:0},regChange:false};
+finish();
+ok('leg: arrival moves nav + logs the visit', S.nav.col===1&&S.nav.row===0&&S.visited.includes('0:1:0')&&S.journeys===1&&S.navT===null);
+const t1=nodeType(0,1,0);
+ok('leg: the node greets by type ('+t1+')', t1==='S'?(S.mode==='depot'&&!!S.depot):(!!S.stop&&S.stop.auto===true));
+// 13 · v2->v3 migration places the veteran on the graph (one region per 5 crossings)
+const m12=migrate({v:2,journeys:12,dist:140,scrap:500,origin:1});
+ok('v2->v3: 12 crossings -> region 2 entry, Railhead dock released', m12.v===3&&m12.nav.reg===2&&m12.nav.col===0&&!m12.origin&&m12.visited.length===1);
+const m3=migrate({v:2,journeys:3,dist:20,scrap:100,origin:1});
+ok('v2->v3: 3 crossings -> region 0, origin dock kept', m3.v===3&&m3.nav.reg===0&&m3.origin===1);
+// 14 · v3 round-trips the map
+S.nav={seed:41,reg:1,col:2,row:1};S.visited=['1:0:0','1:1:0','1:2:1'];S.origin=false;S.stop=null;S.stationX=null;S.mode='idle';S.depot=null;
+await save();
+S.nav={seed:1,reg:0,col:0,row:0};S.visited=['0:0:0'];
+await load();
+ok('v3 save: nav + visited round-trip', S.nav.seed===41&&S.nav.reg===1&&S.nav.col===2&&S.nav.row===1&&S.visited.length===3);
+
+console.log(fails? '\n'+fails+' FAILURES':'\nALL CHECKS PASS ('+((s=>s)(0)||'choreography + save schema + the spine')+')');process.exit(fails?1:0);
 })();

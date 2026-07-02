@@ -99,13 +99,12 @@ button{font-family:'VT323',monospace;cursor:pointer;border:none}
 #savemsg{font-size:16px;color:#6e5f4c}
 #reset{font-size:16px;background:none;color:#a85a4a;border:2px solid #5a3228;padding:8px 12px;min-height:40px}
 .pip{display:inline-block;width:8px;height:8px;margin-right:4px}
-#maplist .stop{display:flex;align-items:center;gap:10px;padding:10px;background:#1d1814;border:2px solid #3a2e22;margin-bottom:7px}
-#maplist .stop.next{border-color:#8a5a1a;background:#241c14}
-#maplist .dot{width:10px;height:10px;border-radius:50%;background:#5f4d38;flex:0 0 auto}
-#maplist .stop.next .dot{background:#e0a33a}
-#maplist .nm{flex:1;font-size:19px;color:#cdb894}
-#maplist .km{font-size:16px;color:#8a7a64}
-#maplist .here{font-size:16px;color:#a8957a;text-align:center;margin-bottom:10px}
+#maplist .regstrip{font-size:15px;letter-spacing:1px;color:#e0a33a;text-align:center;padding:8px 6px;background:#241c14;border:2px solid #8a5a1a;margin-bottom:8px}
+#maplist .navmap{display:block;width:100%;background:#1d1814;border:2px solid #3a2e22}
+#maplist .navmap .mapsel{cursor:pointer}
+#maplist .maplegend{font-size:14px;color:#8a7a64;text-align:center;margin-top:8px}
+.edgebtn{font:inherit;font-size:15px;color:#cdb894;background:#241c14;border:2px solid #57432f;padding:4px 10px;margin:2px 3px;cursor:pointer}
+.edgebtn.sel{color:#f2c560;border-color:#e0a33a;background:#2c2014}
 #loglist .ln{font-size:17px;color:#a8957a;padding:5px 2px;border-bottom:1px solid #241c14;line-height:1.3}
 #loglist .ln:first-child{color:#cdb894}
 /* ===================== LANDSCAPE / DESKTOP SKIN ===================== */
@@ -155,10 +154,8 @@ button{font-family:'VT323',monospace;cursor:pointer;border:none}
 #app.land #cars{display:flex;gap:8px;overflow-x:auto;overflow-y:hidden;padding-bottom:6px;scrollbar-width:thin;scrollbar-color:#6b4a2e #1a1410}
 #app.land #cars .card{flex:0 0 134px;width:134px}
 #app.land #slotbtn{flex:0 0 134px;width:134px;grid-column:auto;min-height:auto}
-#app.land #maplist{display:flex;gap:8px;overflow-x:auto;padding-bottom:6px;scrollbar-width:thin;scrollbar-color:#6b4a2e #1a1410}
-#app.land #maplist .stop{flex:0 0 auto;flex-direction:column;align-items:center;min-width:118px;text-align:center;gap:5px}
-#app.land #maplist .here{flex:0 0 auto;align-self:center;text-align:left;margin:0 6px 0 0;color:#cdb894}
-#app.land #maplist .nm{flex:none}
+#app.land #maplist{overflow-x:auto;padding-bottom:6px;scrollbar-width:thin;scrollbar-color:#6b4a2e #1a1410}
+#app.land #maplist .navmap{min-width:520px;max-height:46vh;margin:0 auto}
 #app.land #loglist{column-count:2;column-gap:18px}
 #app.land #cars::-webkit-scrollbar,#app.land #maplist::-webkit-scrollbar{height:8px}
 #app.land #cars::-webkit-scrollbar-thumb,#app.land #maplist::-webkit-scrollbar-thumb{background:#6b4a2e;border:1px solid #8a5a1a}
@@ -231,7 +228,8 @@ loadSprite('fortress',100,50,'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQA
 const KEY='battle-train-save';
 const S={scrap:120,food:20,fuel:30,heroes:[],crewSel:-1,journeys:0,engine:1,caboose:1,maxSlots:3,
 slots:[{type:'gun',wpn:'cannon',port:'auto',lvl:1},{type:'farm',lvl:1},null],
-mode:'idle',jt:0,dur:14,waves:[],wi:0,hull:0,off:0,flash:0,raiders:[],smoke:[],booms:[],tracers:[],smT:0,saveT:0,resetArm:0,T:0,dt:0.016,ex:216,stackX:286,pan:0,maxPan:0,panHintT:0,tw:{x:360,r:0},turr:{},boss:null,crate:null,crateAt:-1,lastRegion:-1,lastWx:-1,ptrain:null,ptrainAt:-1,ptrainKind:'trader',ptrainElite:false,dist:0,depot:null,discount:false,view:'travel',logHist:[],layout:'',layoutManual:false,immersive:false,engineSkin:null,fortressUnlocked:false,origin:false,stationX:null,stop:null,lampK:1};
+mode:'idle',jt:0,dur:14,waves:[],wi:0,hull:0,off:0,flash:0,raiders:[],smoke:[],booms:[],tracers:[],smT:0,saveT:0,resetArm:0,T:0,dt:0.016,ex:216,stackX:286,pan:0,maxPan:0,panHintT:0,tw:{x:360,r:0},turr:{},boss:null,crate:null,crateAt:-1,lastRegion:-1,lastWx:-1,ptrain:null,ptrainAt:-1,ptrainKind:'trader',ptrainElite:false,dist:0,depot:null,discount:false,view:'travel',logHist:[],layout:'',layoutManual:false,immersive:false,engineSkin:null,fortressUnlocked:false,origin:false,stationX:null,stop:null,lampK:1,
+nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null};
 const gun=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='gun'?s.lvl*wpow(s.wpn||'cannon',s.port||'auto'):0),0)*crewBuffs().gunMult;
 const troops=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='troop'?s.lvl*4:0),0);
 const farm=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='farm'?s.lvl*0.5:0),0)*crewBuffs().foodMult;
@@ -245,7 +243,8 @@ const cbC=()=>Math.round(45*Math.pow(1.7,S.caboose));
 const slC=()=>Math.round(150*Math.pow(2.2,S.maxSlots-3));
 const FORT_COST=500;            // one-time scrap to unlock the Fortress hero engine
 const fdC=()=>Math.max(5,troops()*2);
-const base=()=>Math.round((50+S.journeys*30+S.maxSlots*10)*loot());
+const eff=()=>S.nav?S.nav.reg*6+S.nav.col:Math.min(24,S.journeys); // effective threat: region tier drives difficulty (BRIEF v1.2 rule 6); journeys is flavor
+const base=()=>Math.round((50+eff()*30+S.maxSlots*10)*loot());
 const log=t=>{S.logHist.unshift(t);if(S.logHist.length>16)S.logHist.pop();const tk=document.getElementById('ticker');if(tk)tk.textContent=t;if(S.view=='log')renderLog()};
 const NM={gun:'Gun car',farm:'Farm car',troop:'Troop car',repair:'Repair bay',oil:'Oil car'};
 const PIP={gun:'#9aa0a6',farm:'#9fc25f',troop:'#cfe3e6',repair:'#e2655a',oil:'#caa15a'};
@@ -320,7 +319,7 @@ function pickHero(group){
 function recruitHero(group){
  const kind=pickHero(group||'wander'),d=CREW[kind],owned=ownedHero(kind),rare=!!d.rare;
  if(owned&&owned.rank<MAXRANK){owned.rank++;log((rare?'\u2605 ':'')+'A seasoned '+d.nm+' joins you — your '+d.nm+' reaches rank '+RNK[owned.rank]+'.');return kind}
- if(owned){const b=Math.round(45+S.journeys*10);S.scrap+=b;log('Your '+d.nm+' is already a legend — the newcomers leave '+b+' scrap in tribute.');return null}
+ if(owned){const b=Math.round(45+eff()*10);S.scrap+=b;log('Your '+d.nm+' is already a legend — the newcomers leave '+b+' scrap in tribute.');return null}
  S.heroes.push({kind,rank:1});
  if(rare)log('\u2605 A RAIDER WARBOSS is broken and turned to your banner \u2014 a rare prize! Assign them in the Crew bay.');
  else log('A '+d.nm+(group=='war'?' is hauled from the wreckage':' signs on at the stop')+' \u2014 assign them in the Crew bay.');
@@ -342,7 +341,7 @@ let canSave=typeof window.storage!=='undefined';
 // ---- save schema: versioned, migrated stepwise (one step per state-growing wave; BRIEF v1.2 rule 2) ----
 // POLICY: a rig is sacred. Unknown/higher versions pass through untouched and load reads known fields
 // defensively — we never wipe. Only a genuinely unparseable blob falls back to a fresh boot.
-const SAVE_V=2;
+const SAVE_V=3;
 function migrate(d){
  if(!d||typeof d!=='object')return null;
  if(!d.v){                                  // v1: the unversioned live-shipped shape -> v2 (normalize, no behavior change)
@@ -354,7 +353,14 @@ function migrate(d){
   d.engineSkin=d.engineSkin||null;d.fortressUnlocked=!!d.fortressUnlocked;d.origin=d.origin?1:0;
   d.v=2;
  }
- // future steps append here, in order: if(d.v==2){ ...map state, place veteran on the node graph... d.v=3 }
+ if(d.v==2){                                // v2 -> v3: THE SPINE — place the veteran ON the node graph (one region per 5 crossings)
+  const j=d.journeys||0,reg=Math.min(3,Math.floor(j/5));
+  d.nav={seed:1+Math.floor((j*7919+Math.round(d.dist||0)*131+Math.round(d.scrap||0)*17)%99999),reg,col:0,row:0};
+  d.visited=[reg+':0:0'];
+  if(reg>0)d.origin=0;                      // a veteran deep in the wastes wakes at their region's entry, not the Railhead
+  d.v=3;
+ }
+ // future steps append here, in order: if(d.v==3){ ... d.v=4 }
  return d;
 }
 function setSaveMsg(t){document.getElementById('savemsg').textContent=t}
@@ -362,7 +368,7 @@ let saveTimer=null;
 async function save(){
 if(!canSave){setSaveMsg('Saving unavailable here');return}
 try{
-const d={v:SAVE_V,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0};
+const d={v:SAVE_V,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0,nav:S.nav,visited:S.visited};
 const r=await window.storage.set(KEY,JSON.stringify(d));
 if(r){setSaveMsg('Progress saved');clearTimeout(saveTimer);saveTimer=setTimeout(()=>setSaveMsg(''),2500)}
 }catch(e){canSave=false;setSaveMsg('Saving unavailable here')}
@@ -375,7 +381,11 @@ if(r&&r.value){
 const d=migrate(JSON.parse(r.value));
 if(!d)return false;
 S.scrap=d.scrap;S.food=d.food;S.fuel=(d.fuel!=null?d.fuel:30);S.heroes=Array.isArray(d.heroes)?d.heroes:[];S.crewSel=-1;S.journeys=d.journeys;S.engine=d.engine;S.caboose=d.caboose;S.maxSlots=d.maxSlots;S.slots=d.slots;S.slots.forEach(s=>{if(s&&s.type=='gun'){if(!s.wpn)s.wpn='cannon';if(!s.port)s.port='auto'}crewOf(s)});S.hull=Math.min(d.hull,maxHull());S.dist=d.dist||0;S.discount=!!d.discount;S.layout=d.layout||'';S.layoutManual=!!d.layoutManual;S.engineSkin=d.engineSkin||null;S.fortressUnlocked=!!d.fortressUnlocked;
-if(d.origin){S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1} // saved while docked at the origin — wake up there
+if(d.nav&&typeof d.nav=='object')S.nav={seed:(d.nav.seed|0)||1,reg:Math.max(0,Math.min(REGIONS.length-1,d.nav.reg|0)),col:d.nav.col|0,row:d.nav.row|0};
+else S.nav={seed:1,reg:0,col:0,row:0};                                                           // defensive: a future save without nav still boots ON the map
+S.visited=Array.isArray(d.visited)&&d.visited.length?d.visited.slice():[navVK(S.nav.reg,S.nav.col,S.nav.row)];
+S.sel=0;S.navT=null;
+if(d.origin&&S.nav.reg==0&&S.nav.col==0){S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1} // saved while docked at the origin — wake up there
 else{S.origin=false;S.stop=null;S.stationX=null;S.lampK=1}                                       // ...otherwise the load is authoritative: mid-journey, no stop
 return true}
 }catch(e){}
@@ -463,9 +473,14 @@ document.getElementById('go').addEventListener('click',()=>{
 if(S.mode=='depot'){showView('travel');return}
 if(S.mode=='run'||S.fuel<fuelC())return;
 if(S.stop&&S.stop.ph=='arriving')return;                     // she's still rolling in — let her settle first
+const edges=nodeEdges(S.nav.reg,S.nav.col,S.nav.row);
+if(!edges.length){log('The line ends at THE TERMINUS. Beyond the dead signals there is nothing left to cross \u2014 yet.');return}
+const to=edges[Math.max(0,Math.min(edges.length-1,S.sel))],ty=nodeType(to.reg,to.col,to.row),nm=nodeName(to.reg,to.col,to.row);
 S.fuel-=fuelC();S.food=Math.max(0,S.food-rations());S.mode='run';S.jt=0;S.raiders=[];S.tracers=[];S.crate=null;
-if((S.journeys+1)%5===0){S.dur=Math.max(11,18-S.engine);S.waves=[];S.wi=0;S.boss=null;const bn=Math.floor((S.journeys+1)/5),tier=Math.min(3,bn-1),guns=tier,wp=['cannon','rocket','mortar'],cars=[{type:'engine'}];for(let g=0;g<guns;g++)cars.push({type:'gun',wpn:wp[g%3]});cars.push({type:'fuel'});const m=Math.round((55+S.journeys*22)*(1+guns*0.4));S.boss={hp:m,max:m,x:380,tx:200,hitT:1.5,dead:false,set:false,cars,tier,guns};S.crateAt=-1;log('A warlord convoy blocks the line — BOSS CROSSING ('+(guns?guns+' gun car'+(guns>1?'s':'')+' + lead gun':'lead gun only')+'). Bring everything you have.')}
-else{S.dur=Math.max(8,15-S.engine);S.waves=[0.27,0.55,0.82].map(p=>p*S.dur);S.wi=0;S.boss=null;S.ptrain=null;const elite=S.journeys>=3&&Math.random()<0.13;if(elite){S.ptrainElite=true;S.ptrainKind='raider';S.ptrainAt=S.dur*(0.15+Math.random()*0.22);S.crateAt=-1;log('Departing. The horizon is too quiet \u2014 dust rising off the parallel rail...')}else{S.ptrainElite=false;S.crateAt=(Math.random()<0.65)?S.dur*(0.3+Math.random()*0.4):-1;S.ptrainAt=(Math.random()<0.4)?S.dur*(0.2+Math.random()*0.35):-1;S.ptrainKind=(Math.random()<Math.min(0.55,0.32+S.journeys*0.02))?'raider':'trader';log('Departing. Raider dust on the horizon...')}}
+S.navT={to,regChange:to.reg!==S.nav.reg};S.boss=null;S.ptrain=null;
+if(ty=='G'){S.dur=Math.max(11,18-S.engine);S.waves=[];S.wi=0;const tier=Math.min(3,S.nav.reg),guns=Math.min(3,S.nav.reg),wp=['cannon','rocket','mortar'],cars=[{type:'engine'}];for(let g=0;g<guns;g++)cars.push({type:'gun',wpn:wp[g%3]});cars.push({type:'fuel'});const m=Math.round((55+eff()*22)*(1+guns*0.4));S.boss={hp:m,max:m,x:380,tx:200,hitT:1.5,dead:false,set:false,cars,tier,guns};S.crateAt=-1;S.ptrainAt=-1;log('The gate at '+nm+' is held \u2014 a warlord convoy blocks the crossing ('+(guns?guns+' gun car'+(guns>1?'s':'')+' + lead gun':'lead gun only')+'). Bring everything you have.')} // the region GATE: tier grows with the region, not the calendar
+else if(ty=='B'){S.dur=Math.max(8,15-S.engine);S.waves=[0.3*S.dur];S.wi=0;S.ptrainElite=true;S.ptrainKind='raider';S.ptrainAt=S.dur*(0.15+Math.random()*0.22);S.crateAt=-1;log('Departing for '+nm+'. The line ahead is blockaded \u2014 heavy dust rising off the parallel rail...')} // a BLOCKADE leg forces the elite warband
+else{S.dur=Math.max(8,15-S.engine);const hz=ty=='H';S.waves=(hz?[0.2,0.42,0.64,0.86]:[0.27,0.55,0.82]).map(p=>p*S.dur);S.wi=0;S.ptrainElite=false;S.crateAt=(Math.random()<0.65)?S.dur*(0.3+Math.random()*0.4):-1;S.ptrainAt=(!hz&&Math.random()<0.4)?S.dur*(0.2+Math.random()*0.35):-1;S.ptrainKind=(Math.random()<Math.min(0.55,0.32+eff()*0.02))?'raider':'trader';log(hz?'Departing for '+nm+'. Bad country ahead \u2014 raider sign on every mile-post.':'Departing for '+nm+'. Raider dust on the horizon...')} // a HAZARD leg runs 4 waves; a plain leg keeps the classic 3
 if(S.stop){if(S.stop.vis)log('The Dispatcher tips his hat as the drivers bite: "Mind the wastes, engineer. We’ll keep a lamp burning."');stopDepart()}
 });
 document.getElementById('reset').addEventListener('click',async()=>{
@@ -475,39 +490,83 @@ S.resetArm=0;b.innerHTML='Scuttle &amp; restart';
 S.scrap=120;S.food=20;S.fuel=30;S.heroes=[];S.crewSel=-1;S.journeys=0;S.engine=1;S.caboose=1;S.maxSlots=3;
 S.slots=[{type:'gun',wpn:'cannon',port:'auto',lvl:1},{type:'farm',lvl:1},null];S.slots.forEach(s=>crewOf(s));
 S.hull=maxHull();S.mode='idle';S.raiders=[];S.booms=[];S.tracers=[];S.boss=null;S.crate=null;S.dist=0;S.depot=null;S.discount=false;renderDepot();
+S.nav={seed:1+Math.floor(Math.random()*99999),reg:0,col:0,row:0};S.visited=['0:0:0'];S.sel=0;S.navT=null;
 S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1;   // a fresh rig begins where every rig begins — docked at THE RAILHEAD
 if(canSave){try{await window.storage.delete(KEY)}catch(e){}}
 log('The old rig burns behind you. A fresh engine waits on the line.');
 cards();
 });
-function raiderKind(){const j=S.journeys,roll=Math.random();
+function raiderKind(){const j=eff(),roll=Math.random();
  if(j<2)return roll<0.5?'bike':'buggy';
  if(j<5)return roll<0.28?'bike':roll<0.74?'buggy':'technical';
  return roll<0.2?'bike':roll<0.52?'buggy':'technical';
 }
 function raiderSpawn(x){const k=raiderKind(),sp=k=='bike'?60+Math.random()*22:k=='technical'?34+Math.random()*14:45+Math.random()*25;return{x,v:-sp,life:1.7+Math.random()*0.9,kind:k}}
 function wave(){
-const enemy=Math.round(10+S.journeys*5+Math.random()*6);
+const enemy=Math.round(10+eff()*5+Math.random()*6);
 const mit=gun()+troops()*1.5;
 const dmg=Math.max(0,Math.round(enemy-mit));
-const n=2+Math.min(2,Math.floor(S.journeys/3));
+const n=2+Math.min(2,Math.floor(eff()/3));
 for(let i=0;i<n;i++)S.raiders.push(raiderSpawn(340+i*26));
 S.flash=1.4;
 if(dmg<=0)log('Wave repelled — '+enemy+' raider strength shredded by your guns.');
 else{const tk=hurt(dmg);log('Raiders breached the firing line — hull takes '+tk+'!')}
-if(S.hull<=0){const r=Math.round(base()*0.25);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.mode='idle';S.raiders=[];S.ptrain=null;log('Hull failure! You limp back with only '+r+' scrap. Repair and rearm.');cards();save()}
+if(S.hull<=0){const r=Math.round(base()*0.25);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.mode='idle';S.raiders=[];S.ptrain=null;S.navT=null;log('Hull failure! You limp back to '+nodeName(S.nav.reg,S.nav.col,S.nav.row)+' with only '+r+' scrap. Repair and rearm.');cards();save()}
 }
-function finish(){const r=Math.round(base()*crewBuffs().scrapMult);S.scrap+=r;S.journeys++;S.mode='idle';S.ptrain=null;S.crate=null;log('Crossing complete. Salvaged '+r+' scrap from the far shore. Raiders grow stronger.');maybeDepot();cards();save()}
-function bossKill(){const r=Math.round(base()*2.2*crewBuffs().scrapMult);S.scrap+=r;S.journeys++;const cn=(S.boss.cars||[1,1]).length;for(let i=0;i<7+cn*2;i++)S.booms.push({x:S.boss.x-26+i*(BENGW+(cn-1)*BCARW)/(7+cn*2),y:138+(i%3)*7,t:0.04+i*0.04});S.boss=null;S.mode='idle';S.raiders=[];S.tracers=[];S.crate=null;log('Warlord convoy destroyed! You haul back '+r+' scrap and the wastes learn your name.');if(Math.random()<0.85)recruitHero('war');else{const b=Math.round(30+S.journeys*8);S.scrap+=b;log('No survivors worth taking \u2014 you strip the wreck for '+b+' more scrap.');}maybeDepot();cards();save()}
-function bossEscape(){const r=Math.round(base()*0.3);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.boss=null;S.mode='idle';S.raiders=[];S.tracers=[];S.crate=null;log('The warlord overran your line \u2014 you uncouple and limp home with '+r+' scrap. The wastes still answer to them.');cards();save()}
-function grabCrate(){const c=S.crate;if(!c||c.grabbed)return;c.grabbed=true;if(Math.random()<0.65){const sc=Math.round(28+S.journeys*14),fd=4+Math.floor(Math.random()*5);S.scrap+=sc;S.food+=fd;S.booms.push({x:c.x+5,y:c.y+4,t:0.12});log('Salvage secured — +'+sc+' scrap, +'+fd+' food.')}else{const dmg=Math.round(5+S.journeys*1.5);S.hull=Math.max(Math.round(maxHull()*0.35),S.hull-dmg);S.flash=1.2;for(let i=0;i<2;i++)S.raiders.push(raiderSpawn(340+i*22));log('Ambush! The wreck was bait — hull takes '+dmg+' and raiders close in.')}S.crate=null}
-/* ---- location travel: named depots every leg, each an interactive stop ---- */
-const DEPOT_KM=20;
+function finish(){const r=Math.round(base()*crewBuffs().scrapMult);S.scrap+=r;S.journeys++;S.mode='idle';S.ptrain=null;S.crate=null;log('Crossing complete. Salvaged '+r+' scrap from the far shore.');navArrive()}
+function bossKill(){const r=Math.round(base()*2.2*crewBuffs().scrapMult);S.scrap+=r;S.journeys++;const cn=(S.boss.cars||[1,1]).length;for(let i=0;i<7+cn*2;i++)S.booms.push({x:S.boss.x-26+i*(BENGW+(cn-1)*BCARW)/(7+cn*2),y:138+(i%3)*7,t:0.04+i*0.04});S.boss=null;S.mode='idle';S.raiders=[];S.tracers=[];S.crate=null;log('Warlord convoy destroyed! You haul back '+r+' scrap and the wastes learn your name.');if(Math.random()<0.85)recruitHero('war');else{const b=Math.round(30+eff()*8);S.scrap+=b;log('No survivors worth taking \u2014 you strip the wreck for '+b+' more scrap.');}navArrive()}
+function bossEscape(){const r=Math.round(base()*0.3);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.boss=null;S.mode='idle';S.raiders=[];S.tracers=[];S.crate=null;S.navT=null;log('The warlord overran your line \u2014 you uncouple and limp home with '+r+' scrap. The gate still answers to them.');cards();save()}
+function grabCrate(){const c=S.crate;if(!c||c.grabbed)return;c.grabbed=true;if(Math.random()<0.65){const sc=Math.round(28+eff()*14),fd=4+Math.floor(Math.random()*5);S.scrap+=sc;S.food+=fd;S.booms.push({x:c.x+5,y:c.y+4,t:0.12});log('Salvage secured — +'+sc+' scrap, +'+fd+' food.')}else{const dmg=Math.round(5+eff()*1.5);S.hull=Math.max(Math.round(maxHull()*0.35),S.hull-dmg);S.flash=1.2;for(let i=0;i<2;i++)S.raiders.push(raiderSpawn(340+i*22));log('Ambush! The wreck was bait — hull takes '+dmg+' and raiders close in.')}S.crate=null}
+/* ---- THE SPINE: the node-graph journey (BRIEF v1.2 wave 1) ----
+   The rail ocean is 4 REGIONS, each a seeded node graph: columns of stops, 1-2 forward edges per node,
+   a GATE (warlord boss) at each region's far end. S.nav = where the rig IS; S.navT = the leg in flight.
+   Difficulty comes from position (eff() = reg*6+col), not crossings — the world is dangerous, not the calendar. */
+const REGIONS=[
+ {name:'THE RUST FLATS',biome:0,cols:6,anchors:['THE RAILHEAD','RUST JUNCTION','GALLOWS GATE']},
+ {name:'THE DEAD CITY',biome:1,cols:6,anchors:['ASHGATE','THE SUNKEN YARD','CATHEDRAL GATE']},
+ {name:'THE BONE REEF',biome:2,cols:6,anchors:['MARROW LANDING','THE RIBWALK','PALE GATE']},
+ {name:'THE CINDER SEAM',biome:3,cols:7,anchors:['EMBERFALL','THE CRUCIBLE LINE','THE TERMINUS']}];
+const navVK=(reg,col,row)=>reg+':'+col+':'+row;
+function navRows(reg,col){const R=REGIONS[reg];if(col<=0||col>=R.cols-1)return 1;return 2+(hash(S.nav.seed+reg*1000+col*37+5)<0.5?0:1)}
+function nodeType(reg,col,row){const R=REGIONS[reg];if(col<=0)return 'S';if(col>=R.cols-1)return 'G';
+ const r=hash(S.nav.seed+reg*1000+col*37+row*7+9);return r<0.42?'S':r<0.67?'E':r<0.87?'H':'B'}
+function nodeEdges(reg,col,row){const R=REGIONS[reg];
+ if(col>=R.cols-1)return reg>=REGIONS.length-1?[]:[{reg:reg+1,col:0,row:0}]; // a gate opens the next region — the Terminus gate ends the line
+ const nr=navRows(reg,col+1),a=Math.min(nr-1,row),out=[{reg,col:col+1,row:a}];
+ const h=hash(S.nav.seed+reg*1000+col*37+row*7+3);
+ if(nr>1&&h<0.6){const b=(a+(h<0.3?1:nr-1))%nr;if(b!==a)out.push({reg,col:col+1,row:b})}
+ return out}
 const DPRE=['Rust','Ash','Salt','Bone','Iron','Dust','Gallows','Cinder','Scrap','Vulture','Mercy','Pale','Ember','Hollow','Tar'];
-const DSUF=['Halt','Junction','Yard','Crossing','Siding','Reach','Terminus','Hollow','Spur','Wells','Camp','Landing','Run','Bend'];
+const DSUF=['Halt','Junction','Yard','Crossing','Siding','Reach','Hollow','Spur','Wells','Camp','Landing','Run','Bend'];
 const DFLAV=['Lanterns burn in the dark; the crews eye your guns.','A makeshift market clings to the dead rails.','Survivors trade scrap and rumors here.','Half-buried in dust, still clinging to life.','A fuel stop on the edge of nowhere.','Welders and scavengers work the wreck-stacks.'];
-function depotName(idx){return DPRE[Math.floor(hash(idx*3+1)*DPRE.length)]+' '+DSUF[Math.floor(hash(idx*7+2)*DSUF.length)]}
+function nodeName(reg,col,row){const R=REGIONS[reg];
+ if(col<=0)return R.anchors[0];
+ if(col>=R.cols-1)return R.anchors[2];
+ if(col==2&&row==0)return R.anchors[1];
+ const k=reg*1000+col*37+row*7;
+ return DPRE[Math.floor(hash(S.nav.seed+k*3+1)*DPRE.length)]+' '+DSUF[Math.floor(hash(S.nav.seed+k*7+2)*DSUF.length)]}
+const edgeLabel=e=>{const t=nodeType(e.reg,e.col,e.row);return nodeName(e.reg,e.col,e.row)+' '+(t=='S'?'◉':t=='E'?'?':t=='H'?'~':t=='B'?'✕':'♜')};
 function depotFlavor(idx){return DFLAV[Math.floor(hash(idx*5+4)*DFLAV.length)]}
+function navEvent(nm){const r=Math.random(); // wave-1 light events; wave 3 deepens these into real encounters
+ if(r<0.5){const g=Math.round(30+eff()*12);S.scrap+=g;log('At '+nm+', scavengers wave you down — an honest trade nets +'+g+' scrap.')}
+ else if(r<0.8){const g=Math.round(10+eff()*3);S.food+=g;log('At '+nm+', a half-buried silo still holds grain — +'+g+' food.')}
+ else{const dmg=Math.round(4+eff());S.hull=Math.max(Math.round(maxHull()*0.3),S.hull-dmg);S.flash=1.1;log('At '+nm+', the siding is mined — hull takes '+dmg+' before you clear it.')}}
+function navArrive(){ // every completed leg lands here: move the rig on the map, then let the node speak
+ const to=S.navT&&S.navT.to;S.navT=null;
+ if(!to){cards();save();return}
+ S.dist+=4+Math.floor(S.engine*0.6);
+ S.nav={seed:S.nav.seed,reg:to.reg,col:to.col,row:to.row};
+ const vk=navVK(to.reg,to.col,to.row);if(!S.visited.includes(vk))S.visited.push(vk);
+ S.sel=0;
+ const ty=nodeType(to.reg,to.col,to.row),nm=nodeName(to.reg,to.col,to.row);
+ if(ty=='S'){openDepot(nm)}
+ else{stopArrive(false);S.stop.auto=true; // a real halt at every stop — then she rolls on her own
+  if(ty=='E')navEvent(nm);
+  else if(ty=='H'){const heal=Math.round(maxHull()*0.25);S.hull=Math.min(maxHull(),S.hull+heal);log('You clear the bad country and breathe at '+nm+'. The crew patches plate — +'+heal+' hull.')}
+  else if(ty=='B'){const g=Math.round(15+eff()*6);S.scrap+=g;log('The blockade lies burning behind you. '+nm+' is open rail again — you strip the wrecks for +'+g+' scrap.')}
+  else if(ty=='G'){if(to.reg>=REGIONS.length-1&&to.col>=REGIONS[to.reg].cols-1)log('THE TERMINUS. The last gate on the last line. Beyond the dead signals... something waits. (The line ends here — for now.)');
+   else log('The gate stands broken behind you. '+REGIONS[Math.min(REGIONS.length-1,to.reg+1)].name+' waits across the border — new country, worse company.')}}
+ cards();save()}
 function offerObj(type,idx){
 if(type=='repair'){const c=Math.round(18+idx*6);return{label:'Repair bay',desc:'−'+c+' scrap · full hull',can:()=>S.scrap>=c&&S.hull<maxHull(),act:()=>{S.scrap-=c;S.hull=maxHull();log('Hull fully welded at the depot.')}}}
 if(type=='food'){const c=Math.round(22+idx*7),g=Math.round(16+idx*5);return{label:'Provisioner',desc:'−'+c+' scrap · +'+g+' food',can:()=>S.scrap>=c,act:()=>{S.scrap-=c;S.food+=g;log('Loaded '+g+' food from the provisioner.')}}}
@@ -518,8 +577,7 @@ if(type=='scavenge'){return{label:'Pick the wreck-stacks',desc:'free · gamble',
 if(type=='cache'){const g=Math.round(24+idx*10);return{label:'Supply cache',desc:'free · +'+g+' scrap',can:()=>true,act:()=>{S.scrap+=g;log('Cracked a supply cache — +'+g+' scrap.')}}}
 return{label:'Black-market fixer',desc:'free · next upgrade ½ price',can:()=>!S.discount,act:()=>{S.discount=true;log('A fixer marks down your next upgrade to half price.')}}}
 function depotOffers(idx){const pool=['repair','food','scrap','fuel','recruit','scavenge','cache','discount'],pick=[],used={};let k=0;while(pick.length<3&&k<20){const t=pool[Math.floor(hash(idx*13+k*7+9)*pool.length)];if(!used[t]){used[t]=1;pick.push(t)}k++}if(!pick.includes('scavenge')&&!pick.includes('cache'))pick[2]='scavenge';return pick.map(t=>offerObj(t,idx))}
-function maybeDepot(){const prev=S.dist;S.dist+=4+Math.floor(S.engine*0.6);if(Math.floor(S.dist/DEPOT_KM)>Math.floor(prev/DEPOT_KM))openDepot(Math.floor(S.dist/DEPOT_KM))}
-function openDepot(idx){S.depot={idx,name:depotName(idx),offers:depotOffers(idx)};S.mode='depot';stopArrive(false);log('You pull into '+S.depot.name+'. '+depotFlavor(idx));renderDepot();showView('travel')}
+function openDepot(nm){const idx=eff();S.depot={idx,name:nm,offers:depotOffers(idx)};S.mode='depot';stopArrive(false);log('You pull into '+nm+'. '+depotFlavor(idx));renderDepot();showView('travel')}
 function renderDepot(){const d=S.depot,el=document.getElementById('depot');if(!d){el.className='';el.innerHTML='';return}
 let h='<h3>'+d.name+'</h3><div class="flav">'+depotFlavor(d.idx)+'</div>';
 d.offers.forEach((o,k)=>{h+='<button class="opt" data-k="'+k+'" '+(o.can()?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'});
@@ -534,6 +592,9 @@ document.querySelectorAll('#tabs .tab').forEach(t=>t.classList.toggle('active',t
 if(v=='train')cards();if(v=='crew')renderCrew();if(v=='map')renderMap();if(v=='log')renderLog();
 }
 document.getElementById('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b)showView(b.dataset.v)});
+// choosing the fork: the labeled Depart buttons and the map's lit nodes are the same choice (ratified decision 3)
+document.getElementById('nextdepot').addEventListener('click',e=>{const b=e.target.closest('.edgebtn');if(!b)return;S.sel=+b.dataset.e;document.getElementById('nextdepot')._h=null;upd()});
+document.getElementById('maplist').addEventListener('click',e=>{const g=e.target.closest('.mapsel');if(!g)return;S.sel=+g.getAttribute('data-e');document.getElementById('nextdepot')._h=null;renderMap();upd()});
 function applyLayout(){const land=S.layout=='landscape';appEl.classList.toggle('land',land);document.getElementById('lt').textContent=land?'▢ Mobile':'⛶ Desktop'}
 function autoLayout(){if(S.layoutManual)return false;const want=(window.innerWidth>=820||window.innerWidth>window.innerHeight*1.3)?'landscape':'portrait';if(want!=S.layout){S.layout=want;return true}return false}
 window.addEventListener('resize',()=>{if(autoLayout())applyLayout()});
@@ -555,13 +616,37 @@ const dispmenu=document.getElementById('dispmenu');
 document.getElementById('dm').addEventListener('click',e=>{e.stopPropagation();dispmenu.classList.toggle('open')});
 document.getElementById('dmpop').addEventListener('click',()=>dispmenu.classList.remove('open'));
 document.addEventListener('click',e=>{if(!e.target.closest('#dispmenu'))dispmenu.classList.remove('open')});
-function renderMap(){const reached=Math.floor(S.dist/DEPOT_KM),rem=DEPOT_KM-(S.dist%DEPOT_KM);let h='<div class="here">You are at '+Math.floor(S.dist)+' km on the rail ocean</div>';
-for(let i=1;i<=6;i++){const idx=reached+i,km=i==1?rem:rem+(i-1)*DEPOT_KM;h+='<div class="stop'+(i==1?' next':'')+'"><span class="dot"></span><span class="nm">'+depotName(idx)+'</span><span class="km">'+km+' km</span></div>'}
-document.getElementById('maplist').innerHTML=h;}
+function renderMap(){ // THE SPINE: the current region's node graph — where you've been, where you are, where the line forks
+const el=document.getElementById('maplist');if(!S.nav){el.innerHTML='';return}
+const reg=S.nav.reg,R=REGIONS[reg],cols=R.cols,W=320,H=176;
+const pos=(c,rw)=>{const nr=navRows(reg,c);return[18+c*((W-36)/(cols-1)),92+(rw-(nr-1)/2)*46]};
+const fwd=nodeEdges(reg,S.nav.col,S.nav.row),fwdIn=fwd.filter(e=>e.reg==reg);
+const selE=fwd.length?fwd[Math.min(S.sel,fwd.length-1)]:null;
+let lines='',nodes='';
+for(let c=0;c<cols;c++){const nr=navRows(reg,c);
+ for(let rw=0;rw<nr;rw++){
+  const [x,y]=pos(c,rw),vk=navVK(reg,c,rw),ty=nodeType(reg,c,rw),isHere=(c==S.nav.col&&rw==S.nav.row),wasHere=S.visited.includes(vk);
+  for(const e of nodeEdges(reg,c,rw)){if(e.reg!=reg)continue;const p2=pos(e.col,e.row);
+   const lit=isHere,onSel=lit&&selE&&selE.col==e.col&&selE.row==e.row;
+   lines+='<line x1="'+x+'" y1="'+y+'" x2="'+p2[0]+'" y2="'+p2[1]+'" stroke="'+(onSel?'#f2c560':lit?'#a4763a':'#57432f')+'" stroke-width="'+(onSel?2.5:lit?1.6:1)+'"'+(lit?'':' stroke-dasharray="3 3"')+'/>'}
+  const ei=fwdIn.findIndex(e=>e.col==c&&e.row==rw),isNext=ei>=0,isSel=isNext&&selE&&selE.col==c&&selE.row==rw;
+  const fill=isHere?'#f2c560':isSel?'#e07b2a':wasHere?'#8a6a48':isNext?'#c98f4a':'#4a3c2e';
+  const glyph=ty=='S'?'◉':ty=='E'?'?':ty=='H'?'~':ty=='B'?'✕':'♜';
+  nodes+='<g'+(isNext?' class="mapsel" data-e="'+ei+'"':'')+'>'
+   +(isSel?'<circle cx="'+x+'" cy="'+y+'" r="12" fill="none" stroke="#f2c560" stroke-width="1.5"/>':'')
+   +'<circle cx="'+x+'" cy="'+y+'" r="'+(isHere?8:7)+'" fill="#1c1226" stroke="'+fill+'" stroke-width="'+(isHere||isSel?2.5:1.5)+'"/>'
+   +'<text x="'+x+'" y="'+(y+3.5)+'" text-anchor="middle" font-size="9" fill="'+fill+'">'+glyph+'</text>'
+   +'<text x="'+x+'" y="'+(y+21)+'" text-anchor="middle" font-size="6.5" fill="'+(isHere?'#f2c560':isNext?'#e6cfa0':'#8a7658')+'">'+nodeName(reg,c,rw)+'</text>'
+   +(isHere?'<text x="'+x+'" y="'+(y-14)+'" text-anchor="middle" font-size="7" fill="#f2c560">▼ YOU</text>':'')
+   +'</g>'}}
+let h='<div class="regstrip">REGION '+['I','II','III','IV'][reg]+' · '+R.name+(reg<REGIONS.length-1?' — the gate opens on '+REGIONS[reg+1].name:' — the last line')+'</div>';
+h+='<svg class="navmap" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+lines+nodes+'</svg>';
+h+='<div class="maplegend">◉ station · ? event · ~ hazard · ✕ blockade · ♜ gate'+(fwd.length>1?' — tap a lit stop to choose the fork':'')+'</div>';
+el.innerHTML=h;}
 function renderLog(){document.getElementById('loglist').innerHTML=S.logHist.map(l=>'<div class="ln">'+l+'</div>').join('')}
 function renderTravelStatus(){const el=document.getElementById('travelstatus');if(!el)return;if(S.mode=='depot'){el.innerHTML='';return}
 if(S.origin&&S.stop&&S.stop.ph=='docked'){el.innerHTML=S.layout=='landscape'?'<b>THE RAILHEAD</b> · at rest':'Docked at <b>THE RAILHEAD</b> · the rig at rest<br>hull '+Math.max(0,Math.round(S.hull))+'/'+maxHull();return}
-const reg=BIOMES[Math.max(0,curIdx)],wl=(wBlend<0.5?wCur:wNext).label,rn=reg?reg.name:'the wastes';
+const wl=(wBlend<0.5?wCur:wNext).label,rn=REGIONS[S.nav?S.nav.reg:0].name;
 if(S.layout=='landscape'){el.innerHTML='<b>'+rn+'</b>'+(wl?' · '+wl:'')}
 else el.innerHTML='Rolling through <b>'+rn+'</b>'+(wl?' · <b>'+wl+'</b>':'')+'<br>hull '+Math.max(0,Math.round(S.hull))+'/'+maxHull();}
 let _pd=false,_pdrag=false,_psx=0,_ppan=0;
@@ -581,13 +666,18 @@ document.getElementById('s-hull').textContent=Math.max(0,Math.round(S.hull))+'/'
 document.getElementById('hullbox').className='st'+(S.hull<maxHull()*0.35?' warn':'');
 const b=document.getElementById('go'),nd=document.getElementById('nextdepot'),docked=S.mode=='depot';
 b.classList.toggle('docked',docked);
-if(docked){b.disabled=false;b.textContent=S.view=='travel'?'At '+S.depot.name:'▸ Open '+S.depot.name}
+const _edges=(!docked&&S.mode!='run')?nodeEdges(S.nav.reg,S.nav.col,S.nav.row):null,atEnd=_edges&&!_edges.length;
+if(docked){b.disabled=false;b.textContent=S.view=='travel'?'At '+S.depot.name:'\u25b8 Open '+S.depot.name}
 else if(S.mode=='run'){b.disabled=true;b.textContent='Crossing the rail ocean...'}
+else if(atEnd){b.disabled=true;b.textContent='The end of the line'}
 else{b.disabled=S.fuel<fuelC();b.textContent='Depart \u00b7 '+fuelC()+' fuel'}
-{const km='<span style="color:#cdb894">'+Math.floor(S.dist)+' km</span>';
- if(docked)nd.innerHTML=km+' \u00b7 docked at '+S.depot.name;
- else if(S.mode=='run')nd.innerHTML=km+' \u00b7 crossing the rail ocean\u2026';
- else{const ni=Math.floor(S.dist/DEPOT_KM)+1,rem=Math.ceil(DEPOT_KM-(S.dist%DEPOT_KM));nd.innerHTML=km+' \u00b7 \u25b8 next stop <span style="color:#cdb894">'+depotName(ni)+'</span> \u2014 '+rem+' km'+(S.discount?'  \u00b7  <span style="color:#e0a33a">\u00bd upgrade ready</span>':'')}}
+{const km='<span style="color:#cdb894">'+Math.floor(S.dist)+' km</span>';let h;
+ if(docked)h=km+' \u00b7 docked at '+S.depot.name;
+ else if(S.mode=='run'){const t=S.navT&&S.navT.to;h=km+' \u00b7 crossing to <span style="color:#cdb894">'+(t?nodeName(t.reg,t.col,t.row):'the far shore')+'</span>\u2026'}
+ else if(atEnd)h=km+' \u00b7 THE TERMINUS \u2014 the last gate stands broken behind you';
+ else if(_edges.length==1)h=km+' \u00b7 \u25b8 next stop <span style="color:#cdb894">'+edgeLabel(_edges[0])+'</span>'+(S.discount?'  \u00b7  <span style="color:#e0a33a">\u00bd upgrade ready</span>':'');
+ else{S.sel=Math.min(S.sel,_edges.length-1);h=km+' \u00b7 the line forks: '+_edges.map((e,i)=>'<button class="edgebtn'+(i==S.sel?' sel':'')+'" data-e="'+i+'">'+edgeLabel(e)+'</button>').join('')+(S.discount?' <span style="color:#e0a33a">\u00bd upgrade ready</span>':'')}
+ if(nd._h!==h){nd._h=h;nd.innerHTML=h}}
 document.querySelector('#tabs .tab[data-v="travel"]').classList.toggle('alert',docked);
 {let cr=false;for(const s of S.slots){if(s){const c=activeCrew(s);if(c.rank<MAXRANK&&S.scrap>=crewRankCost(c.rank)){cr=true;break}}}if(S.heroes.length)cr=true;
 document.querySelector('#tabs .tab[data-v="crew"]').classList.toggle('alert',cr&&S.view!='crew');}
@@ -1503,9 +1593,15 @@ range(x,p){ridgeLine(x,110,124,8,4,0.05,2,'rgba(178,164,142,0.45)',false);const 
 mid(x,p){const c='rgba(150,140,120,0.85)',bn='rgba(206,196,172,0.9)';if(p<0.4){for(let v=0;v<4;v++)vertebra(x+v*6,109-v*2,bn)}else if(p<0.72){bonePillar(x,109,24,bn);ribArc(x+6,109,12,bn)}else{pxa(x,98,30,11,c);pxa(x+4,94,18,5,c);pxa(x,109,30,1,'rgba(40,34,28,0.5)')}},
 deb(x,p){if(p<0.45){ctx.fillStyle='rgba(210,200,178,0.9)';blob(x,162,9,5);pxa(x+3,160,2,2,'rgba(40,34,28,0.4)')}else if(p<0.72){pxa(x,165,5,2,'#cabfa6');pxa(x+1,163,1,2,'#cabfa6');pxa(x+4,164,1,2,'#cabfa6')}else{pxa(x,166,6,2,'#b89f86')}},
 land(x){const c='rgba(216,206,184,0.95)';ribArc(x,109,40,c);ribArc(x,109,33,c);ribArc(x,109,26,c);pxa(x-3,109-40,6,8,c);pxa(x-2,109-44,2,2,'rgba(40,34,28,0.6)');pxa(x+1,109-44,2,2,'rgba(40,34,28,0.6)')}};
-const BIOMES=[RUST,CITY,REEF];
+/* THE CINDER SEAM — wave-1 placeholder art (char ground, ember haze, seam-glow fissures); wave 6 gives it the full pass */
+const SEAM={name:'THE CINDER SEAM',ground:['#4a3a32','#3c2e28','#2c211d'],haze:'#8a5038',
+far(x,p){ctx.fillStyle='rgba(70,44,38,0.55)';if(p<0.5){tri(x-26,109,x+4,70,x+36,109);pxa(x+2,72,3,2,'rgba(232,110,50,0.5)')}else{tri(x-18,109,x+8,84,x+34,109);tri(x+14,109,x+34,78,x+56,109)}},
+range(x,p){ridgeLine(x-10,110,128,9,7,0.06,2.1,'rgba(84,52,42,0.5)',true);ridgeLine(x,110,112,20,13,0.09,4.2,'rgba(56,36,30,0.66)',true)},
+mid(x,p){const c='rgba(40,26,22,0.9)';if(p<0.4){pxa(x,96,4,13,c);pxa(x-3,96,10,3,c);pxa(x+1,92,2,4,'rgba(232,110,50,0.6)')}else if(p<0.7){wreckCar(x,109,c)}else{pxa(x,100,14,9,c);pxa(x+3,97,8,3,c);pxa(x+5,101,4,2,'rgba(232,110,50,0.45)')}},
+deb(x,p){if(p<0.45){ctx.fillStyle='rgba(20,14,12,0.9)';blob(x,160,14,7);pxa(x+4,158,2,1,'rgba(240,130,60,0.55)')}else if(p<0.72){pxa(x,164,5,3,'#3a2a22');pxa(x+2,163,2,1,'rgba(232,110,50,0.5)')}else{pxa(x,166,7,1,'rgba(220,120,60,0.35)')}},
+land(x){const c='rgba(30,20,16,0.92)';pxa(x,64,3,45,c);pxa(x+10,72,3,37,c);pxa(x-2,60,17,6,c);pxa(x-2,60,17,1,'rgba(240,140,60,0.5)');pxa(x+4,66,7,2,'rgba(232,110,50,0.65)')}};
+const BIOMES=[RUST,CITY,REEF,SEAM];
 const BIOME_LEN=1150;
-function biomeIdx(r){if(r<=0)return 0;let i=Math.floor(hash(r*7+3)*BIOMES.length);const p=Math.floor(hash((r-1)*7+3)*BIOMES.length);if(i===p)i=(i+1)%BIOMES.length;return i}
 /* ---- weather: a mood layer that drifts independently of place, biased by biome ---- */
 const W_CLEAR={label:'',tint:[0,0,0,0],sun:1,haze:1,vig:0,part:null};
 const W_DUST={label:'DUST STORM',tint:[201,150,82,0.20],sun:0.72,haze:1.5,vig:0.10,part:'dust'};
@@ -1513,13 +1609,14 @@ const W_ASH={label:'ASH FALL',tint:[78,70,66,0.24],sun:0.45,haze:1.25,vig:0.18,p
 const W_FOG={label:'CHOKING FOG',tint:[206,202,192,0.30],sun:0.5,haze:1.7,vig:0,part:'fog'};
 const W_BLOOD={label:'BLOOD SUN',tint:[122,28,30,0.26],sun:0.34,haze:1.1,vig:0.26,part:'ember'};
 const WEATHERS=[W_CLEAR,W_DUST,W_ASH,W_FOG,W_BLOOD];
-RUST.wx=[5,4,1,1,2];CITY.wx=[2,2,5,1,3];REEF.wx=[4,1,1,5,2];
+RUST.wx=[5,4,1,1,2];CITY.wx=[2,2,5,1,3];REEF.wx=[4,1,1,5,2];SEAM.wx=[2,2,4,0,5];
 RUST.gtex=function(o){ctx.strokeStyle='rgba(150,110,60,0.16)';ctx.lineWidth=1;for(let i=0;i<6;i++){let x=((i*60)-o*0.5)%360;if(x<0)x+=360;const y=128+i*7;ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+22,y-2,x+44,y+1);ctx.stroke()}};
 CITY.gtex=function(o){let x0=-(o*0.6)%40;for(let x=x0;x<320;x+=40)pxa(x,128,1,48,'rgba(40,36,30,0.22)');for(let i=0;i<5;i++){let x=((i*72)-o*0.6)%360;if(x<0)x+=360;pxa(x,150,9,2,'rgba(192,168,78,0.22)')}};
 REEF.gtex=function(o){ctx.strokeStyle='rgba(230,220,200,0.18)';ctx.lineWidth=1;for(let i=0;i<8;i++){let x=((i*46)-o*0.6)%360;if(x<0)x+=360;const y=132+(i%4)*11;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+12,y-4);ctx.lineTo(x+24,y+2);ctx.stroke()}};
+SEAM.gtex=function(o){ctx.strokeStyle='rgba(236,110,48,0.30)';ctx.lineWidth=1;for(let i=0;i<7;i++){let x=((i*52)-o*0.6)%360;if(x<0)x+=360;const y=130+(i%4)*11;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+8,y+3);ctx.lineTo(x+18,y+1);ctx.stroke();pxa(x+8,y+2,3,1,'rgba(255,170,90,0.4)')}};
 const WX_LEN=560;
 let wCur=W_CLEAR,wNext=W_CLEAR,wBlend=0;
-function weatherIdx(wr){const bi=biomeIdx(Math.floor((wr*WX_LEN+WX_LEN/2)/BIOME_LEN)),w=BIOMES[bi].wx;let tot=0;for(const x of w)tot+=x;const r=hash(wr*911+17);let acc=0;for(let i=0;i<w.length;i++){acc+=w[i]/tot;if(r<acc)return i}return w.length-1}
+function weatherIdx(wr){const w=BIOMES[Math.max(0,curIdx)].wx;let tot=0;for(const x of w)tot+=x;const r=hash(wr*911+17);let acc=0;for(let i=0;i<w.length;i++){acc+=w[i]/tot;if(r<acc)return i}return w.length-1}
 function computeWeather(){const wr=Math.floor(S.off/WX_LEN),within=(S.off/WX_LEN)-wr,bs=0.8;wBlend=within>bs?(within-bs)/(1-bs):0;wCur=WEATHERS[weatherIdx(wr)];wNext=WEATHERS[weatherIdx(wr+1)];S._wr=wr}
 function weatherParticles(w,amt){if(!w.part||amt<=0.02)return;
 if(w.part=='dust'){for(let i=0;i<26;i++){const sp=170+(i%5)*44;let x=310-((S.T*sp+i*60)%360);if(x<0)x+=360;const y=38+((i*53)%134)+Math.sin(S.T*2+i)*4;pxa(x,y,4,1,'rgba(210,170,110,'+(0.26*amt)+')')}}
@@ -1562,13 +1659,15 @@ function setRegion(name){const el=document.getElementById('region');if(!el)retur
 function drawClouds2(dx){drawClouds(dx)}
 function drawBackdrop(){
 if(bgReady){ctx.drawImage(bgImg,0,0,320,180);return}
-const reg=Math.floor(S.off/BIOME_LEN),within=(S.off/BIOME_LEN)-reg,bs=0.84;
-blendT=within>bs?(within-bs)/(1-bs):0;curIdx=biomeIdx(reg);nextIdx=biomeIdx(reg+1);
+const nreg=S.nav?S.nav.reg:0,R=REGIONS[nreg],lseg=Math.floor(S.off/BIOME_LEN); // the MAP owns the biome now: where the rig IS decides the country
+const regChange=!!(S.navT&&S.navT.regChange&&S.mode=='run');
+blendT=regChange?Math.max(0,Math.min(1,(S.jt/S.dur-0.5)*2)):0;                 // on a gate leg the new region bleeds in across the back half
+curIdx=R.biome;nextIdx=regChange?REGIONS[Math.min(REGIONS.length-1,nreg+1)].biome:curIdx;
 const cur=BIOMES[curIdx],nxt=BIOMES[nextIdx];
 computeWeather();
 dayNight();
 const wLabel=wBlend<0.5?wCur.label:wNext.label;
-if(reg!==S.lastRegion||S._wr!==S.lastWx){S.lastRegion=reg;S.lastWx=S._wr;setRegion(cur.name+(wLabel?'   ·   '+wLabel:''))}
+if(nreg!==S.lastRegion||S._wr!==S.lastWx){S.lastRegion=nreg;S.lastWx=S._wr;setRegion(R.name+(wLabel?'   ·   '+wLabel:''))}
 const wSun=wCur.sun*(1-wBlend)+wNext.sun*wBlend,hzMul=wCur.haze*(1-wBlend)+wNext.haze*wBlend;
 ctx.fillStyle=grad(0,0,0,118,[[0,dnTop],[0.5,dnMid],[1,dnHor]]);ctx.fillRect(0,0,320,118);
 if(dnStar>0.02){for(let s=0;s<46;s++){const sx=(s*61+13)%320,sy=4+((s*37)%70),tw=0.5+0.5*Math.sin(S.T*(1+(s%5)*0.4)+s);pxa(sx,sy,1,1,'rgba(240,238,255,'+(dnStar*tw*0.9)+')')}
@@ -1586,8 +1685,8 @@ const drA=0.32*dnLight+0.12;
 pxa(0,106,320,1,'rgba(58,44,32,'+drA+')');
 const rt=Math.floor(S.off*0.08)%9;for(let tx=-rt;tx<320;tx+=9)pxa(tx,105,1,2,'rgba(48,36,26,'+(drA*0.7)+')');
 for(let gt=0;gt<2;gt++){const dir=gt?1:-1;let gx=(gt*230+S.T*(7+gt*4)*dir)%480;gx=((gx%480)+480)%480-80;const gc='rgba(38,30,24,'+(0.42*dnLight+0.14)+')';pxa(gx-4,101,5,5,gc);for(let c=0;c<5;c++)pxa(gx+2+c*6,102,5,4,gc);if(Math.floor(S.T*3+gt)%2==0)pxa(gx-4,98,2,2,'rgba(70,58,48,0.22)')}
-const lwx=(reg+0.5)*BIOME_LEN-S.off*0.18;if(lwx>-50&&lwx<360)cur.land(lwx);
-const lwx2=(reg+1.5)*BIOME_LEN-S.off*0.18;if(lwx2>-50&&lwx2<360)nxt.land(lwx2);
+const lwx=(lseg+0.5)*BIOME_LEN-S.off*0.18;if(lwx>-50&&lwx<360)cur.land(lwx);
+const lwx2=(lseg+1.5)*BIOME_LEN-S.off*0.18;if(lwx2>-50&&lwx2<360)nxt.land(lwx2);
 eachCell(0.26,64,29,(k,sx)=>{if(hash(k*131+29)>0.78)return;const b=BIOMES[cellBiomeIdx(k,29)],jx=(hash(k*977+29)-0.5)*34;b.mid(sx+jx,hash(k*53+29))});
 const g0=lerpCol(cur.ground[0],nxt.ground[0],blendT),g1=lerpCol(cur.ground[1],nxt.ground[1],blendT),g2=lerpCol(cur.ground[2],nxt.ground[2],blendT);
 ctx.fillStyle=grad(0,110,0,180,[[0,g0],[0.5,g1],[1,g2]]);ctx.fillRect(0,110,320,70);
@@ -1596,7 +1695,7 @@ const oc=Math.floor(S.off*0.6)%340;ctx.strokeStyle='rgba(70,46,22,0.4)';ctx.line
 for(const c of CRACKS){let x=(c.x-oc)%340;if(x<0)x+=340;ctx.beginPath();ctx.moveTo(x,c.y);ctx.lineTo(x+c.len*0.6,c.y+3*c.dir);ctx.lineTo(x+c.len,c.y+1);ctx.stroke()}
 eachCell(0.6,40,53,(k,sx)=>{if(hash(k*131+53)>0.72)return;const b=BIOMES[cellBiomeIdx(k,53)];b.deb(sx,hash(k*53+53))});
 eachCell(0.6,52,71,(k,sx)=>{if(hash(k*131+71)>0.5)return;const x=sx,y=150+Math.floor(hash(k*17+71)*22);for(let bb=-2;bb<=2;bb++)pxa(x+bb,y-3-(2-Math.abs(bb)),1,3+(2-Math.abs(bb)),'rgba(120,98,46,0.8)');pxa(x-2,y,5,1,'rgba(86,68,30,0.8)')});
-for(const rr of [reg,reg+1]){if(hash(rr*97+9)<0.45){const sx=(rr+0.3)*BIOME_LEN-S.off*0.6;if(sx>-40&&sx<360)storyAt(sx,Math.floor(hash(rr*61+9)*3))}}
+for(const rr of [lseg,lseg+1]){if(hash(rr*97+9)<0.45){const sx=(rr+0.3)*BIOME_LEN-S.off*0.6;if(sx>-40&&sx<360)storyAt(sx,Math.floor(hash(rr*61+9)*3))}}
 // (foreground wreck-tire retired — its car-sized scale broke the world's proportions; trackside debris lives in the deb cells)
 ambientLife(cur);
 if(S.origin)drawRailhead(S.stationX==null?STATION_HOME:S.stationX);
@@ -1616,6 +1715,7 @@ pxa(2,-2,4,3,'#241a12');pxa(14,-2,4,3,'#241a12');ctx.restore()}
 function ambientLife(b){
 if(b.name=='THE RUST FLATS'){const dx=(180-S.off*0.5)%500;const ddx=dx<0?dx+500:dx;if(ddx<320){for(let s=0;s<5;s++){const wob=Math.sin(S.T*6+s)*3;pxa(ddx+wob,150-s*7,2+(s<2?1:0),3,'rgba(180,150,100,0.3)')}}}
 else if(b.name=='THE DEAD CITY'){for(let f=0;f<3;f++){const fx=((f*110+60)-S.off*0.26)%330;const fxx=fx<0?fx+330:fx;if(Math.floor(S.T*7+f)%2==0)pxa(fxx,96+f*3,2,2,'rgba(255,150,60,0.7)')}}
+else if(b.name=='THE CINDER SEAM'){for(let m=0;m<9;m++){const mx=(m*41+S.T*6+Math.sin(S.T*1.1+m)*4)%320,my=172-((S.T*11+m*37)%118);pxa(mx,my,1,1,'rgba(240,130,56,0.55)')}}
 else{for(let m=0;m<10;m++){const mx=(m*33+S.T*9+m*7)%320,my=(140-((S.T*14+m*30)%80));pxa(mx,my,1,1,'rgba(230,218,196,0.35)')}const bx=160+Math.cos(S.T*0.7)*90,by=44+Math.sin(S.T*0.7)*10,bf=Math.floor(S.T*5)%2;pxa(bx,by+(bf?1:0),3,1,'rgba(50,40,30,0.7)');pxa(bx+3,by+(bf?0:1),3,1,'rgba(50,40,30,0.7)')}
 }
 const STATION_HOME=40;
@@ -1924,7 +2024,7 @@ if(S.stop){const st=S.stop;st.t+=dt;
   if(st.vis)S.stationX=STATION_HOME+st.v0*st.T*0.5*(1-u)*(1-u);           // exact integral of the decel — she settles as the world stops
   S.lampK=u<0.8?0:(u<0.97?((Math.sin(S.T*34)>-0.2?1:0.3)*(u-0.8)/0.17):1);// the lanterns flicker up as she settles
   if(u>=1){st.ph='docked';spd=0;S.lampK=1;if(st.vis)S.stationX=STATION_HOME}}
- else if(st.ph=='docked')spd=0;
+ else if(st.ph=='docked'){spd=0;if(st.auto&&st.t>2.4)stopDepart()} // an auto stop (event/rest halt) breathes, then rolls on her own
  else if(st.ph=='departing'){const u=Math.min(1,st.t/st.T),vt=S.mode=='run'?((S.boss&&S.boss.set&&!S.boss.dead)?0:110):14;
   spd=vt*u*u;                                                             // she leans into the run
   if(st.vis){S.stationX-=spd*dt;if(S.stationX<-300){S.origin=false;S.stop=null;S.lampK=1}}
@@ -1974,23 +2074,23 @@ boss.x+=(boss.tx-boss.x)*Math.min(1,dt*1.7);
 if(!boss.set&&boss.x-boss.tx<6){boss.set=true;log('You throw the brakes \u2014 both rigs grind to a dead stop on the line. Trade fire until one is scrap.')}
 const dps=gun()+troops()*1.5;boss.hp-=dps*dt;if(dps>0&&S.flash<0.3)S.flash=0.3;
 boss.hitT-=dt;
-if(boss.hitT<=0){boss.hitT=1.7;const dmg=Math.max(2,Math.round((7+S.journeys*2-troops()*0.5)*(1+(boss.guns||0)*0.25)));hurt(dmg);S.flash=1.3;S.booms.push({x:210,y:128,t:0.1});
+if(boss.hitT<=0){boss.hitT=1.7;const dmg=Math.max(2,Math.round((7+eff()*2-troops()*0.5)*(1+(boss.guns||0)*0.25)));hurt(dmg);S.flash=1.3;S.booms.push({x:210,y:128,t:0.1});
 if(S.hull<=0)bossEscape();}
 if(S.boss&&S.boss.hp<=0)bossKill();
 }
 if(!S.boss){
 if(S.wi<S.waves.length&&S.jt>=S.waves[S.wi]){S.wi++;wave()}
 if(S.crateAt>0&&S.jt>=S.crateAt&&!S.crate){S.crate={x:340,y:150,grabbed:false};S.crateAt=-1}
-if(S.ptrainAt>0&&S.jt>=S.ptrainAt&&!S.ptrain){if(S.ptrainElite){const guns=Math.min(3,2+Math.floor(S.journeys/14)),wp=['cannon','rocket','mortar'],cars=[];for(let g=0;g<guns;g++)cars.push({wpn:wp[g%3]});const m=Math.round((42+S.journeys*15)*(1+guns*0.25));S.ptrain={kind:'raider',elite:true,cars,guns,x:-96,state:'in',t:0,gave:false,atkT:1.2,muzzle:0,hp:m,max:m,dead:false};log('A heavy raider convoy thunders onto the parallel rail \u2014 ELITE WARBAND, guns bristling. Outshoot them or die on the line.')}else{const m=Math.round(30+S.journeys*10);S.ptrain={kind:S.ptrainKind,x:-64,state:'in',t:0,gave:false,atkT:1.0,muzzle:0,hp:m,max:m,dead:false};log(S.ptrainKind=='trader'?'A survivor train eases onto the parallel rail — they signal peace.':'A raider train swings onto the parallel rail, guns up!')}S.ptrainAt=-1}
+if(S.ptrainAt>0&&S.jt>=S.ptrainAt&&!S.ptrain){if(S.ptrainElite){const guns=Math.min(3,2+Math.floor(eff()/14)),wp=['cannon','rocket','mortar'],cars=[];for(let g=0;g<guns;g++)cars.push({wpn:wp[g%3]});const m=Math.round((42+eff()*15)*(1+guns*0.25));S.ptrain={kind:'raider',elite:true,cars,guns,x:-96,state:'in',t:0,gave:false,atkT:1.2,muzzle:0,hp:m,max:m,dead:false};log('A heavy raider convoy thunders onto the parallel rail \u2014 ELITE WARBAND, guns bristling. Outshoot them or die on the line.')}else{const m=Math.round(30+eff()*10);S.ptrain={kind:S.ptrainKind,x:-64,state:'in',t:0,gave:false,atkT:1.0,muzzle:0,hp:m,max:m,dead:false};log(S.ptrainKind=='trader'?'A survivor train eases onto the parallel rail — they signal peace.':'A raider train swings onto the parallel rail, guns up!')}S.ptrainAt=-1}
 }
 const pt=S.ptrain;
 if(pt){pt.t+=dt;if(pt.muzzle>0)pt.muzzle-=dt;
 if(pt.state=='in'){pt.x+=128*dt;if(pt.x>=150){pt.x=150;pt.state='pace';pt.t=0}}
 else if(pt.state=='pace'){pt.x+=Math.sin(S.T*1.5)*5*dt;
-if(pt.kind=='trader'){if(!pt.gave&&pt.t>0.9){pt.gave=true;S.booms.push({x:pt.x+18,y:132,t:0.1});if(Math.random()<0.22){log('A wanderer rides the trader car across to your rig...');recruitHero('wander')}else{const sc=Math.round(20+S.journeys*12),fd=4+Math.floor(Math.random()*4);S.scrap+=sc;S.food+=fd;log('The traders toss across supplies — +'+sc+' scrap, +'+fd+' food. They wave and pull ahead.')}}if(pt.t>2.6)pt.state='out'}
+if(pt.kind=='trader'){if(!pt.gave&&pt.t>0.9){pt.gave=true;S.booms.push({x:pt.x+18,y:132,t:0.1});if(Math.random()<0.22){log('A wanderer rides the trader car across to your rig...');recruitHero('wander')}else{const sc=Math.round(20+eff()*12),fd=4+Math.floor(Math.random()*4);S.scrap+=sc;S.food+=fd;log('The traders toss across supplies — +'+sc+' scrap, +'+fd+' food. They wave and pull ahead.')}}if(pt.t>2.6)pt.state='out'}
 else{const dps=gun()+troops()*1.5;pt.hp-=dps*dt*0.85;if(dps>0&&S.flash<0.3)S.flash=0.3;
-pt.atkT-=dt;if(pt.atkT<=0){pt.atkT=pt.elite?1.1:1.4;pt.muzzle=0.18;const dmg=pt.elite?Math.max(2,Math.round((6+S.journeys*1.5-troops()*0.4)*(1+(pt.guns||0)*0.2))):Math.max(1,Math.round(4+S.journeys-troops()*0.4));hurt(dmg);S.flash=1.0;S.booms.push({x:165,y:126,t:0.08});if(S.hull<=0){const r=Math.round(base()*0.25);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.ptrain=null;S.mode='idle';S.raiders=[];S.tracers=[];log((pt.elite?'The elite warband raked your rig apart':'The raider train shot your boiler out')+' — you limp home with '+r+' scrap.');cards();save()}}
-if(S.ptrain&&pt.hp<=0){if(pt.elite){const r=Math.round(base()*1.6*crewBuffs().scrapMult);S.scrap+=r;for(let i=0;i<8;i++)S.booms.push({x:pt.x+i*8,y:96+(i%3)*6,t:0.04+i*0.05});log('ELITE WARBAND WRECKED! You strip the convoy for '+r+' scrap as it derails in flames.');if(Math.random()<0.5)recruitHero('war');else{const b=Math.round(25+S.journeys*7);S.scrap+=b;log('You salvage another '+b+' scrap from the burning cars.')}}else{const r=Math.round(base()*0.8);S.scrap+=r;for(let i=0;i<5;i++)S.booms.push({x:pt.x+i*9,y:98+(i%2)*6,t:0.05+i*0.05});log('Raider train wrecked! You strip it for '+r+' scrap as it derails.')}pt.dead=true;pt.state='out'}
+pt.atkT-=dt;if(pt.atkT<=0){pt.atkT=pt.elite?1.1:1.4;pt.muzzle=0.18;const dmg=pt.elite?Math.max(2,Math.round((6+eff()*1.5-troops()*0.4)*(1+(pt.guns||0)*0.2))):Math.max(1,Math.round(4+eff()-troops()*0.4));hurt(dmg);S.flash=1.0;S.booms.push({x:165,y:126,t:0.08});if(S.hull<=0){const r=Math.round(base()*0.25);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.ptrain=null;S.mode='idle';S.raiders=[];S.tracers=[];S.navT=null;log((pt.elite?'The elite warband raked your rig apart':'The raider train shot your boiler out')+' — you limp home with '+r+' scrap.');cards();save()}}
+if(S.ptrain&&pt.hp<=0){if(pt.elite){const r=Math.round(base()*1.6*crewBuffs().scrapMult);S.scrap+=r;for(let i=0;i<8;i++)S.booms.push({x:pt.x+i*8,y:96+(i%3)*6,t:0.04+i*0.05});log('ELITE WARBAND WRECKED! You strip the convoy for '+r+' scrap as it derails in flames.');if(Math.random()<0.5)recruitHero('war');else{const b=Math.round(25+eff()*7);S.scrap+=b;log('You salvage another '+b+' scrap from the burning cars.')}}else{const r=Math.round(base()*0.8);S.scrap+=r;for(let i=0;i<5;i++)S.booms.push({x:pt.x+i*9,y:98+(i%2)*6,t:0.05+i*0.05});log('Raider train wrecked! You strip it for '+r+' scrap as it derails.')}pt.dead=true;pt.state='out'}
 else if(S.ptrain&&!pt.elite&&pt.t>3.6&&pt.state=='pace'){pt.state='out';log('The raider train breaks off and falls behind.')}}}
 else if(pt.state=='out'){pt.x+=(pt.dead?70:165)*dt;if(pt.x>384)S.ptrain=null}}
 if(S.crate){S.crate.x-=80*dt;if(S.crate.x<-16)S.crate=null}
@@ -2006,6 +2106,7 @@ const loaded=await load();
 if(loaded){log('Save recovered. Your rig idles where you left it — '+S.journeys+' crossings logged.');
 if(S.origin)log('The Dispatcher nods from the platform: "Still here, engineer. The line’s yours whenever you want it."');}
 else{S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1; // BEGIN-AT-ORIGIN: a fresh game starts docked & at rest
+S.nav={seed:1+Math.floor(Math.random()*99999),reg:0,col:0,row:0};S.visited=['0:0:0'];S.sel=0;S.navT=null; // a fresh line is drawn for a fresh rig
 log('THE RAILHEAD — last lit outpost on the line. The Dispatcher leans on the rail: "Rig’s watered and the way west is clear. Roll out whenever you’re ready, engineer."');}
 if(!S.layoutManual)autoLayout();
 applyLayout();

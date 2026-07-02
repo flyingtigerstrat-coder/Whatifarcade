@@ -69,6 +69,14 @@ Every node-stop shares one reusable state machine, `S.stop = {ph, t, vis, v0, T}
 
 ---
 
+## The Spine — the node-graph journey (Wave 1)
+
+The rail ocean is **4 regions** (`REGIONS`): Rust Flats → Dead City → Bone Reef → Cinder Seam, each a **seeded node graph** — columns of stops (6/6/6/7), 1–2 forward edges per node, one entry anchor (col 0), one named mid anchor, and a **GATE** (warlord boss crossing) at the far end that opens the next region. The Terminus gate ends the line (Wave 4 gives it its story). Node types: **S** station (depot offers) · **E** event (light for now; Wave 3 deepens) · **H** hazard (4-wave leg, rest on arrival) · **B** blockade (elite-warband leg) · **G** gate. The graph is pure functions of `S.nav.seed` (`navRows`/`nodeType`/`nodeEdges`/`nodeName`) — nothing stored but position, so saves stay tiny and the map can't corrupt.
+
+**Position drives threat:** `eff() = reg*6 + col` replaces journey-count difficulty everywhere (BRIEF v1.2 rule 6) — the world is dangerous because of *where you are*, not how long you've played. `S.journeys` remains as flavor/records. **The map owns the biome:** `drawBackdrop` reads `REGIONS[S.nav.reg].biome`; on a gate leg the next region's palette bleeds in across the back half of the crossing (`blendT` from `S.jt/S.dur`). `biomeIdx`-by-distance is retired. **Choosing a fork:** when a node has two edges, the travel strip shows labeled Depart buttons and the Map tab's lit nodes are tappable — same choice, two surfaces. A failed leg (`S.navT=null`) leaves the rig at the node it departed — the map never moves on a loss. Every arrival is a physical stop: stations dock until you leave; event/rest halts carry `stop.auto` and release themselves.
+
+---
+
 ## Save schema — versioned, migrated stepwise
 
 `save()` stamps `v: SAVE_V`; `load()` runs `migrate(d)` **first**, so load logic only ever reads the current schema. `migrate()` is a **chain of stepwise upgrades** — one step per wave that grows state (v1→v2 normalized the live-shipped unversioned shape; v2→v3 will add map state and place veterans on the node graph). **Policy: a rig is sacred** — unknown/higher versions pass through untouched and load reads known fields defensively; only a genuinely unparseable blob falls back to a fresh boot. Extend save/load/reset (and the harness) together every time state grows.
