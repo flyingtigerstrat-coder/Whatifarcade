@@ -1,6 +1,19 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-02 — B.2.4: trail commit fix — the fins bug, actually fixed and PROVEN
+DECIDED (human: "fin bug still present" — correctly). Engine v3.2.3 → **v3.2.4**.
+
+FOUND — B.2.3's trail gate had a self-defeating bug, and the verification method missed it: the gate dragged `trail[0]` along WITH the head every frame, so the 2px spacing threshold never tripped — **the trail starved at 1 point**. A 1-point trail hits the straight-line fallback (full-length STIFF fish), which photographs beautifully — my screenshot verification lied. On real machines, occasional frame spikes committed a second point ~2px away → a 2px "trail" → the collapsed boxes the human kept seeing. Confirmed with data: on the deployed build, every koi's trail measured **1 point, 0px span** after 9 seconds.
+
+CHANGED:
+- **Commit-or-replace trail:** the head point is exact every frame; the point behind it commits only once it is ≥2px behind (replaced until then). Trails measured at 49–83 points spanning 115–177px — full body coverage.
+- **Trail pre-fill:** koi are born with a straight trail behind them, so fish render full-length from frame one instead of "growing" for their first seconds.
+- **Version in the fps chip** (`v3.2.4 · NN fps`) so which-build-am-I-running is never a question again.
+
+VERIFICATION UPGRADED (the meta-lesson): screenshots alone can lie — a stiff straight fish and a healthy curved fish look the same in a still. The gate test now **asserts on the trail data itself** (every koi: trail span ≥ body length, at t=1s and t=10s) and the screenshot confirms curvature. 8/8 full at both checkpoints; suites green (37/37).
+
+
 ## 2026-07-02 — B.2.3: full-length koi fix (founding-era bug) + quality-first adaptive DPR
 DECIDED (human: "fins are broken" + "flip philosophy and fold in"). Engine v3.2.2 → **v3.2.3**.
 
