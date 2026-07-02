@@ -1,6 +1,20 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-02 — C.1: hardscape/flora differentiation + graceful turns (§10 micro-loop, human's live read)
+DECIDED (human, four items from the live Phase C build): plants too similar; koi still curl into a ball; driftwood the weakest visual; rocks under-differentiated. Engine v3.3 → **v3.3.1**.
+
+CHANGED:
+- **Koi never ball up (two layers):** turn rate now scales with speed (min turn radius ~ half a body length — a slow fish sweeps an arc instead of pivoting in place), plus a spine **curvature clamp** (max bend .34 rad/segment) so the body can never fold into a hairpin whatever the trail did. Verified under torture: 20s of forced max-turn → worst bend .45 rad incl. swim-wiggle (a ball is 1.5+); the fish arc, always.
+- **Driftwood redesigned:** an actual weathered log — tapered trunk, broken branch stub, pale cut end with end-grain rings, bark grain following the taper, a knot, wet top sheen.
+- **Rocks differentiated by construction, not just size:** river stone = smooth worn pebble with a sediment band + wet sheen; boulder = angular faceted chunk with a lit top plane, shadowed flank, and cracks; slate = three stacked layered plates with strata edges and a lit rim.
+- **Flora voices separated:** copper pad's whole body reads warm olive-bronze with a strong copper rim (was rim-only); cluster is now a five-pad colony with varied sizes; reeds grew taller with proper cattail heads + tip shoots; submerged grass got shorter/thinner/cooler (no longer a reed twin); **iris blooms violet** via a new `bloomAlt` role (natural violet · metal gold · ink pale wash — contract-safe with fallback).
+
+TRIED / VERIFIED: all three suites green (62/62); lineup screenshot captured (all 5 hardscape forms + all flora varieties side by side) and shared; spine-bend torture assertion in real Chromium.
+
+OPEN: slate could show its layers even more at small sizes; duckweed remains subtle by design — both for the director's eye on the next read.
+
+
 ## 2026-07-02 — LIVING POND Phase C: the three planes come alive (BRIEF v1.1)
 DECIDED (human: "Go into phase C" after B.2.4's fins verified live). All C rulings were batch-ratified earlier (quick visitor unlocks; real-clock day cycle; ink keeps its eternal dusk; thresholds shelter≥6 / 3 mature pads / bloom≥3). Engine **v3.2.4 → v3.3 (living pond, phase C)**.
 
