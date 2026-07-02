@@ -101,6 +101,14 @@ The rail ocean is **4 regions** (`REGIONS`): Rust Flats → Dead City → Bone R
 
 ---
 
+## The Bench — heroes deepen (Wave 5)
+
+**+8 heroes.** Four join the recruit pools: Signalwoman & Cartwright (wanderers), Spotter & The Uncoupled (spoils of war). Four are **named story heroes** (`grp:'story'`, unique — `grantHero`/`hasHero` guarantee once-only): **THE STOWAWAY** (a special passenger who doesn't step down, 25% per special disembark), **THE LANTERNKEEPER** (steps off the Ghost Hauler, 35% per relic gift), **THE GATEWRIGHT** (freed from the first pretender's wreck), **THE SURVEYOR** (waiting at the Cinder Seam's entry, first arrival). Story chips read "found on the line."
+
+**Tap the rig.** On calm rail, tapping a car (or the engine) inspects it — name, level, statline, who's aboard — with an amber outline pulse (`S.inspI/S.inspT`); the same crate-tap pointer path powers it. **Noodle is tappable** at the origin platform: no stats, a faster tail (`S.noodleT`), and a line from `NOODLE_LINES`. **Hero's favor:** ~35% of station stops, one non-elite hero offers a discounted rank-up (60% of training cost) on the depot board. **Elite laurel:** any crew figure at MAXRANK wears a plain amber laurel above the head — mastery reads on the rig itself.
+
+---
+
 ## Save schema — versioned, migrated stepwise
 
 `save()` stamps `v: SAVE_V`; `load()` runs `migrate(d)` **first**, so load logic only ever reads the current schema. `migrate()` is a **chain of stepwise upgrades** — one step per wave that grows state (v1→v2 normalized the live-shipped unversioned shape; v2→v3 will add map state and place veterans on the node graph). **Policy: a rig is sacred** — unknown/higher versions pass through untouched and load reads known fields defensively; only a genuinely unparseable blob falls back to a fresh boot. Extend save/load/reset (and the harness) together every time state grows.

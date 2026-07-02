@@ -11,11 +11,11 @@ global.document={getElementById:()=>anyElCache,querySelector:()=>anyElCache,quer
 global.Image=class{set src(v){}};
 global.requestAnimationFrame=()=>{};
 const script=fs.readFileSync(__dirname+'/battle-train-hd.html','utf8').match(/<script>([\s\S]*)<\/script>/)[1]
- +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus};';
+ +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK};';
 eval(script);
 (async()=>{
 await new Promise(r=>setTimeout(r,20)); // let the async boot IIFE settle
-const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus}=globalThis.__T;
+const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK}=globalThis.__T;
 let t=0,fails=0;const maxHullSafe=()=>60+S.engine*30;const step=n=>{for(let i=0;i<n;i++){t+=16;tick(t)}};
 const ok=(name,cond)=>{console.log((cond?'PASS':'FAIL')+'  '+name);if(!cond)fails++};
 
@@ -226,6 +226,31 @@ await load();
 ok('v6 save: linebroken round-trips', S.linebroken===true);
 S.linebroken=false;
 
+// ===== THE BENCH DEEPENS (Wave 5) =====
+// 33 · eight new hands: four in the pools, four found on the line
+ok('heroes: new wanderers + war heroes in the pools', WANDER_HEROES.includes('signalwoman')&&WANDER_HEROES.includes('cartwright')&&WAR_HEROES.includes('spotter')&&WAR_HEROES.includes('uncoupled'));
+ok('heroes: four named story heroes exist', ['stowaway','lanternkeeper','gatewright','surveyor'].every(k=>CREW[k]&&CREW[k].grp==='story'&&CREW[k].rare));
+// 34 · a story hero is found once and only once
+S.heroes=[];S.slots=[null];
+ok('grant: the Stowaway joins the bench', grantHero('stowaway','test')===true&&S.heroes.length===1);
+ok('grant: never twice', grantHero('stowaway','test')===false&&S.heroes.length===1);
+// 35 · a placed story hero pulls their weight
+S.slots=[{type:'cargo',lvl:1,hero:{kind:'stowaway',rank:2}}];S.heroes=[];
+ok('buffs: the Stowaway earns +24% scrap at rank II', Math.abs(crewBuffs().scrapMult-1.24)<0.02);
+// 36 · the Surveyor waits at the Seam's edge
+S.heroes=[];S.slots=[null];S.nav={seed:7,reg:2,col:5,row:0};S.visited=['2:5:0'];S.mode='run';S.pax=[];S.contracts=[];S.origin=false;S.stop=null;S.depot=null;
+S.navT={to:{reg:3,col:0,row:0},regChange:true};
+finish();
+ok('story: first arrival in the Seam finds THE SURVEYOR', hasHero('surveyor'));
+S.mode='idle';S.stop=null;
+// 37 · a pretender's wreck frees THE GATEWRIGHT
+S.heroes=S.heroes.filter(h=>h.kind!=='gatewright');S.linebroken=true;S.mode='run';
+S.nav={seed:7,reg:0,col:4,row:0};S.navT={to:{reg:0,col:5,row:0},regChange:false};
+S.boss={hp:0,max:100,x:200,tx:200,hitT:1,dead:false,set:true,cars:[{type:'engine'}],tier:0,guns:0,cap:0,final:false,pret:true,phase:1};
+bossKill();
+ok('story: the first pretender kill frees THE GATEWRIGHT', hasHero('gatewright'));
+S.linebroken=false;S.mode='idle';S.boss=null;S.stop=null;
+
 // 21 · the ledger survives a save
 S.cargo={ore:3,relic:1};S.contracts=[{k:'haul',g:'grain',n:2,reg:1,src:'0:1:0',pay:60}];S.pax=[{special:true,nm:'X',fare:99,legs:2}];
 S.mode='idle';S.depot=null;S.origin=false;S.stop=null;
@@ -233,5 +258,5 @@ await save();S.cargo={};S.contracts=[];S.pax=[];
 await load();
 ok('v4 save: cargo + contracts + passengers round-trip', S.cargo.ore===3&&S.cargo.relic===1&&S.contracts.length===1&&S.contracts[0].pay===60&&S.pax.length===1&&S.pax[0].fare===99);
 
-console.log(fails? '\n'+fails+' FAILURES':'\nALL CHECKS PASS ('+((s=>s)(0)||'choreography + schema + spine + economy + combat + linebreaker')+')');process.exit(fails?1:0);
+console.log(fails? '\n'+fails+' FAILURES':'\nALL CHECKS PASS ('+((s=>s)(0)||'choreography + schema + spine + economy + combat + linebreaker + the bench')+')');process.exit(fails?1:0);
 })();

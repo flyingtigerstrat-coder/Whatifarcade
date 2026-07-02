@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-07-02 · session 11 (cont.) — Wave 5 · THE BENCH: eight new hands, and a puppy you can pet
+DECIDED: Eight heroes join. Four in the pools (Signalwoman, Cartwright / Spotter, The Uncoupled); four NAMED story heroes found on the line, once and only once: THE STOWAWAY (a special passenger who throws back the hood instead of stepping down), THE LANTERNKEEPER (steps off the Ghost Hauler), THE GATEWRIGHT (freed from the first pretender's wreck), THE SURVEYOR (waiting at the Seam's entry). TAP-TO-INSPECT rides the crate-tap path: tap any car on calm rail for its card (amber outline pulse); tap NOODLE at the origin platform for a faster tail and a line — no stats, obviously. HERO'S FAVOR: ~35% of stations, one hero offers a discounted rank-up on the board. Elite laurel: MAXRANK crew wear a plain amber mark above the head.
+TRIED: Story-hero uniqueness enforced at grant (bench + placed slots both checked) — the harness proves never-twice.
+PARKED: Hero side-quest CHAINS (multi-stop asks) — the favor is the wave-5 shape; deepen if the human wants more after play.
+CHANGED: CREW +8 kinds with buffs; crewFig +10 uniforms + laurel; renderCrew 'found on the line' badge + .story chip CSS; pointerup gains inspect + Noodle branches; harness 69 -> 76 assertions. No schema change (heroes already persist).
+OPEN: Human eyes on inspect-tap hit zones (phone thumbs) and Noodle's wag speed. Wave 6 next: the polish pass, band by band.
+FEELING: A bench full of names, and the smallest crew member still outranks us all.
+
 ## 2026-07-02 · session 11 (cont.) — Wave 4 · THE LINEBREAKER: the line gets a story
 DECIDED: The gates have names now — SPOKE, FOREMAN FLAK, DEACON MARROW hold their regions' gates (taunts on brake-lock via the ⚔ region banner, clan pennants on the lead engine, death lines), and THE TERMINUS is held by THE LINEBREAKER aboard the re-dressed Fortress (the orphaned drawFortress() finally gets its job — it faces LEFT, into your headlamp). The final fight breathes in three phases: outrider bays at 66%, the man himself at 33% (faster guns, crawlers, burning hull). The kill sets linebroken (SAVE_V=6): the loop home opens off the Terminus gate (free-roam forever), pretenders squat re-fought gates at 0.75×, and station talk changes. RUMORS: ~35% of station arrivals drop a region-keyed story line, every set pointing obliquely at the Linebreaker.
 TRIED: Verified the Terminus face-off composition against the live game's standard boss framing (rendered both) — the near-lane overlap is the shipped language, not a bug.
