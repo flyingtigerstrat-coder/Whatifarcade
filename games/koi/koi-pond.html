@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v3.2.2 (living pond, B.2.2: half-res water buffer + adaptive quality shed) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.2.3 (living pond, B.2.3: full-length koi fix + quality-first adaptive DPR) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
@@ -907,11 +907,20 @@ function drawFX(c){
 // =================================================================
 // SIMULATION (skin-agnostic)
 // =================================================================
+// FIX (founding-era latent bug): the trail recorded a point EVERY frame with no distance
+// gate, capped at ~36 points — at koi swim speed that is ~15-25px of trail for a ~100px
+// body, so the rear of every koi collapsed to a point (fish always rendered boxy-short).
+// Elder fins scale with the INTENDED length, which made the collapse read as broken fins.
+// Points are now distance-gated (2px) and the cap covers the full body length.
+function trailPush(k){const t0=k.trail[0];
+  if(!t0||((k.x-t0.x)**2+(k.y-t0.y)**2)>=4)k.trail.unshift({x:k.x,y:k.y});
+  else{t0.x=k.x;t0.y=k.y;}
+  const mx=Math.ceil(elen(k)*1.25/2)+6;if(k.trail.length>mx)k.trail.length=mx;}
 function updateKoi(k,dt){
   if(k.departing){                                                   // "let it swim on": gather way toward the edge and go
     const a=Math.atan2(k.exit.y-k.y,k.exit.x-k.x);let da=((a-k.ang+Math.PI*3)%TAU)-Math.PI;
     k.ang+=clamp(da,-2,2)*dt*1.4;k.x+=Math.cos(k.ang)*k.spd*1.7*dt;k.y+=Math.sin(k.ang)*k.spd*1.7*dt;
-    k.trail.unshift({x:k.x,y:k.y});const mx=Math.ceil(elen(k)*1.25/4)+4;if(k.trail.length>mx)k.trail.length=mx;
+    trailPush(k);
     const tlx=k.x-Math.cos(k.ang)*elen(k)*.82, tly=k.y-Math.sin(k.ang)*elen(k)*.82, lw=k.wake[0];
     if(!lw||((tlx-lw.x)**2+(tly-lw.y)**2)>30)k.wake.unshift({x:tlx,y:tly,age:0});
     for(const w of k.wake)w.age+=dt;while(k.wake.length&&k.wake[k.wake.length-1].age>1.5)k.wake.pop();
@@ -935,7 +944,7 @@ function updateKoi(k,dt){
   if(bf&&bd<13*13){bf.r-=dt*7;k.hunger=Math.max(0,k.hunger-dt*.5);k.wellfed=4;k.age=Math.min(AGE_MAX,k.age+dt*GROW_FED);}
   k.age=Math.min(AGE_MAX,k.age+dt*PASSIVE_SEC);                    // blended growth: time counts too (idle sim covers away time)
   k.hunger=Math.min(1,k.hunger+dt*.012);k.wellfed=Math.max(0,k.wellfed-dt);
-  k.trail.unshift({x:k.x,y:k.y});const mx=Math.ceil(elen(k)*1.25/4)+4;if(k.trail.length>mx)k.trail.length=mx;
+  trailPush(k);
   // wake: drop a disturbance point behind the tail when it has moved enough
   const tlx=k.x-Math.cos(k.ang)*elen(k)*.82, tly=k.y-Math.sin(k.ang)*elen(k)*.82;
   const lw=k.wake[0];
@@ -1207,17 +1216,22 @@ document.getElementById('codexX').addEventListener('click',()=>codexEl.classList
 // LOOP + BOOT
 // =================================================================
 let last=performance.now(),frame=1000/40,saveT=0,_fpsN=0,_fpsT=0;
-let DPR_CAP=1.5;   // 1.5: soft water doesn't need retina fill-rate; adaptive shed may lower it
+let DPR_CAP=2;     // quality-first: full retina by default; the adaptive shed steps DOWN only if needed
+let _shed=0;try{_shed=Math.min(2,+localStorage.getItem('koipond_q')||0);}catch(e){}
+if(_shed){DPR_CAP=_shed===1?1.5:1;WS=_shed===1?.45:.4;}   // slow machines remember their level — no slow first 10s on return
 function resize(){DPR=Math.min(devicePixelRatio||1,DPR_CAP);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);buildBuffers();buildWaterBuf();}
 addEventListener('resize',resize);
-// one-shot adaptive quality: sample the first ~6s; if the machine can't hold a livable
-// rate, shed pixels once (DPR 1 + smaller water buffer) rather than stay a slideshow.
-let _adN=0,_adT=0,_adDone=false;
+// adaptive quality: sample rolling ~5s windows; if the machine can't hold a livable rate,
+// shed pixels stepwise (2 -> 1.5 -> 1, water buffer down) — never up, max twice, remembered
+// in localStorage so a slow device skips the slow first seconds on its next visit.
+let _adN=0,_adT=0;
 function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;return;}if(now-last<frame)return;
   let dt=(now-last)/1000;last=now;if(dt>.1)dt=.1;
   step(dt);render(now/1000);syncShop();
-  if(!_adDone){_adN++;_adT+=dt;if(_adT>=6){_adDone=true;const f=_adN/_adT;
-    if(f<22){DPR_CAP=1;WS=.4;resize();}}}
+  _adN++;_adT+=dt;
+  if(_adT>=5){const f=_adN/_adT;_adN=0;_adT=0;
+    if(f<22&&_shed<2){_shed++;DPR_CAP=_shed===1?1.5:1;WS=_shed===1?.45:.4;resize();
+      try{localStorage.setItem('koipond_q',String(_shed));}catch(e){}}}
   if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent=(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
   saveT+=dt;if(saveT>5){saveT=0;persist();}}
 addEventListener('beforeunload',persist);

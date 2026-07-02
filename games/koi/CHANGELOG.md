@@ -1,6 +1,20 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-02 — B.2.3: full-length koi fix (founding-era bug) + quality-first adaptive DPR
+DECIDED (human: "fins are broken" + "flip philosophy and fold in"). Engine v3.2.2 → **v3.2.3**.
+
+FOUND — a FOUNDING-ERA latent bug, finally visible: the koi body is drawn along a trail of recorded positions, but the trail recorded a point EVERY frame with no distance gate, capped at ~36 points — at koi swim speed that is ~15–25px of trail for a ~100px body. **The rear two-thirds of every koi has always collapsed to a point** (why fish always rendered boxy-short, never the designed sleek taper). The elder work amplified it into visible breakage: elder fins scale with the INTENDED body length while elders also swim slower (even shorter trail) → tiny collapsed body wearing a giant detached fin.
+
+CHANGED:
+- **Trail fixed at the root:** points are distance-gated (2px spacing, head tracked exactly) and the cap now covers the full body length. Koi render at their designed length for the first time — rounded head, broad shoulders, smooth taper, fins attached and flowing. Verified by SCREENSHOT (Playwright renders the real canvas): before = the human's broken screenshot exactly; after = the koi as the founding chat designed them. **Flag for the director: this is a significant (corrective) visual change to every fish.**
+- **Quality-first DPR (human-ratified flip):** DPR starts at full retina (cap 2); the adaptive shed now steps DOWN in rolling 5s windows (2 → 1.5/.45 → 1/.4), never up, max twice — and the shed level is **remembered per device** (`koipond_q`), so a slow machine skips the slow first seconds on every later visit. Good machines get retina crispness back.
+
+MEASURED (software-raster container): visit 1 starts DPR 2, sheds once, settles 25.9 fps @ DPR 1.5; visit 2 starts at the remembered level immediately (24.9 fps from the first second). Suites green (37/37).
+
+OPEN: the human re-verifies fins + feel on the laptop and the spark (spark first visit will be slow for ~5-10s while it finds its level, once).
+
+
 ## 2026-07-02 — B.2.2: half-res water buffer + adaptive quality shed (human: 11 fps live)
 DECIDED: the human's live fps readout came back **11 fps** — their machine rasterizes the canvas in software (matches our headless software-raster measurements exactly), so the bottleneck is the full-frame WATER painting, as the B.2.1 profile predicted (JS ~2.5%; raster ~97%). Pulled the staged lever. Engine v3.2.1 → **v3.2.2**.
 
