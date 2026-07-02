@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-06-23 · session 6 — the first-frame polish: The Railhead becomes a place
+DECIDED: The opening frame carries the universe, so it got a full polish pass: a telegraph line (poles + sagging wires, band 4) running past the station off both frame edges; the station now glows from inside (window light spilling to the ground, porch lantern under the canopy, a lazy stovepipe wisp); the platform sits on a worn apron of trampled biome-matched earth; a lantern at each end with gnats in the lamplight; the kid now SITS on the deck edge, legs dangling (per the brief); freight (crate + milk-can) waits by the deck. Also: the small depot cabin grew into a proper rail STATION (hip roof, clock cupola, tall windows, double-door + canopy, ticket bay) as the cluster anchor.
+TRIED: Pixel-level zoom QA (new crop tool) caught three defects invisible at 1x — the gable's protruding ridge-cap "wart" (fixed: clean symmetric pitch), band-3 scrub/wreck props colliding with the platform figures (fixed: the apron clears the strip), and the kid reading as a monochrome smudge (fixed: face/hair/ochre-coat contrast).
+PARKED: A dog on the platform (raised, not shipped — brand-adjacent call for the human). Arrival choreography is next.
+CHANGED: bGable rewritten; bStation + station parts (bHip/bClock/bAwning/bBay) added; bPole/bWire added; apron + backing strip in drawRailheadFront; DESIGN.md building grammar + worked example updated.
+OPEN: Bless this frame as the final look, then wire the arrival/departure choreography (spd->0, begin-at-origin, the Dispatcher's ticker line) on top of it.
+FEELING: It finally feels like arriving somewhere at dusk — the lamps are lit, somebody's home, and the wire runs west into the haze. This is the world.
+
 ## 2026-06-23 · session 5 — depth-band canon + The Railhead restaged
 DECIDED: Landed the depth-band staging ladder in DESIGN.md (descriptive of draw()'s existing order; the one rule — a new drawable names its band before it's drawn). Restaged The Railhead per BRIEF v0.4: architecture (water tower / signal mast / depot building) pushed UP-AND-BACK into band 4 and haze-dimmed by aerial perspective; name-board promoted to a band-9 UI banner; platform + Dispatcher + lanterns kept as the band-6 front strip. Train now alone on band 5 — clean unbroken silhouette (pass/fail test passes).
 TRIED: First bracket vs shed prototypes — director's pass: ART/FIT/PROCEDURAL PASSED, STAGING FAILED (station was drawn at the train's depth). Gantry/canopy retired (caged the rig); built from the tower/mast frame.
