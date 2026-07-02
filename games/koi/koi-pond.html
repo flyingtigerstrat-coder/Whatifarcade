@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v3.1 (living pond, phase B: the dream pond) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.1.1 (living pond, B.1: QA time controls + chrome/lantern fixes) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
@@ -236,7 +236,7 @@ const PLANT_MAKE={pad:makePad,lotus:makeLotus,reed:makeReed,iris:makeIris,duckwe
 const BELOW_TYPES={grass:1};                       // BELOW-plane flora renders under the koi
 // hardscape: heavy, mossing, persistent (decor AND habitat — Principle 3)
 function makeRock(form,x,y){return {form,x,y,size:rand(.75,1.25),rot:rand(0,TAU),grow:0};}
-function rockR(r){return (r.form==='boulder'?34:r.form==='slate'?30:r.form==='driftwood'?40:r.form==='lantern'?18:24)*r.size;}
+function rockR(r){return (r.form==='boulder'?34:r.form==='slate'?30:r.form==='driftwood'?40:r.form==='lantern'?22:24)*r.size;}
 
 // dev lifecycle harness (?dev=1): drives the WHOLE player journey on demand.
 // Warps call the REAL idleReturn() path with the cap lifted — testing exercises
@@ -541,12 +541,15 @@ function drawPlant(c,p,pal,opts){switch(p.type){
 function drawRock(c,r){const RL=ROLES(),R=rockR(r);
   c.save();c.translate(r.x,r.y);
   c.fillStyle='rgba(4,14,11,.3)';c.beginPath();c.ellipse(2,4,R*1.05,R*.5,0,0,TAU);c.fill();  // waterline shadow
-  if(r.form==='lantern'){const s=r.size;                                                     // stone toro: base/post/lightbox/cap
-    c.fillStyle=RL.stone[1];c.fillRect(-9*s,-2*s,18*s,6*s);
-    c.fillStyle=RL.stone[1];c.fillRect(-4*s,-16*s,8*s,14*s);
-    c.fillStyle=RL.stone[0];c.fillRect(-8*s,-26*s,16*s,10*s);
-    c.fillStyle='rgba(8,10,8,.7)';c.fillRect(-4.5*s,-24*s,9*s,6*s);                          // dark lightbox (glows at dusk, Phase C)
-    c.fillStyle=RL.stone[2];c.beginPath();c.moveTo(-11*s,-26*s);c.lineTo(0,-33*s);c.lineTo(11*s,-26*s);c.closePath();c.fill();
+  if(r.form==='lantern'){const s=r.size*1.25;                                                // stone toro — squat, grounded; kasa OVERHANGS the light box
+    c.fillStyle=RL.stone[1];c.beginPath();c.ellipse(0,2*s,11*s,4.5*s,0,0,TAU);c.fill();      // base stone
+    c.fillStyle=RL.stone[2];c.fillRect(-4.5*s,-9*s,9*s,11*s);                                // short, thick post
+    c.fillStyle=RL.stone[1];c.fillRect(-8*s,-12*s,16*s,3.4*s);                               // chudai (platform)
+    c.fillStyle=RL.stone[0];c.fillRect(-7*s,-22*s,14*s,10*s);                                // hibukuro (light box)
+    c.fillStyle='rgba(8,10,8,.72)';c.fillRect(-3.6*s,-20.4*s,7.2*s,7*s);                     // window (glows at dusk)
+    c.fillStyle=RL.stone[1];c.beginPath();c.moveTo(-13*s,-22*s);                             // kasa — broad swept cap, wider than the box
+    c.quadraticCurveTo(0,-31*s,13*s,-22*s);c.quadraticCurveTo(0,-25.5*s,-13*s,-22*s);c.closePath();c.fill();
+    c.fillStyle=RL.stone[0];c.beginPath();c.arc(0,-27.5*s,2.1*s,0,TAU);c.fill();             // hoju (finial)
   }else if(r.form==='driftwood'){c.rotate(r.rot);
     const g=c.createLinearGradient(-R,0,R,0);g.addColorStop(0,RL.wood[2]);g.addColorStop(.5,RL.wood[0]);g.addColorStop(1,RL.wood[1]);
     c.fillStyle=g;c.beginPath();c.ellipse(0,0,R,R*.22,0,0,TAU);c.fill();
@@ -921,12 +924,28 @@ function step(dt){Pond._t+=dt;
 // RENDER
 // =================================================================
 let skin='natural';
+// ---- day cycle (QA PREVIEW of Phase C — codex-forced, session-only, never persisted) ----
+// 'auto' = plain day until Phase C wires the real local-clock drift. Ink keeps its
+// eternal dusk (per-skin ruling). Cheap: two full-frame fills, no ctx.filter.
+const DayQA={force:null};   // null(auto->day) | 'dawn' | 'day' | 'dusk' | 'night'
+function dayTint(c){const ph=DayQA.force||'day';if(ph==='day'||skin==='ink')return;
+  if(ph==='dusk'){c.globalCompositeOperation='multiply';c.fillStyle='rgba(255,178,102,.5)';c.fillRect(0,0,W,H);
+    c.globalCompositeOperation='screen';const g=c.createRadialGradient(W*.3,H*.25,0,W*.3,H*.25,Math.max(W,H)*.7);
+    g.addColorStop(0,'rgba(255,160,80,.13)');g.addColorStop(1,'transparent');c.fillStyle=g;c.fillRect(0,0,W,H);}
+  else if(ph==='night'){c.globalCompositeOperation='multiply';c.fillStyle='rgba(104,120,164,.66)';c.fillRect(0,0,W,H);}
+  else if(ph==='dawn'){c.globalCompositeOperation='multiply';c.fillStyle='rgba(224,212,224,.5)';c.fillRect(0,0,W,H);
+    c.globalCompositeOperation='screen';c.fillStyle='rgba(255,214,214,.07)';c.fillRect(0,0,W,H);}
+  if(ph==='dusk'||ph==='night'){c.globalCompositeOperation='screen';       // the lantern earns its place at dusk
+    for(const r of Pond.rocks)if(r.form==='lantern'){const s=r.size*1.25,gx=r.x,gy=r.y-17*s;
+      const gl=c.createRadialGradient(gx,gy,0,gx,gy,26*s);gl.addColorStop(0,'rgba(255,206,120,.5)');gl.addColorStop(1,'transparent');
+      c.fillStyle=gl;c.beginPath();c.arc(gx,gy,26*s,0,TAU);c.fill();}}
+  c.globalCompositeOperation='source-over';}
 function render(t){
   // hard-reset canvas state each frame so no blend/blur/alpha can leak between skins or frames
   ctx.filter='none';ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.shadowColor='transparent';
   const S=SKINS[skin];ctx.save();
   try{
-    if(S.full){S.render(ctx,t);}
+    if(S.full){S.render(ctx,t);dayTint(ctx);}
     else{S.water(ctx,t);
       const PL=S.plant||SKINS.natural.plant;
       for(const p of Pond.plants)if(BELOW_TYPES[p.type])PL(ctx,p);   // BELOW plane (submerged grass)
@@ -934,7 +953,7 @@ function render(t){
       const ks=Pond.koi.slice().sort((a,b)=>b.depth-a.depth);
       for(const k of ks){const sp=spine(k,18);S.koi(ctx,k,sp,lerp(.6,1,1-k.depth));}
       for(const p of Pond.plants)if(!BELOW_TYPES[p.type])PL(ctx,p);  // ON plane (floating + emergent flora)
-      drawFX(ctx);(S.overlay||(()=>{}))(ctx,t);drawSparkles(ctx);}
+      drawFX(ctx);(S.overlay||(()=>{}))(ctx,t);drawSparkles(ctx);dayTint(ctx);}
   }catch(e){if(!render._warned){console.warn('skin render error:',e);render._warned=1;}}
   ctx.restore();
   // belt & suspenders: leave state clean for the next frame no matter what a skin did
@@ -972,8 +991,12 @@ addEventListener('pointerup',()=>{if(drag){persist();drag=null;cv.style.cursor='
 cv.addEventListener('pointerleave',()=>{P.x=-999;P.y=-999;});
 const ser=document.getElementById('serN');
 const skinsBar=document.getElementById('skins'),tendBar=document.getElementById('tend'),hint=document.getElementById('hint');
-let uiTimer=null;function showUI(){[skinsBar,tendBar].forEach(e=>e.classList.remove('hide'));hint.style.opacity='1';clearTimeout(uiTimer);
-  uiTimer=setTimeout(()=>{[skinsBar,tendBar].forEach(e=>e.classList.add('hide'));hint.style.opacity='0';},3000);}
+let uiTimer=null;
+function tryHideUI(){ // never fade the chrome mid-task — open tray, armed chip, live drag, or koi card keep it up
+  if(trayMode||placing||drag||(typeof kcard!=='undefined'&&!kcard.classList.contains('hide'))){uiTimer=setTimeout(tryHideUI,1500);return;}
+  [skinsBar,tendBar].forEach(e=>e.classList.add('hide'));hint.style.opacity='0';}
+function showUI(){[skinsBar,tendBar].forEach(e=>e.classList.remove('hide'));hint.style.opacity='1';clearTimeout(uiTimer);
+  uiTimer=setTimeout(tryHideUI,3000);}
 showUI();setTimeout(()=>hint.style.opacity='0',5500);
 document.querySelectorAll('.pill').forEach(p=>p.addEventListener('click',()=>{const s=p.dataset.skin;if(s===skin)return;
   veil.style.opacity='1';setTimeout(()=>{skin=s;document.querySelectorAll('.pill').forEach(q=>q.classList.toggle('on',q.dataset.skin===s));veil.style.opacity='0';},220);}));
@@ -1062,6 +1085,21 @@ const KOIDEX=[
 const codexEl=document.getElementById('codex'),cxList=document.getElementById('cxList'),codexBtn=document.getElementById('codexBtn');
 function cxOwned(e){return e.cost===0||(Pond.unlocked||[]).includes(e.id);}
 function buildCodex(){cxList.innerHTML='';
+  { // Pond QA — time (temporary QA surface, human-requested; remove/gate before any wider push)
+    const qa=document.createElement('div');qa.className='cx';
+    qa.innerHTML=`<div class="info"><div class="nm">Pond QA <span class="jp">time</span></div>
+      <div class="ds">day-cycle preview (Phase C grade, session-only) · time warps run the real return path.</div>
+      <div class="act" id="qaTime"></div><div class="act" id="qaWarp"></div></div>`;
+    cxList.appendChild(qa);
+    const tRow=qa.querySelector('#qaTime');
+    for(const ph of ['auto','dawn','day','dusk','night']){const b=document.createElement('button');b.className='ul';
+      b.style.marginRight='5px';b.textContent=ph;
+      if((DayQA.force||'auto')===ph)b.style.outline='2px solid rgba(240,207,134,.8)';
+      b.addEventListener('click',()=>{DayQA.force=ph==='auto'?null:ph;buildCodex();});tRow.appendChild(b);}
+    const wRow=qa.querySelector('#qaWarp');
+    for(const [l,d] of [['+1 day',1],['+7 days',7],['+30 days',30]]){const b=document.createElement('button');b.className='ul';
+      b.style.marginRight='5px';b.textContent=l;b.addEventListener('click',()=>{devWarp(d);});wRow.appendChild(b);}
+  }
   for(const e of KOIDEX){const owned=cxOwned(e);
     const row=document.createElement('div');row.className='cx';
     row.innerHTML=`<canvas></canvas><div class="info"><div class="nm">${e.name} <span class="jp">${e.jp}</span></div>`+

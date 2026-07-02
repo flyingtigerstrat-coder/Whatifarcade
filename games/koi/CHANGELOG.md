@@ -1,6 +1,18 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-02 — B.1: QA time controls in the codex + chrome/lantern fixes (§10 micro-loop)
+DECIDED (human, live, from the deployed A+B build): surface the **time cycle in the Koi Codex as a QA tool for now**. Engine v3.1 → v3.1.1.
+
+CHANGED:
+- **Codex "Pond QA — time" card** (top of the codex, which has doubled as a QA surface since founding): a **day-cycle preview row** (auto/dawn/day/dusk/night) and **time warps** (+1/+7/+30 days) that run the real `idleReturn()` return path. This pulls **Phase C's ambient grade forward in QA-only form** — `auto` stays plain day for players, forcing is session-only and never persisted; **ink keeps its eternal dusk** (per-skin ruling, previewable now). Dusk/night also light the **stone lantern's window** (cheap radial — the Phase C "lantern earns its place" moment, previewable). *Tripwire: remove or dev-gate this card before any wider audience push.*
+- **BUG FIX — chrome auto-hide fought the tend tray:** the 3s UI fade was never taught about Phase B's states, so the top-tier menu greyed out (opacity 0 + pointer-events none) while a tray was open or a chip armed, then flickered back on mouse move. The chrome now **never auto-hides mid-task** (open tray, armed chip, live drag, or koi card up).
+- **Stone lantern re-proportioned** — it read as a birdhouse on a stick (tall thin post, undersized cap). Now real *tōrō* proportions: grounded base stone, short thick post, chudai platform, larger hibukuro light box with window, **broad overhanging swept kasa cap** + hoju finial; ~25% larger overall (steer/hit radius bumped to match).
+
+TRIED / VERIFIED: both gate suites re-run green (37/37); QA smoke forces every day phase across all four skins + codex build with zero warnings; parse clean.
+
+OPEN: day-grade tint values are QA placeholders — the director tunes the real curve in Phase C; whether the QA card ships dev-gated is the tripwire above.
+
 ## 2026-07-02 — LIVING POND Phase B: the dream pond (BRIEF v1.1)
 DECIDED (human, batch ratification 2026-07-02): all remaining phase proposals (B/C/D) ratified in one pass, with three riders — **visitors unlock QUICK** (first visitors within the first good session or two), **pond-born koi at ~7–10 kept days** (slower than visitors, faster than a month), and a **rapid-test requirement**: the human wants to drive the whole player lifecycle on demand while we refine. Engine **v3.0 → v3.1 (living pond, phase B)**.
 
