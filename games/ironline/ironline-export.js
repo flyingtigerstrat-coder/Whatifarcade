@@ -247,7 +247,7 @@ global.requestAnimationFrame = () => {};
 
 // ---- load the game & expose its internals --------------------------------
 let script = fs.readFileSync(GAME, 'utf8').match(/<script>([\s\S]*)<\/script>/)[1];
-script += '\n;globalThis.__G={drawBoss,drawBossEngine,drawBossCar,drawTrain,drawRaider,drawPtrain,drawPElite,drawFortress,drawBackdrop,drawRailheadFront,drawRailheadBanner,STATION_HOME,S,BENGW,BCARW};';
+script += '\n;globalThis.__G={drawBoss,drawBossEngine,drawBossCar,drawTrain,drawRaider,drawPtrain,drawPElite,drawFortress,drawBackdrop,drawRailheadFront,drawRailheadBanner,STATION_HOME,S,BENGW,BCARW,tick,stopArrive,stopDepart};';
 try { eval(script); } catch (e) { console.error('Failed to load game:', e.message); process.exit(1); }
 const G = globalThis.__G, S = G.S;
 
@@ -333,16 +333,17 @@ const SUBJECTS = {
     S.ptrain = { kind: 'raider', elite: true, cars, guns, x: 28, state: 'mid', t: 0, gave: false, atkT: 1.2, muzzle: 0, hp: 300, max: 300, dead: false };
     G.drawPtrain(); return { scale: 6 }; },
   fortress() { G.drawFortress(10, 150); return { scale: 5 }; },
-  // railhead [--off=N --T=N] — the origin depot: full frame, rig docked AT REST at THE RAILHEAD.
+  // railhead [--off=N --T=N --sx=N --lamp=0..1] — the origin: full frame, rig docked AT REST at THE RAILHEAD.
   // Three depth bands: drawRailhead = band 4 (behind, in drawBackdrop) · drawRailheadFront = band 6 (front) · drawRailheadBanner = band 9 (UI).
+  // Choreography keyframes: --sx slides the station (arriving >40, docked 40, departing <40); --lamp dims the stop's lanterns.
   railhead(o) {
     S.off = o.off != null ? o.off : 0;        // origin biome (THE RUST FLATS) by default
     S.T = o.T != null ? o.T : 0;              // sunset by default
     // the FRESH begin-at-origin rig: short starting consist (engine 1, gun + farm, caboose) — not an endgame train
-    S.engine = 1; S.caboose = 1; S.maxSlots = 3; S.ex = 216; S.pan = 0; S.engineSkin = o.engine || null;
-    S.origin = true; S.stationX = null;       // settled-centered (STATION_HOME)
+    S.engine = 1; S.caboose = 1; S.maxSlots = 3; S.ex = 184.5; S.pan = 0; S.engineSkin = o.engine || null; // ex matches the live idle camera for this consist
+    S.origin = true; S.stationX = o.sx != null ? o.sx : null; S.lampK = o.lamp != null ? o.lamp : 1;
     S.slots = [{ type: 'gun', wpn: 'cannon', port: 'auto', lvl: 1 }, { type: 'farm', lvl: 1 }, null];
-    G.drawBackdrop(); G.drawTrain(); G.drawRailheadFront(G.STATION_HOME); G.drawRailheadBanner(); // band 4 is inside drawBackdrop; front (6) + banner (9) go over the train
+    G.drawBackdrop(); G.drawTrain(); G.drawRailheadFront(S.stationX == null ? G.STATION_HOME : S.stationX); G.drawRailheadBanner(); // band 4 is inside drawBackdrop; front (6) + banner (9) go over the train
     return { scale: 4, fixedBox: { minx: 0, miny: 0, maxx: 319, maxy: 179 } };
   },
   // scene <off> — full world frame (backdrop + train) at world-position off (→ biome) and time S.T.
@@ -418,6 +419,8 @@ function run(subject, arg, opt) {
     else if (a.startsWith('--anim=')) opt.anim = +a.slice(7);
     else if (a.startsWith('--off=')) opt.off = +a.slice(6);
     else if (a.startsWith('--T=')) opt.T = +a.slice(4);
+    else if (a.startsWith('--sx=')) opt.sx = +a.slice(5);
+    else if (a.startsWith('--lamp=')) opt.lamp = +a.slice(7);
     else pos.push(a);
   }
   const subject = pos[0];

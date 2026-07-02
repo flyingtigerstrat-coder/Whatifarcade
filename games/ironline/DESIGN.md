@@ -50,3 +50,19 @@ Station/depot structures are **entities, not one-off blobs**: a list (`RH_BUILDI
 8. **Cluster, don't scatter** — a depot is a *place*: a few structures of varied scale (the depot building anchors; tower / silo / signal are secondary), spaced so each reads.
 
 All depot buildings live in **band 4**: footed on `RHGY` (the far rail), rising into the backdrop, then **haze-dimmed** by the aerial-perspective veil so the cluster recedes behind the train. Adding a new depot type = new recipes + a new entity list; the bands and the veil come for free.
+
+---
+
+## The stop — the arrival/departure choreography
+
+Every node-stop shares one reusable state machine, `S.stop = {ph, t, vis, v0, T}` (session-only; run inside `tick()`; enter via `stopArrive(vis)` / leave via `stopDepart()`):
+
+- **`arriving`** — the world **decelerates linearly to rest** (`spd = v0·(1−u)`), and the station glides in on the **exact integral of that deceleration** (`stationX = HOME + v0·T/2·(1−u)²`) so it settles precisely as the wheels stop — one physical motion, no drift, no snap. The **lanterns flicker up** (`S.lampK`) in the last beat of the settle. Wheels stop for free (they spin on `S.off`); smoke stops emitting below walking pace and the last puffs thin to nothing.
+- **`docked`** — the world at rest (`spd = 0`). Tumbleweed and birds keep moving (`S.T`-driven): the world is still, not frozen.
+- **`departing`** — ease-in spin-up (`spd = v_target·u²`); the station slides away west at world speed until it clears the frame, then the stop releases and normal speed rules resume. The lamps stay lit as they go — you leave the lit outpost behind.
+
+`vis` marks a stop with a physical station to stage (the origin, for now; future map nodes reuse it). Depot stops run the same machine visual-less (gentle 1.4s halt at the depot panel, 1.2s resume on leaving) — **stopping is physically real at every stop**.
+
+**Begin-at-origin:** a fresh game (no save) boots `docked` at The Railhead — journey 0, world at rest, the Dispatcher's greeting in the ticker. Saving while docked persists one flag (`origin`) so a pre-departure reload wakes up on the platform; any other save loads mid-journey and never sees it. Scuttle-&-restart re-docks. Save/load/reset extended together.
+
+**Headless QA:** `tick`/`stopArrive`/`stopDepart` are exposed through the exporter's `__G`, and the scratch harness (`chor-qa`) boots the real script and asserts all phases (frozen world, exact landing, lamp state, drift resume, save round-trips). Keyframe stills: `node ironline-export.js railhead --sx=N --lamp=K`.

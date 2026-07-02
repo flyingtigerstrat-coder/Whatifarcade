@@ -231,7 +231,7 @@ loadSprite('fortress',100,50,'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAGQA
 const KEY='battle-train-save';
 const S={scrap:120,food:20,fuel:30,heroes:[],crewSel:-1,journeys:0,engine:1,caboose:1,maxSlots:3,
 slots:[{type:'gun',wpn:'cannon',port:'auto',lvl:1},{type:'farm',lvl:1},null],
-mode:'idle',jt:0,dur:14,waves:[],wi:0,hull:0,off:0,flash:0,raiders:[],smoke:[],booms:[],tracers:[],smT:0,saveT:0,resetArm:0,T:0,dt:0.016,ex:216,stackX:286,pan:0,maxPan:0,panHintT:0,tw:{x:360,r:0},turr:{},boss:null,crate:null,crateAt:-1,lastRegion:-1,lastWx:-1,ptrain:null,ptrainAt:-1,ptrainKind:'trader',ptrainElite:false,dist:0,depot:null,discount:false,view:'travel',logHist:[],layout:'',layoutManual:false,immersive:false,engineSkin:null,fortressUnlocked:false};
+mode:'idle',jt:0,dur:14,waves:[],wi:0,hull:0,off:0,flash:0,raiders:[],smoke:[],booms:[],tracers:[],smT:0,saveT:0,resetArm:0,T:0,dt:0.016,ex:216,stackX:286,pan:0,maxPan:0,panHintT:0,tw:{x:360,r:0},turr:{},boss:null,crate:null,crateAt:-1,lastRegion:-1,lastWx:-1,ptrain:null,ptrainAt:-1,ptrainKind:'trader',ptrainElite:false,dist:0,depot:null,discount:false,view:'travel',logHist:[],layout:'',layoutManual:false,immersive:false,engineSkin:null,fortressUnlocked:false,origin:false,stationX:null,stop:null,lampK:1};
 const gun=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='gun'?s.lvl*wpow(s.wpn||'cannon',s.port||'auto'):0),0)*crewBuffs().gunMult;
 const troops=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='troop'?s.lvl*4:0),0);
 const farm=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='farm'?s.lvl*0.5:0),0)*crewBuffs().foodMult;
@@ -338,7 +338,7 @@ let saveTimer=null;
 async function save(){
 if(!canSave){setSaveMsg('Saving unavailable here');return}
 try{
-const d={scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked};
+const d={scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0};
 const r=await window.storage.set(KEY,JSON.stringify(d));
 if(r){setSaveMsg('Progress saved');clearTimeout(saveTimer);saveTimer=setTimeout(()=>setSaveMsg(''),2500)}
 }catch(e){canSave=false;setSaveMsg('Saving unavailable here')}
@@ -350,6 +350,8 @@ const r=await window.storage.get(KEY);
 if(r&&r.value){
 const d=JSON.parse(r.value);
 S.scrap=d.scrap;S.food=d.food;S.fuel=(d.fuel!=null?d.fuel:30);S.heroes=Array.isArray(d.heroes)?d.heroes:[];S.crewSel=-1;S.journeys=d.journeys;S.engine=d.engine;S.caboose=d.caboose;S.maxSlots=d.maxSlots;S.slots=d.slots;S.slots.forEach(s=>{if(s&&s.type=='gun'){if(!s.wpn)s.wpn='cannon';if(!s.port)s.port='auto'}crewOf(s)});S.hull=Math.min(d.hull,maxHull());S.dist=d.dist||0;S.discount=!!d.discount;S.layout=d.layout||'';S.layoutManual=!!d.layoutManual;S.engineSkin=d.engineSkin||null;S.fortressUnlocked=!!d.fortressUnlocked;
+if(d.origin){S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1} // saved while docked at the origin — wake up there
+else{S.origin=false;S.stop=null;S.stationX=null;S.lampK=1}                                       // ...otherwise the load is authoritative: mid-journey, no stop
 return true}
 }catch(e){}
 return false;
@@ -435,9 +437,11 @@ renderCrew();cards();save();
 document.getElementById('go').addEventListener('click',()=>{
 if(S.mode=='depot'){showView('travel');return}
 if(S.mode=='run'||S.fuel<fuelC())return;
+if(S.stop&&S.stop.ph=='arriving')return;                     // she's still rolling in — let her settle first
 S.fuel-=fuelC();S.food=Math.max(0,S.food-rations());S.mode='run';S.jt=0;S.raiders=[];S.tracers=[];S.crate=null;
 if((S.journeys+1)%5===0){S.dur=Math.max(11,18-S.engine);S.waves=[];S.wi=0;S.boss=null;const bn=Math.floor((S.journeys+1)/5),tier=Math.min(3,bn-1),guns=tier,wp=['cannon','rocket','mortar'],cars=[{type:'engine'}];for(let g=0;g<guns;g++)cars.push({type:'gun',wpn:wp[g%3]});cars.push({type:'fuel'});const m=Math.round((55+S.journeys*22)*(1+guns*0.4));S.boss={hp:m,max:m,x:380,tx:200,hitT:1.5,dead:false,set:false,cars,tier,guns};S.crateAt=-1;log('A warlord convoy blocks the line — BOSS CROSSING ('+(guns?guns+' gun car'+(guns>1?'s':'')+' + lead gun':'lead gun only')+'). Bring everything you have.')}
 else{S.dur=Math.max(8,15-S.engine);S.waves=[0.27,0.55,0.82].map(p=>p*S.dur);S.wi=0;S.boss=null;S.ptrain=null;const elite=S.journeys>=3&&Math.random()<0.13;if(elite){S.ptrainElite=true;S.ptrainKind='raider';S.ptrainAt=S.dur*(0.15+Math.random()*0.22);S.crateAt=-1;log('Departing. The horizon is too quiet \u2014 dust rising off the parallel rail...')}else{S.ptrainElite=false;S.crateAt=(Math.random()<0.65)?S.dur*(0.3+Math.random()*0.4):-1;S.ptrainAt=(Math.random()<0.4)?S.dur*(0.2+Math.random()*0.35):-1;S.ptrainKind=(Math.random()<Math.min(0.55,0.32+S.journeys*0.02))?'raider':'trader';log('Departing. Raider dust on the horizon...')}}
+if(S.stop){if(S.stop.vis)log('The Dispatcher tips his hat as the drivers bite: "Mind the wastes, engineer. We’ll keep a lamp burning."');stopDepart()}
 });
 document.getElementById('reset').addEventListener('click',async()=>{
 const b=document.getElementById('reset');
@@ -446,6 +450,7 @@ S.resetArm=0;b.innerHTML='Scuttle &amp; restart';
 S.scrap=120;S.food=20;S.fuel=30;S.heroes=[];S.crewSel=-1;S.journeys=0;S.engine=1;S.caboose=1;S.maxSlots=3;
 S.slots=[{type:'gun',wpn:'cannon',port:'auto',lvl:1},{type:'farm',lvl:1},null];S.slots.forEach(s=>crewOf(s));
 S.hull=maxHull();S.mode='idle';S.raiders=[];S.booms=[];S.tracers=[];S.boss=null;S.crate=null;S.dist=0;S.depot=null;S.discount=false;renderDepot();
+S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1;   // a fresh rig begins where every rig begins — docked at THE RAILHEAD
 if(canSave){try{await window.storage.delete(KEY)}catch(e){}}
 log('The old rig burns behind you. A fresh engine waits on the line.');
 cards();
@@ -489,14 +494,14 @@ if(type=='cache'){const g=Math.round(24+idx*10);return{label:'Supply cache',desc
 return{label:'Black-market fixer',desc:'free · next upgrade ½ price',can:()=>!S.discount,act:()=>{S.discount=true;log('A fixer marks down your next upgrade to half price.')}}}
 function depotOffers(idx){const pool=['repair','food','scrap','fuel','recruit','scavenge','cache','discount'],pick=[],used={};let k=0;while(pick.length<3&&k<20){const t=pool[Math.floor(hash(idx*13+k*7+9)*pool.length)];if(!used[t]){used[t]=1;pick.push(t)}k++}if(!pick.includes('scavenge')&&!pick.includes('cache'))pick[2]='scavenge';return pick.map(t=>offerObj(t,idx))}
 function maybeDepot(){const prev=S.dist;S.dist+=4+Math.floor(S.engine*0.6);if(Math.floor(S.dist/DEPOT_KM)>Math.floor(prev/DEPOT_KM))openDepot(Math.floor(S.dist/DEPOT_KM))}
-function openDepot(idx){S.depot={idx,name:depotName(idx),offers:depotOffers(idx)};S.mode='depot';log('You pull into '+S.depot.name+'. '+depotFlavor(idx));renderDepot();showView('travel')}
+function openDepot(idx){S.depot={idx,name:depotName(idx),offers:depotOffers(idx)};S.mode='depot';stopArrive(false);log('You pull into '+S.depot.name+'. '+depotFlavor(idx));renderDepot();showView('travel')}
 function renderDepot(){const d=S.depot,el=document.getElementById('depot');if(!d){el.className='';el.innerHTML='';return}
 let h='<h3>'+d.name+'</h3><div class="flav">'+depotFlavor(d.idx)+'</div>';
 d.offers.forEach((o,k)=>{h+='<button class="opt" data-k="'+k+'" '+(o.can()?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'});
 h+='<button class="leave" data-k="-1">Press on without stopping</button>';
 el.innerHTML=h;el.className='show';
 }
-document.getElementById('depot').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||!S.depot)return;const k=+b.dataset.k;if(k>=0)S.depot.offers[k].act();S.depot=null;S.mode='idle';renderDepot();cards();save();showView('travel')});
+document.getElementById('depot').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||!S.depot)return;const k=+b.dataset.k;if(k>=0)S.depot.offers[k].act();S.depot=null;S.mode='idle';if(S.stop)stopDepart();renderDepot();cards();save();showView('travel')});
 /* ---- view router: persistent shell + swappable content ---- */
 function showView(v){S.view=v;
 for(const id of ['travel','train','crew','map','log'])document.getElementById('v-'+id).hidden=(id!=v);
@@ -530,6 +535,7 @@ for(let i=1;i<=6;i++){const idx=reached+i,km=i==1?rem:rem+(i-1)*DEPOT_KM;h+='<di
 document.getElementById('maplist').innerHTML=h;}
 function renderLog(){document.getElementById('loglist').innerHTML=S.logHist.map(l=>'<div class="ln">'+l+'</div>').join('')}
 function renderTravelStatus(){const el=document.getElementById('travelstatus');if(!el)return;if(S.mode=='depot'){el.innerHTML='';return}
+if(S.origin&&S.stop&&S.stop.ph=='docked'){el.innerHTML=S.layout=='landscape'?'<b>THE RAILHEAD</b> · at rest':'Docked at <b>THE RAILHEAD</b> · the rig at rest<br>hull '+Math.max(0,Math.round(S.hull))+'/'+maxHull();return}
 const reg=BIOMES[Math.max(0,curIdx)],wl=(wBlend<0.5?wCur:wNext).label,rn=reg?reg.name:'the wastes';
 if(S.layout=='landscape'){el.innerHTML='<b>'+rn+'</b>'+(wl?' · '+wl:'')}
 else el.innerHTML='Rolling through <b>'+rn+'</b>'+(wl?' · <b>'+wl+'</b>':'')+'<br>hull '+Math.max(0,Math.round(S.hull))+'/'+maxHull();}
@@ -1595,6 +1601,11 @@ else if(b.name=='THE DEAD CITY'){for(let f=0;f<3;f++){const fx=((f*110+60)-S.off
 else{for(let m=0;m<10;m++){const mx=(m*33+S.T*9+m*7)%320,my=(140-((S.T*14+m*30)%80));pxa(mx,my,1,1,'rgba(230,218,196,0.35)')}const bx=160+Math.cos(S.T*0.7)*90,by=44+Math.sin(S.T*0.7)*10,bf=Math.floor(S.T*5)%2;pxa(bx,by+(bf?1:0),3,1,'rgba(50,40,30,0.7)');pxa(bx+3,by+(bf?0:1),3,1,'rgba(50,40,30,0.7)')}
 }
 const STATION_HOME=40;
+// enter/leave a stop (the choreography runs in tick). vis = the stop has a physical station to stage (the origin, for now).
+function stopArrive(vis){const v0=vis?110:Math.max(6,S.mode=='run'?110:14),T=vis?5.8:1.4;
+ S.stop={ph:'arriving',t:0,vis:!!vis,v0,T};
+ if(vis){S.origin=true;S.lampK=0;S.stationX=STATION_HOME+v0*T*0.5}}
+function stopDepart(){const vis=!!(S.stop&&S.stop.vis);S.stop={ph:'departing',t:0,vis,T:vis?3:1.2}}
 // THE RAILHEAD — the origin depot, drawn PROCEDURALLY in the backdrop layer so the live world
 // (dnLight + haze + drawOverlays) lights it. sx = platform's left edge: animatable later (slides in
 // from the right, settles at STATION_HOME). This is the reusable grammar every future node-stop reuses.
@@ -1636,6 +1647,7 @@ function rhBoard(bx,by,bw){ // the cream hand-painted name-board
  rhText('THE RAILHEAD',bx+3,by+4,'#7a3322');
 }
 function rhLantern(lx,topY,poolY,glow,pole){ // amber lantern (pole + ground pool optional)
+ glow*=(S.lampK==null?1:S.lampK);                           // the stop's lamps — dark until the arrival flickers them up
  const gun=MAT[1],IR=MAT[0];
  if(pole)box(lx,topY+2,2,Math.max(2,poolY-topY-2),gun[1]);
  px(lx-1,topY,4,3,IR[1]);px(lx,topY-1,2,1,IR[3]);
@@ -1884,7 +1896,22 @@ ctx.globalAlpha=1;
 let lt=0;
 function tick(ts){
 const dt=Math.min(0.05,(ts-lt)/1000||0.016);lt=ts;S.T+=dt;S.dt=dt;
-const spd=S.mode=='run'?((S.boss&&S.boss.set&&!S.boss.dead)?0:110):14;
+let spd=S.mode=='run'?((S.boss&&S.boss.set&&!S.boss.dead)?0:110):14;
+// THE STOP — the reusable arrival/departure choreography. Every node-stop shares this grammar:
+// arriving = linear decel to rest (station glides in on its exact integral and settles as the wheels do);
+// docked = the world at rest; departing = ease-in spin-up (the station slides away west).
+if(S.stop){const st=S.stop;st.t+=dt;
+ if(st.ph=='arriving'){const u=Math.min(1,st.t/st.T);
+  spd=st.v0*(1-u);                                                        // the world eases to rest
+  if(st.vis)S.stationX=STATION_HOME+st.v0*st.T*0.5*(1-u)*(1-u);           // exact integral of the decel — she settles as the world stops
+  S.lampK=u<0.8?0:(u<0.97?((Math.sin(S.T*34)>-0.2?1:0.3)*(u-0.8)/0.17):1);// the lanterns flicker up as she settles
+  if(u>=1){st.ph='docked';spd=0;S.lampK=1;if(st.vis)S.stationX=STATION_HOME}}
+ else if(st.ph=='docked')spd=0;
+ else if(st.ph=='departing'){const u=Math.min(1,st.t/st.T),vt=S.mode=='run'?((S.boss&&S.boss.set&&!S.boss.dead)?0:110):14;
+  spd=vt*u*u;                                                             // she leans into the run
+  if(st.vis){S.stationX-=spd*dt;if(S.stationX<-300){S.origin=false;S.stop=null;S.lampK=1}}
+  else if(u>=1)S.stop=null;}
+}
 S.off+=spd*dt;
 // follow-camera: hold native anchor (216) while enemies are present so turret aiming & approach distances stay calibrated; otherwise frame the whole consist
 {const cn=S.slots.length,cw=40,L=cn*(cw+4)+52,foe=S.boss||S.raiders.length>0;
@@ -1899,7 +1926,7 @@ S.fuel+=oilProd()*dt;
 {const hr=crewBuffs().hullRegen;if(hr>0&&S.hull<maxHull())S.hull=Math.min(maxHull(),S.hull+hr*dt);}
 if(S.mode=='idle'&&S.hull<maxHull())S.hull=Math.min(maxHull(),S.hull+1.3*dt);
 S.smT-=dt;
-if(S.smT<=0&&!S.engineSkin){S.smoke.push({x:S.stackX,y:90,t:1.4});S.smT=S.mode=='run'?0.08:0.35}
+if(S.smT<=0&&!S.engineSkin&&spd>2){S.smoke.push({x:S.stackX,y:90,t:1.4});S.smT=S.mode=='run'?0.08:0.35} // no chuff at rest — the smoke thins to nothing
 S.smoke.forEach(s=>{s.t-=dt;s.x-=(spd*0.32)*dt;s.y-=9*dt});
 S.smoke=S.smoke.filter(s=>s.t>0&&s.x>-5);
 if(S.flash>0)S.flash-=dt;
@@ -1958,8 +1985,10 @@ requestAnimationFrame(tick);
 }
 (async function(){
 const loaded=await load();
-if(loaded)log('Save recovered. Your rig idles where you left it — '+S.journeys+' crossings logged.');
-else log('The wastes are quiet. Upgrade your rig, then depart.');
+if(loaded){log('Save recovered. Your rig idles where you left it — '+S.journeys+' crossings logged.');
+if(S.origin)log('The Dispatcher nods from the platform: "Still here, engineer. The line’s yours whenever you want it."');}
+else{S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1; // BEGIN-AT-ORIGIN: a fresh game starts docked & at rest
+log('THE RAILHEAD — last lit outpost on the line. The Dispatcher leans on the rail: "Rig’s watered and the way west is clear. Roll out whenever you’re ready, engineer."');}
 if(!S.layoutManual)autoLayout();
 applyLayout();
 applyImmersive();

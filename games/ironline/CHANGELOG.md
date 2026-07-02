@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-06-23 · session 8 — the arrival choreography: the world comes to rest
+DECIDED: Built THE STOP — the reusable arrival/departure state machine (S.stop: arriving/docked/departing in tick). Arriving = linear decel to rest with the station gliding in on the decel's EXACT integral (settles precisely as the wheels stop); docked = spd 0 (wheels frozen, smoke thins to nothing, tumbleweed still drifts — still, not frozen); departing = ease-in spin-up, the settlement slides away west, lamps left burning. BEGIN-AT-ORIGIN live: a fresh game boots docked at The Railhead with the Dispatcher's greeting in the ticker; depart gets his send-off ("We'll keep a lamp burning"). Depots now physically HALT the world too (visual-less stops). Save/load/reset extended together (origin flag persists a pre-departure dock; load is authoritative).
+TRIED: Headless behavioral harness (boots the real script, drives tick manually) — 20 assertions across boot/depart/arrive/depot/save. Caught one real gap: load() didn't clear stale dock state (fixed; load authoritative). Exporter gained --sx/--lamp choreography keyframes + live-matched idle camera.
+PARKED: Fortress-skin smoke plume doesn't yet respect rest (fresh games have no skin — cosmetic, note for the skin pass). Guided departure = Phase B, still pinned.
+CHANGED: tick spd is now choreography-aware; smoke emission gated on spd; go/openDepot/depot-leave/reset/boot wired; DESIGN.md "The stop" section added.
+OPEN: Human plays the live file — fresh boot, watch the rest, press Depart, feel the pull-out. Phase A definition-of-done rides on those eyes.
+FEELING: You press Depart and the town slides away with its lamps lit. The journey finally begins somewhere.
+
 ## 2026-06-23 · session 7 — the settlement, and Noodle
 DECIDED: The Railhead grew from a depot cluster into a TRUE SETTLEMENT — two quarters flanking the station anchor: homes west (shack with smoking chimney, water tower, tool shed), work east (freight house with sliding door, silo, signal, a wind pump whose fan turns above the train's roofline), stitched by scrap-fence runs and the telegraph wire. AND: the human ratified the dog — NOODLE is on the platform, a little black puppy sat in front of the kid, tail mid-wag, wearing the only gold pixels in the scene (gold is his mark alone).
 TRIED: East-side dwellings behind the engine (occluded — wasted; moved homes west where they read). Collar first landed mid-chest like a bib; tucked to the neck after zoom QA.
