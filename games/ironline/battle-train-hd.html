@@ -239,7 +239,7 @@ const KEY='battle-train-save';
 const S={scrap:120,food:20,fuel:30,heroes:[],crewSel:-1,journeys:0,engine:1,caboose:1,maxSlots:3,
 slots:[{type:'gun',wpn:'cannon',port:'auto',lvl:1},{type:'farm',lvl:1},null],
 mode:'idle',jt:0,dur:14,waves:[],wi:0,hull:0,off:0,flash:0,raiders:[],smoke:[],booms:[],tracers:[],smT:0,saveT:0,resetArm:0,T:0,dt:0.016,ex:216,stackX:286,pan:0,maxPan:0,panHintT:0,tw:{x:360,r:0},turr:{},boss:null,crate:null,crateAt:-1,lastRegion:-1,lastWx:-1,ptrain:null,ptrainAt:-1,ptrainKind:'trader',ptrainElite:false,dist:0,depot:null,discount:false,view:'travel',logHist:[],layout:'',layoutManual:false,immersive:false,engineSkin:null,fortressUnlocked:false,origin:false,stationX:null,stop:null,lampK:1,
-nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null,cargo:{},pax:[],contracts:[]};
+nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null,cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0}};
 const gun=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='gun'?s.lvl*wpow(s.wpn||'cannon',s.port||'auto'):0),0)*crewBuffs().gunMult;
 const troops=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='troop'?s.lvl*4:0),0);
 const farm=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='farm'?s.lvl*0.5:0),0)*crewBuffs().foodMult;
@@ -268,6 +268,13 @@ const TOPW={cannon:{nm:'Cannon',pow:5,dt:'kinetic',c:'#9aa0a6'},rocket:{nm:'Rock
 const PORTW={auto:{nm:'Autocannon',pow:4,dt:'kinetic',c:'#cdb894'},flak:{nm:'Flak',pow:5,dt:'blast',c:'#e0a33a'},flame:{nm:'Flamer',pow:6,dt:'fire',c:'#ff7a2a'}};
 const TOPKEYS=Object.keys(TOPW),PORTKEYS=Object.keys(PORTW);
 const wpow=(top,port)=>(TOPW[top]?TOPW[top].pow:5)+(PORTW[port]?PORTW[port].pow:0);
+/* ---- WAVE 3: damage types go LIVE — armor classes make the refit choice matter ---- */
+const dtMix=()=>{const m={kinetic:0,blast:0,fire:0};for(const s of S.slots){if(s&&s.type=='gun'){m[TOPW[s.wpn||'cannon'].dt]+=s.lvl*TOPW[s.wpn||'cannon'].pow;m[PORTW[s.port||'auto'].dt]+=s.lvl*PORTW[s.port||'auto'].pow}}const g=crewBuffs().gunMult;for(const k in m)m[k]*=g;return m};
+const AC={light:{kinetic:1,blast:1,fire:1.3},armored:{kinetic:0.7,blast:1.5,fire:0.8},swarm:{kinetic:0.8,blast:0.9,fire:1.6}}; // resist sparks · weakness blooms
+const ACNM={light:'light raiders',armored:'armored plate',swarm:'a bike swarm'};
+function gunVs(cl){const m=dtMix(),a=AC[cl]||AC.light;return m.kinetic*a.kinetic+m.blast*a.blast+m.fire*a.fire}
+const markMult=t=>(S.mark&&S.mark===t)?1.3:1;                                    // MARK TARGET: tap the duel enemy, all guns focus
+const CLANS=[{nm:'the Rustborn',c:'#c96b3e'},{nm:'the Smoke Choir',c:'#7e8a93'},{nm:'the Marrow Kings',c:'#d8c6a8'},{nm:'the Cindermen',c:'#e06a3a'}]; // clans are enemies with names, never bookkeeping
 const nextTop=w=>TOPKEYS[(TOPKEYS.indexOf(w)+1)%TOPKEYS.length];
 const nextPort=p=>PORTKEYS[(PORTKEYS.indexOf(p)+1)%PORTKEYS.length];
 const REFIT=30;
@@ -357,7 +364,7 @@ let canSave=typeof window.storage!=='undefined';
 // ---- save schema: versioned, migrated stepwise (one step per state-growing wave; BRIEF v1.2 rule 2) ----
 // POLICY: a rig is sacred. Unknown/higher versions pass through untouched and load reads known fields
 // defensively — we never wipe. Only a genuinely unparseable blob falls back to a fresh boot.
-const SAVE_V=4;
+const SAVE_V=5;
 function migrate(d){
  if(!d||typeof d!=='object')return null;
  if(!d.v){                                  // v1: the unversioned live-shipped shape -> v2 (normalize, no behavior change)
@@ -380,7 +387,11 @@ function migrate(d){
   d.cargo={};d.pax=[];d.contracts=[];
   d.v=4;
  }
- // future steps append here, in order: if(d.v==4){ ... d.v=5 }
+ if(d.v==4){                                // v4 -> v5: factions — a clean name with the Dispatchers and the Caravaneers
+  d.rep={disp:0,carav:0,tr:0};
+  d.v=5;
+ }
+ // future steps append here, in order: if(d.v==5){ ... d.v=6 }
  return d;
 }
 function setSaveMsg(t){document.getElementById('savemsg').textContent=t}
@@ -388,7 +399,7 @@ let saveTimer=null;
 async function save(){
 if(!canSave){setSaveMsg('Saving unavailable here');return}
 try{
-const d={v:SAVE_V,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0,nav:S.nav,visited:S.visited,cargo:S.cargo,pax:S.pax,contracts:S.contracts};
+const d={v:SAVE_V,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0,nav:S.nav,visited:S.visited,cargo:S.cargo,pax:S.pax,contracts:S.contracts,rep:S.rep};
 const r=await window.storage.set(KEY,JSON.stringify(d));
 if(r){setSaveMsg('Progress saved');clearTimeout(saveTimer);saveTimer=setTimeout(()=>setSaveMsg(''),2500)}
 }catch(e){canSave=false;setSaveMsg('Saving unavailable here')}
@@ -405,7 +416,7 @@ if(d.nav&&typeof d.nav=='object')S.nav={seed:(d.nav.seed|0)||1,reg:Math.max(0,Ma
 else S.nav={seed:1,reg:0,col:0,row:0};                                                           // defensive: a future save without nav still boots ON the map
 S.visited=Array.isArray(d.visited)&&d.visited.length?d.visited.slice():[navVK(S.nav.reg,S.nav.col,S.nav.row)];
 S.sel=0;S.navT=null;
-S.cargo=(d.cargo&&typeof d.cargo=='object')?d.cargo:{};S.pax=Array.isArray(d.pax)?d.pax:[];S.contracts=Array.isArray(d.contracts)?d.contracts:[];
+S.cargo=(d.cargo&&typeof d.cargo=='object')?d.cargo:{};S.pax=Array.isArray(d.pax)?d.pax:[];S.contracts=Array.isArray(d.contracts)?d.contracts:[];S.rep=(d.rep&&typeof d.rep=='object')?{disp:d.rep.disp|0,carav:d.rep.carav|0,tr:d.rep.tr|0}:{disp:0,carav:0,tr:0};
 if(d.origin&&S.nav.reg==0&&S.nav.col==0){S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1} // saved while docked at the origin — wake up there
 else{S.origin=false;S.stop=null;S.stationX=null;S.lampK=1}                                       // ...otherwise the load is authoritative: mid-journey, no stop
 return true}
@@ -502,8 +513,8 @@ const to=edges[Math.max(0,Math.min(edges.length-1,S.sel))],ty=nodeType(to.reg,to
 S.fuel-=fuelC();S.food=Math.max(0,S.food-rations());S.mode='run';S.jt=0;S.raiders=[];S.tracers=[];S.crate=null;
 S.navT={to,regChange:to.reg!==S.nav.reg};S.boss=null;S.ptrain=null;
 if(ty=='G'){S.dur=Math.max(11,18-S.engine);S.waves=[];S.wi=0;const tier=Math.min(3,S.nav.reg),guns=Math.min(3,S.nav.reg),wp=['cannon','rocket','mortar'],cars=[{type:'engine'}];for(let g=0;g<guns;g++)cars.push({type:'gun',wpn:wp[g%3]});cars.push({type:'fuel'});const m=Math.round((55+eff()*22)*(1+guns*0.4));S.boss={hp:m,max:m,x:380,tx:200,hitT:1.5,dead:false,set:false,cars,tier,guns};S.crateAt=-1;S.ptrainAt=-1;log('The gate at '+nm+' is held \u2014 a warlord convoy blocks the crossing ('+(guns?guns+' gun car'+(guns>1?'s':'')+' + lead gun':'lead gun only')+'). Bring everything you have.')} // the region GATE: tier grows with the region, not the calendar
-else if(ty=='B'){S.dur=Math.max(8,15-S.engine);S.waves=[0.3*S.dur];S.wi=0;S.ptrainElite=true;S.ptrainKind='raider';S.ptrainAt=S.dur*(0.15+Math.random()*0.22);S.crateAt=-1;log('Departing for '+nm+'. The line ahead is blockaded \u2014 heavy dust rising off the parallel rail...')} // a BLOCKADE leg forces the elite warband
-else{S.dur=Math.max(8,15-S.engine);const hz=ty=='H';S.waves=(hz?[0.2,0.42,0.64,0.86]:[0.27,0.55,0.82]).map(p=>p*S.dur);S.wi=0;S.ptrainElite=false;S.crateAt=(Math.random()<0.65)?S.dur*(0.3+Math.random()*0.4):-1;S.ptrainAt=(!hz&&Math.random()<0.4)?S.dur*(0.2+Math.random()*0.35):-1;S.ptrainKind=(Math.random()<Math.min(0.55,0.32+eff()*0.02))?'raider':'trader';log(hz?'Departing for '+nm+'. Bad country ahead \u2014 raider sign on every mile-post.':'Departing for '+nm+'. Raider dust on the horizon...')} // a HAZARD leg runs 4 waves; a plain leg keeps the classic 3
+else if(ty=='B'){S.dur=Math.max(8,15-S.engine);S.waves=[0.3*S.dur];S.wi=0;S.ptrainElite=true;S.ptrainKind='raider';S.ptrainBoard=eff()>=6&&Math.random()<0.5;S.ptrainAt=S.dur*(0.15+Math.random()*0.22);S.crateAt=-1;log('Departing for '+nm+'. The line ahead is blockaded \u2014 heavy dust rising off the parallel rail...')} // a BLOCKADE leg forces the elite warband
+else{S.dur=Math.max(8,15-S.engine);const hz=ty=='H';S.waves=(hz?[0.2,0.42,0.64,0.86]:[0.27,0.55,0.82]).map(p=>p*S.dur);S.wi=0;S.ptrainElite=false;S.crateAt=(Math.random()<0.65)?S.dur*(0.3+Math.random()*0.4):-1;S.ptrainAt=(!hz&&Math.random()<0.4)?S.dur*(0.2+Math.random()*0.35):-1;S.ptrainKind=(Math.random()<Math.min(0.55,0.32+eff()*0.02))?'raider':'trader';if(!hz&&S.ptrainAt<0&&Math.random()<0.03){S.ptrainKind='ghost';S.ptrainAt=S.dur*(0.3+Math.random()*0.3)}log(hz?'Departing for '+nm+'. Bad country ahead \u2014 raider sign on every mile-post.':'Departing for '+nm+'. Raider dust on the horizon...')} // a HAZARD leg runs 4 waves; a plain leg keeps the classic 3
 if(S.stop){if(S.stop.vis)log('The Dispatcher tips his hat as the drivers bite: "Mind the wastes, engineer. We’ll keep a lamp burning."');stopDepart()}
 });
 document.getElementById('reset').addEventListener('click',async()=>{
@@ -514,7 +525,7 @@ S.scrap=120;S.food=20;S.fuel=30;S.heroes=[];S.crewSel=-1;S.journeys=0;S.engine=1
 S.slots=[{type:'gun',wpn:'cannon',port:'auto',lvl:1},{type:'farm',lvl:1},null];S.slots.forEach(s=>crewOf(s));
 S.hull=maxHull();S.mode='idle';S.raiders=[];S.booms=[];S.tracers=[];S.boss=null;S.crate=null;S.dist=0;S.depot=null;S.discount=false;renderDepot();
 S.nav={seed:1+Math.floor(Math.random()*99999),reg:0,col:0,row:0};S.visited=['0:0:0'];S.sel=0;S.navT=null;
-S.cargo={};S.pax=[];S.contracts=[];
+S.cargo={};S.pax=[];S.contracts=[];S.rep={disp:0,carav:0,tr:0};
 S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1;   // a fresh rig begins where every rig begins — docked at THE RAILHEAD
 if(canSave){try{await window.storage.delete(KEY)}catch(e){}}
 log('The old rig burns behind you. A fresh engine waits on the line.');
@@ -525,16 +536,23 @@ function raiderKind(){const j=eff(),roll=Math.random();
  if(j<5)return roll<0.28?'bike':roll<0.74?'buggy':'technical';
  return roll<0.2?'bike':roll<0.52?'buggy':'technical';
 }
-function raiderSpawn(x){const k=raiderKind(),sp=k=='bike'?60+Math.random()*22:k=='technical'?34+Math.random()*14:45+Math.random()*25;return{x,v:-sp,life:1.7+Math.random()*0.9,kind:k}}
+function raiderSpawn(x,kind){const k=kind||raiderKind(),sp=k=='bike'?60+Math.random()*22:k=='crawler'?20+Math.random()*8:k=='technical'?34+Math.random()*14:45+Math.random()*25;return{x,v:-sp,life:k=='crawler'?2.6:1.7+Math.random()*0.9,kind:k}}
+function waveClass(){const e=eff();if(e<2)return 'light';const r=Math.random();return r<0.45?'light':r<0.75?'armored':'swarm'}
 function wave(){
-const enemy=Math.round(10+eff()*5+Math.random()*6);
-const mit=gun()+troops()*1.5;
-const dmg=Math.max(0,Math.round(enemy-mit));
-const n=2+Math.min(2,Math.floor(eff()/3));
-for(let i=0;i<n;i++)S.raiders.push(raiderSpawn(340+i*26));
+const cl=waveClass(),clan=CLANS[S.nav.reg];
+const enemy=Math.round((10+eff()*5+Math.random()*6)*(cl=='armored'?1.15:1));
+const mit=gunVs(cl)+troops()*1.5;
+let dmg=Math.max(0,Math.round(enemy-mit));
+if(S.mined){const extra=Math.round(4+eff()*1.5);dmg+=extra;S.mined=false;log('Seeded mines crack under the wheels \u2014 +'+extra+' damage before the wave even hits.')}
+if(cl=='swarm'){for(let i=0;i<5;i++)S.raiders.push(raiderSpawn(336+i*20,'bike'))}
+else if(cl=='armored'){S.raiders.push(raiderSpawn(344,'crawler'));const n=1+Math.min(2,Math.floor(eff()/4));for(let i=0;i<n;i++)S.raiders.push(raiderSpawn(374+i*28))}
+else{const n=2+Math.min(2,Math.floor(eff()/3));for(let i=0;i<n;i++)S.raiders.push(raiderSpawn(340+i*26))}
 S.flash=1.4;
-if(dmg<=0)log('Wave repelled — '+enemy+' raider strength shredded by your guns.');
-else{const tk=hurt(dmg);log('Raiders breached the firing line — hull takes '+tk+'!')}
+const m=dtMix(),dom=(m.kinetic>=m.blast&&m.kinetic>=m.fire)?'kinetic':(m.blast>=m.fire?'blast':'fire'),k=(AC[cl]||AC.light)[dom];
+const fl=k>1.2?' Your '+dom+' fire blooms against '+ACNM[cl]+'.':k<0.85?' Your '+dom+' rounds spark off '+ACNM[cl]+'.':'';
+if(dmg<=0)log('Wave of '+clan.nm+' repelled \u2014 '+enemy+' raider strength shredded.'+fl);
+else{const tk=hurt(dmg);log(clan.nm.charAt(0).toUpperCase()+clan.nm.slice(1)+' breached the firing line \u2014 hull takes '+tk+'!'+fl)}
+if(cl=='armored'&&eff()>=8&&dmg>0&&Math.random()<0.5&&!S.mined){S.mined=true;log('A MINELAYER slips past in the dust \u2014 the rail ahead is seeded.')}
 if(S.hull<=0){const r=Math.round(base()*0.25);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.mode='idle';S.raiders=[];S.ptrain=null;navFail();log('Hull failure! You limp back to '+nodeName(S.nav.reg,S.nav.col,S.nav.row)+' with only '+r+' scrap. Repair and rearm.');cards();save()}
 }
 function finish(){const r=Math.round(base()*crewBuffs().scrapMult);S.scrap+=r;S.journeys++;S.mode='idle';S.ptrain=null;S.crate=null;log('Crossing complete. Salvaged '+r+' scrap from the far shore.');navArrive()}
@@ -606,10 +624,12 @@ function paxArrive(atStation){S.pax.forEach(p=>p.legs--);
 function navFail(){S.navT=null; // a lost leg: the map doesn't move, passengers scatter, escort clocks reset
  if(S.pax.length){S.pax=[];log('Your passengers scatter into the wastes.')}
  S.contracts.forEach(c=>{if(c.k=='escort'&&c.left<c.legs){c.left=c.legs;log('The escort clock resets — the convoy scatters.')}})}
-function navEvent(nm){const r=Math.random(); // wave-1 light events; wave 3 deepens these into real encounters
- if(r<0.5){const g=Math.round(30+eff()*12);S.scrap+=g;log('At '+nm+', scavengers wave you down — an honest trade nets +'+g+' scrap.')}
+function navEvent(nm){const r=Math.random(),tp=troops(); // troops are manpower: a party on the ground changes the odds
+ if(tp>=8&&r<0.25){const g=Math.round(45+eff()*16);S.scrap+=g;log('At '+nm+', you send a party into the wreck-field. They come back grinning — +'+g+' scrap.')}
+ else if(r<0.5){const g=Math.round(30+eff()*12);S.scrap+=g;log('At '+nm+', scavengers wave you down — an honest trade nets +'+g+' scrap.')}
  else if(r<0.8){const g=Math.round(10+eff()*3);S.food+=g;log('At '+nm+', a half-buried silo still holds grain — +'+g+' food.')}
- else{const dmg=Math.round(4+eff());S.hull=Math.max(Math.round(maxHull()*0.3),S.hull-dmg);S.flash=1.1;log('At '+nm+', the siding is mined — hull takes '+dmg+' before you clear it.')}}
+ else{let dmg=Math.round(4+eff());if(tp>0){dmg=Math.max(1,Math.round(dmg*Math.max(0.4,1-tp*0.03)));S.hull=Math.max(Math.round(maxHull()*0.3),S.hull-dmg);S.flash=1.1;log('At '+nm+', the siding is mined — your troops clear the worst of it; hull takes '+dmg+'.')}
+ else{S.hull=Math.max(Math.round(maxHull()*0.3),S.hull-dmg);S.flash=1.1;log('At '+nm+', the siding is mined — hull takes '+dmg+' before you clear it.')}}}
 function navArrive(){ // every completed leg lands here: move the rig on the map, then let the node speak
  const to=S.navT&&S.navT.to;S.navT=null;
  if(!to){cards();save();return}
@@ -619,7 +639,7 @@ function navArrive(){ // every completed leg lands here: move the rig on the map
  S.sel=0;
  const ty=nodeType(to.reg,to.col,to.row),nm=nodeName(to.reg,to.col,to.row);
  S.contracts.forEach(c=>{if(c.k=='escort')c.left--});                              // every safe leg counts toward an escort
- S.contracts=S.contracts.filter(c=>{if(c.k=='escort'&&c.left<=0){S.scrap+=c.pay;log('Escort complete — the caravan pays out '+c.pay+' scrap.');return false}return true});
+ S.contracts=S.contracts.filter(c=>{if(c.k=='escort'&&c.left<=0){const pay=Math.round(c.pay*(1+S.rep.disp*0.02)*(1+troops()*0.01));S.scrap+=pay;S.rep.disp=Math.min(10,S.rep.disp+1);log('Escort complete — the caravan pays out '+pay+' scrap'+(troops()?' (your riflemen earn their keep)':'')+'.');return false}return true});
  paxArrive(ty=='S');
  if(ty=='S'){openDepot(nm);paxBoard()}
  else{stopArrive(false);S.stop.auto=true; // a real halt at every stop — then she rolls on her own
@@ -637,12 +657,13 @@ if(type=='recruit'){const c=Math.round(70+idx*22);return{label:'Wandering specia
 if(type=='scrap'){const c=Math.round(12+idx*4),g=Math.round(40+idx*14);return{label:'Scrap broker',desc:'−'+c+' food · +'+g+' scrap',can:()=>S.food>=c,act:()=>{S.food-=c;S.scrap+=g;log('Sold rations for '+g+' scrap.')}}}
 if(type=='scavenge'){return{label:'Pick the wreck-stacks',desc:'free · gamble',can:()=>true,act:()=>{const r=Math.random();if(r<0.5){const g=Math.round(35+idx*13);S.scrap+=g;log('Scavenging paid off — +'+g+' scrap.')}else if(r<0.8){const g=Math.round(12+idx*5);S.food+=g;log('Found a food cache — +'+g+' food.')}else log('The stacks were already picked clean. Nothing here.')}}}
 if(type=='cache'){const g=Math.round(24+idx*10);return{label:'Supply cache',desc:'free · +'+g+' scrap',can:()=>true,act:()=>{S.scrap+=g;log('Cracked a supply cache — +'+g+' scrap.')}}}
+if(type=='guard'){return{label:'Walk the walls',desc:'free · troops earn their keep',can:()=>troops()>0,act:()=>{const g=Math.round(troops()*(6+eff()));S.scrap+=g;log('Your troops walk the walls for a night — +'+g+' scrap earned.')}}}
 if(type=='blessing'){const heal=Math.round(maxHull()*0.2);return{label:'Chapel of the Open Rail',desc:'free · the crew breathes',can:()=>true,act:()=>{S.hull=Math.min(maxHull(),S.hull+heal);S.food+=4;log('Lamp-smoke and quiet in the chapel car. The crew breathes — +'+heal+' hull, +4 food.')}}}
 return{label:'Black-market fixer',desc:'free · next upgrade ½ price',can:()=>!S.discount,act:()=>{S.discount=true;log('A fixer marks down your next upgrade to half price.')}}}
 function depotOffers(idx,pers){ // personalities pin their trade first (YARD repairs, OUTPOST recruits, CHAPEL blesses); the rest rolls from the pool
 const pool=['repair','food','scrap','fuel','recruit','scavenge','cache','discount'],pick=[],used={};
 if(pers&&pers.includes('yard')){used.repair=1;pick.push('repair')}
-if(pers&&pers.includes('outpost')){used.recruit=1;pick.push('recruit')}
+if(pers&&pers.includes('outpost')){used.recruit=1;used.guard=1;pick.push('recruit');pick.push('guard')}
 if(pers&&pers.includes('chapel')){used.blessing=1;pick.push('blessing')}
 let k=0;while(pick.length<3&&k<20){const t=pool[Math.floor(hash(idx*13+k*7+9)*pool.length)];if(!used[t]){used[t]=1;pick.push(t)}k++}
 if(!pick.includes('scavenge')&&!pick.includes('cache'))pick[pick.length-1]='scavenge';
@@ -654,13 +675,14 @@ function renderDepot(){const d=S.depot,el=document.getElementById('depot');if(!d
 let h='<h3>'+d.name+'</h3><div class="flav"><span class="pers">'+d.pers.map(p=>PERS[p]).join(' + ')+'</span> — '+depotFlavor(d.idx)+'</div>';
 d.offers.forEach((o,k)=>{h+='<button class="opt" data-k="'+k+'" '+(o.can()?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'});
 if(d.pers.includes('market')){ // the trade board: spot prices with the regional spread visible
- h+='<div class="mkthd">MARKET · hold '+cargoUsed()+'/'+cargoCap()+(cargoCap()?'':' — weld a Cargo car to trade')+'</div>';
+ h+='<div class="mkthd">MARKET · hold '+cargoUsed()+'/'+cargoCap()+(cargoCap()?'':' — weld a Cargo car to trade')+(S.rep.carav?' · Caravaneers '+'★'.repeat(S.rep.carav):'')+'</div>';
  GKEYS.forEach(g=>{const p=gPrice(g),held=S.cargo[g]||0,tr=gTrend(g);
+  const pb=Math.max(2,Math.round(p*(1-S.rep.carav*0.01))),ps=Math.round(p*(1+S.rep.carav*0.01));
   h+='<div class="mrow"><span class="pip" style="background:'+GOODS[g].c+'"></span><span class="gn">'+GOODS[g].nm+(held?' ×'+held:'')+'</span>'
    +'<span class="gp '+(tr=='▼'?'lo':tr=='▲'?'hi':'')+'">'+tr+' '+p+'</span>'
-   +'<button class="tbtn" data-g="'+g+'" data-tact="buy" '+((S.scrap>=p&&cargoUsed()<cargoCap())?'':'disabled')+'>Buy</button>'
-   +'<button class="tbtn" data-g="'+g+'" data-tact="sell" '+(held?'':'disabled')+'>Sell</button></div>'})}
-{h+='<div class="mkthd">DISPATCHER BOARD · '+S.contracts.length+'/2 inked</div>';
+   +'<button class="tbtn" data-g="'+g+'" data-tact="buy" '+((S.scrap>=pb&&cargoUsed()<cargoCap())?'':'disabled')+'>Buy '+pb+'</button>'
+   +'<button class="tbtn" data-g="'+g+'" data-tact="sell" '+(held?'':'disabled')+'>Sell '+ps+'</button></div>'})}
+{h+='<div class="mkthd">DISPATCHER BOARD · '+S.contracts.length+'/2 inked'+(S.rep.disp?' · rep '+'★'.repeat(S.rep.disp):'')+'</div>';
  S.contracts.forEach((c,i)=>{const dl=c.k=='haul'&&c.reg==S.nav.reg&&d.key!=c.src&&(S.cargo[c.g]||0)>=c.n;
   h+='<div class="mrow crow"><span class="gn">'+cLabel(c)+'</span><span class="gp">'+(c.k=='escort'?c.left+' to go':(S.cargo[c.g]||0)+'/'+c.n+' held')+'</span>'
    +(dl?'<button class="tbtn hot" data-cact="deliver" data-ci="'+i+'">Deliver · +'+c.pay+'</button>':'<span class="gp">'+c.pay+' scrap</span>')+'</div>'});
@@ -670,13 +692,15 @@ h+='<button class="leave" data-k="-1">Press on without stopping</button>';
 el.innerHTML=h;el.className='show';
 }
 document.getElementById('depot').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||!S.depot)return;
-if(b.dataset.g){const g=b.dataset.g,p=gPrice(g); // trading keeps the depot open
- if(b.dataset.tact=='buy'&&S.scrap>=p&&cargoUsed()<cargoCap()){S.scrap-=p;S.cargo[g]=(S.cargo[g]||0)+1;log('Bought 1 '+GOODS[g].nm+' — −'+p+' scrap.')}
- else if(b.dataset.tact=='sell'&&(S.cargo[g]||0)>0){S.cargo[g]--;S.scrap+=p;log('Sold 1 '+GOODS[g].nm+' — +'+p+' scrap.')}
+if(b.dataset.g){const g=b.dataset.g,p=gPrice(g),pb=Math.max(2,Math.round(p*(1-S.rep.carav*0.01))),ps=Math.round(p*(1+S.rep.carav*0.01)); // trading keeps the depot open
+ let traded=false;
+ if(b.dataset.tact=='buy'&&S.scrap>=pb&&cargoUsed()<cargoCap()){S.scrap-=pb;S.cargo[g]=(S.cargo[g]||0)+1;traded=true;log('Bought 1 '+GOODS[g].nm+' — −'+pb+' scrap.')}
+ else if(b.dataset.tact=='sell'&&(S.cargo[g]||0)>0){S.cargo[g]--;S.scrap+=ps;traded=true;log('Sold 1 '+GOODS[g].nm+' — +'+ps+' scrap.')}
+ if(traded){S.rep.tr++;if(S.rep.tr%4==0&&S.rep.carav<10){S.rep.carav++;log('The Caravaneers mark your manifest — rep '+'★'.repeat(S.rep.carav)+'.')}}
  renderDepot();upd();save();return}
 if(b.dataset.cact){const ci=+b.dataset.ci; // contracts keep it open too
  if(b.dataset.cact=='accept'&&S.contracts.length<2){const c=S.depot.board.splice(ci,1)[0];S.contracts.push(c);log('Contract inked: '+cLabel(c)+' — '+c.pay+' scrap on completion.')}
- else if(b.dataset.cact=='deliver'){const c=S.contracts[ci];if(c&&c.k=='haul'&&(S.cargo[c.g]||0)>=c.n){S.cargo[c.g]-=c.n;S.scrap+=c.pay;S.contracts.splice(ci,1);log('Delivered '+c.n+' '+GOODS[c.g].nm+' — the Dispatcher counts out '+c.pay+' scrap.')}}
+ else if(b.dataset.cact=='deliver'){const c=S.contracts[ci];if(c&&c.k=='haul'&&(S.cargo[c.g]||0)>=c.n){S.cargo[c.g]-=c.n;const pay=Math.round(c.pay*(1+S.rep.disp*0.02));S.scrap+=pay;S.rep.disp=Math.min(10,S.rep.disp+1);S.contracts.splice(ci,1);log('Delivered '+c.n+' '+GOODS[c.g].nm+' — the Dispatcher counts out '+pay+' scrap.')}}
  renderDepot();upd();save();return}
 const k=+b.dataset.k;if(k>=0)S.depot.offers[k].act();S.depot=null;S.mode='idle';if(S.stop)stopDepart();renderDepot();cards();save();showView('travel')});
 /* ---- view router: persistent shell + swappable content ---- */
@@ -750,7 +774,11 @@ const _lx=e=>{const f=_fit();return (e.clientX-f.r.left-f.ox)/f.dw*320;};
 const _ly=e=>{const f=_fit();return (e.clientY-f.r.top-f.oy)/f.dh*180;};
 cv.addEventListener('pointerdown',e=>{_pd=true;_pdrag=false;_psx=_lx(e);_ppan=S.pan;try{cv.setPointerCapture(e.pointerId)}catch(_){}});
 cv.addEventListener('pointermove',e=>{if(!_pd)return;const dx=_lx(e)-_psx;if(!_pdrag&&Math.abs(dx)>6)_pdrag=true;if(_pdrag&&!(S.boss||S.raiders.length)){S.pan=Math.max(0,Math.min(S.maxPan,_ppan+dx));S.panHintT=2;}});
-cv.addEventListener('pointerup',e=>{const ix=_lx(e),iy=_ly(e);if(_pd&&Math.abs(ix-_psx)<8&&S.crate&&!S.crate.grabbed){const c=S.crate;if(ix>=c.x-9&&ix<=c.x+20&&iy>=c.y-10&&iy<=c.y+20)grabCrate();}_pd=false;_pdrag=false;try{cv.releasePointerCapture(e.pointerId)}catch(_){}});
+cv.addEventListener('pointerup',e=>{const ix=_lx(e),iy=_ly(e);if(_pd&&Math.abs(ix-_psx)<8){if(S.crate&&!S.crate.grabbed){const c=S.crate;if(ix>=c.x-9&&ix<=c.x+20&&iy>=c.y-10&&iy<=c.y+20){grabCrate();_pd=false;_pdrag=false;return}}
+ // MARK TARGET: tap the duel enemy and every gun focuses it (+30%)
+ if(S.boss&&!S.boss.dead&&Math.abs(ix-S.boss.x)<50&&iy>112&&iy<170){S.mark=(S.mark=='boss')?null:'boss';log(S.mark?'Target marked \u2014 all guns on the warlord.':'Mark lifted \u2014 guns fire at will.')}
+ else{const p=S.ptrain;if(p&&p.kind=='raider'&&!p.dead&&p.state=='pace'&&iy>72&&iy<118&&Math.abs(ix-(p.x+(p.elite?(p.cars?p.cars.length:3)*15/2:20)))<48){S.mark=(S.mark=='ptrain')?null:'ptrain';log(S.mark?'Target marked \u2014 all guns on the convoy.':'Mark lifted \u2014 guns fire at will.')}}}
+_pd=false;_pdrag=false;try{cv.releasePointerCapture(e.pointerId)}catch(_){}});
 cv.addEventListener('pointercancel',()=>{_pd=false;_pdrag=false;});
 function upd(){
 document.getElementById('s-scrap').textContent=Math.floor(S.scrap);
@@ -1343,6 +1371,21 @@ function drawRaider(r){
   px(x+5,ry-15,3,2,'#c9a07a');px(x+5,ry-16,3,1,R[2]);px(x+6,ry-14,1,1,'#bfe3ff'); // head + red bandana + goggle
   const bf=Math.round(Math.sin(S.T*7+x));px(x+2,ry-15,1,5,'#241a12');px(x-1,ry-15,3+bf,2,R[1]);px(x-1,ry-15,3,1,R[2]); // back pennant
   if(Math.floor(S.T*9+x)%2==0)px(x-2,ry-5,2,2,'rgba(90,80,72,0.5)');           // exhaust
+ }else if(k=='crawler'){
+  // CRAWLER — slow tracked hulk, clan-marked; the reason you bolt on rockets
+  const cc=CLANS[S.nav?S.nav.reg:0].c;
+  box(x,ry-12,26,7,m[1]);px(x+1,ry-11,24,1,m[3]);                                 // slab hull, lit brow
+  for(let rv=x+3;rv<x+24;rv+=4)px(rv,ry-10,1,1,m[0]);                             // rivets
+  px(x+2,ry-7,22,1,cc);                                                           // clan band
+  box(x+7,ry-17,10,6,m[1]);px(x+8,ry-16,8,1,m[3]);px(x+9,ry-15,4,2,'#16242a');    // low turret + vision slit
+  px(x+16,ry-15,10,2,m[2]);px(x+16,ry-15,10,1,m[4]);px(x+25,ry-16,2,3,m[0]);      // stub cannon + muzzle brake
+  if(S.flash>0&&Math.floor((S.flash*8+x))%3==0){px(x+27,ry-16,4,3,'#ffd23e');px(x+30,ry-15,2,2,'#fff4c2')}
+  px(x-1,ry-5,28,6,'#241a12');                                                    // track shroud
+  const tr=Math.floor(S.T*10+x)%3;                                                // rolling track links
+  for(let tk=0;tk<9;tk++)px(x+tk*3-((3-tr)%3),ry-4,2,1,'#4a443c');
+  for(let tk=0;tk<9;tk++)px(x+tk*3+tr,ry,2,1,'#4a443c');
+  wheel(x+2,ry-4,5);wheel(x+10,ry-4,5);wheel(x+18,ry-4,5);                         // road wheels inside the shroud
+  px(x-1,ry-5,28,1,m[0]);
  }else if(k=='technical'){
   // GUN-TRUCK — heavy mounted autocannon
   box(x,ry-11,24,10,m[1]);px(x+1,ry-10,22,1,m[3]);px(x+1,ry-3,22,1,m[0]);
@@ -1612,17 +1655,20 @@ function drawPElite(x,y,p){
  px(x-1,y-27,bw,4,'#241a12');px(x,y-26,bw-2,2,'#5a1f18');px(x,y-26,Math.round((bw-2)*hp),2,'#d23a2a');
  ctx.globalAlpha=1;
 }
+const GHOSTM=['#2c3a44','#3c4e5a','#4c5e6c','#8fb4c0','#243038']; // the Ghost Hauler's cold ramp
 function drawPtrain(){
-const p=S.ptrain;if(!p)return;const x=Math.round(p.x),y=108,raider=p.kind=='raider';
+const p=S.ptrain;if(!p)return;const x=Math.round(p.x),y=108,raider=p.kind=='raider',ghost=p.kind=='ghost';
 if(p.elite){drawPElite(x,y,p);return;}
-ctx.globalAlpha=0.94;
-const M=raider?RAIDM:TRADM;
+ctx.globalAlpha=ghost?0.45:0.94;
+const M=raider?RAIDM:(ghost?GHOSTM:TRADM);
 for(let c=0;c<2;c++){const bx=x+c*16;
  panel(bx,y-12,15,12,M);                                                  // shaded hull (lit top / shadow base / AO / side shadows)
  px(bx+4,y-9,1,8,M[1]);px(bx+10,y-9,1,8,M[1]);                            // plate seams
  streak(bx+6,y-8,5,bx+c*3);                                               // rust drip
  if(raider){for(let s=0;s<3;s++){px(bx+2+s*5,y-15,2,3,M[1]);px(bx+2+s*5,y-15,1,1,RAIDRED[2])} // red-tipped spikes
   px(bx+1,y-3,13,1,RAIDRED[1]);}                                          // warpaint stripe
+ else if(ghost){px(bx+1,y-16,13,4,M[2]);px(bx+1,y-16,13,1,M[3]);                                // frost-pale load, no living cargo
+  if(Math.floor(S.T*3+c)%2==0)px(bx+6,y-18,2,2,'rgba(190,232,255,0.5)')}                       // cold shimmer
  else{px(bx+1,y-16,13,4,'#9a7a4a');px(bx+1,y-16,13,1,'#bd9a68');px(bx+1,y-13,13,1,M[1]);       // canvas tarp (lit ridge)
   px(bx+3,y-15,2,2,'#6f5230');px(bx+9,y-15,3,2,'#6f5230');rustPatch(bx+10,y-7,bx)}            // crate humps under the tarp
 }
@@ -1640,6 +1686,8 @@ if(raider){
  skull(ex+4,y-10);
  px(x-2,y-16,2,9,RAIDRED[2]);px(x-3,y-16,1,9,'#241a12');                 // war banner
  const w=44,hp=Math.max(0,p.hp/p.max);px(x,y-27,w,4,'#241a12');px(x+1,y-26,w-2,2,'#5a1f18');px(x+1,y-26,Math.round((w-2)*hp),2,'#d23a2a')
+}else if(ghost){
+ px(ex+6,y-23,2,3,'#bfe8ff');                                                                  // one cold lamp, no crew
 }else{
  const wv=Math.floor(S.T*4)%2;px(ex+6,y-23,2,3,'#ffe39a');px(ex+6,y-26+wv,2,3-wv,'#ffe39a');  // lantern / waving survivor
  px(ex+13,y-9,3,3,M[1]);px(ex+13,y-9,3,1,M[3])                                                 // buffer lamp
@@ -2118,6 +2166,14 @@ px(b.x-r/2,b.y-r/2,r,r,'#b8442a');
 px(b.x-r/3,b.y-r/3,Math.max(2,Math.round(r*0.66)),Math.max(2,Math.round(r*0.66)),'#e07b2a');
 px(b.x-r/5,b.y-r/5,Math.max(2,Math.round(r*0.4)),Math.max(2,Math.round(r*0.4)),'#ffd23e');
 if(b.t<0.2)px(b.x-1,b.y-1,3,3,'#fff8e0')});
+// band 7 read-outs: the mark chevron + the boarding meter (above the grade so they stay legible)
+if(S.mark){const pu=0.5+0.5*Math.sin(S.T*6);let mx=null,my=0;
+ if(S.mark=='boss'&&S.boss){mx=S.boss.x;my=112}
+ else if(S.mark=='ptrain'&&S.ptrain){const p=S.ptrain;mx=p.x+(p.elite?(p.cars?p.cars.length:3)*15/2:20);my=p.elite?66:78}
+ if(mx!=null){ctx.globalAlpha=0.55+0.45*pu;px(mx-3,my,7,2,'#f2c560');px(mx-2,my+2,5,2,'#f2c560');px(mx-1,my+4,3,2,'#f2c560');px(mx,my+6,1,2,'#f2c560');ctx.globalAlpha=1}}
+{const p=S.ptrain;if(p&&p.boarder&&!p.dead&&p.state=='pace'&&p.board>0.02){const bx=Math.round(p.x),w=44;
+ px(bx,58,w,5,'#241a12');px(bx+1,59,w-2,3,'#3a2020');px(bx+1,59,Math.round((w-2)*p.board),3,p.board>0.7?'#d23a2a':'#e07b2a');
+ if(p.board>0.4){for(let gl=0;gl<2;gl++){const gx=bx+10+gl*22;ctx.strokeStyle='rgba(200,190,170,0.7)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(gx,104);ctx.lineTo(gx+16+Math.sin(S.T*9+gl)*2,146);ctx.stroke()}}}}
 drawOverlays();
 if(S.origin&&(S.immersive||S.layout!='landscape'))drawRailheadBanner(); // canvas banner only where the DOM chrome isn't announcing the place (portrait / immersive); landscape's status pill carries it
 drawPanHint();
@@ -2193,7 +2249,7 @@ const boss=S.boss;
 if(boss&&!boss.dead){
 boss.x+=(boss.tx-boss.x)*Math.min(1,dt*1.7);
 if(!boss.set&&boss.x-boss.tx<6){boss.set=true;log('You throw the brakes \u2014 both rigs grind to a dead stop on the line. Trade fire until one is scrap.')}
-const dps=gun()+troops()*1.5;boss.hp-=dps*dt;if(dps>0&&S.flash<0.3)S.flash=0.3;
+const dps=gunVs('armored')*markMult('boss')+troops()*1.5;boss.hp-=dps*dt;if(dps>0&&S.flash<0.3)S.flash=0.3;
 boss.hitT-=dt;
 if(boss.hitT<=0){boss.hitT=1.7;const dmg=Math.max(2,Math.round((7+eff()*2-troops()*0.5)*(1+(boss.guns||0)*0.25)));hurt(dmg);S.flash=1.3;S.booms.push({x:210,y:128,t:0.1});
 if(S.hull<=0)bossEscape();}
@@ -2202,19 +2258,25 @@ if(S.boss&&S.boss.hp<=0)bossKill();
 if(!S.boss){
 if(S.wi<S.waves.length&&S.jt>=S.waves[S.wi]){S.wi++;wave()}
 if(S.crateAt>0&&S.jt>=S.crateAt&&!S.crate){S.crate={x:340,y:150,grabbed:false};S.crateAt=-1}
-if(S.ptrainAt>0&&S.jt>=S.ptrainAt&&!S.ptrain){if(S.ptrainElite){const guns=Math.min(3,2+Math.floor(eff()/14)),wp=['cannon','rocket','mortar'],cars=[];for(let g=0;g<guns;g++)cars.push({wpn:wp[g%3]});const m=Math.round((42+eff()*15)*(1+guns*0.25));S.ptrain={kind:'raider',elite:true,cars,guns,x:-96,state:'in',t:0,gave:false,atkT:1.2,muzzle:0,hp:m,max:m,dead:false};log('A heavy raider convoy thunders onto the parallel rail \u2014 ELITE WARBAND, guns bristling. Outshoot them or die on the line.')}else{const m=Math.round(30+eff()*10);S.ptrain={kind:S.ptrainKind,x:-64,state:'in',t:0,gave:false,atkT:1.0,muzzle:0,hp:m,max:m,dead:false};log(S.ptrainKind=='trader'?'A survivor train eases onto the parallel rail — they signal peace.':'A raider train swings onto the parallel rail, guns up!')}S.ptrainAt=-1}
+if(S.ptrainAt>0&&S.jt>=S.ptrainAt&&!S.ptrain){if(S.ptrainElite){const guns=Math.min(3,2+Math.floor(eff()/14)),wp=['cannon','rocket','mortar'],cars=[];for(let g=0;g<guns;g++)cars.push({wpn:wp[g%3]});const m=Math.round((42+eff()*15)*(1+guns*0.25));const brd=S.ptrainBoard&&eff()>=6;S.ptrain={kind:'raider',elite:true,boarder:brd,board:0,bLog:0,cars,guns,x:-96,state:'in',t:0,gave:false,atkT:1.2,muzzle:0,hp:m,max:m,dead:false};S.ptrainBoard=false;log(brd?'A BOARDER WAGON of '+CLANS[S.nav.reg].nm+' surges alongside \u2014 grapples ready. Your troops to the rails!':'A heavy raider convoy of '+CLANS[S.nav.reg].nm+' thunders onto the parallel rail \u2014 ELITE WARBAND, guns bristling.')}else if(S.ptrainKind=='ghost'){S.ptrain={kind:'ghost',x:-64,state:'in',t:0,gave:false,atkT:99,muzzle:0,hp:999,max:999,dead:false};log('A pale train runs the far rail without a sound. The old-timers call it the GHOST HAULER.')}else{const m=Math.round(30+eff()*10);S.ptrain={kind:S.ptrainKind,x:-64,state:'in',t:0,gave:false,atkT:1.0,muzzle:0,hp:m,max:m,dead:false};log(S.ptrainKind=='trader'?'A survivor train eases onto the parallel rail — they signal peace.':'A raider train of '+CLANS[S.nav.reg].nm+' swings onto the parallel rail, guns up!')}S.ptrainAt=-1}
 }
 const pt=S.ptrain;
 if(pt){pt.t+=dt;if(pt.muzzle>0)pt.muzzle-=dt;
 if(pt.state=='in'){pt.x+=128*dt;if(pt.x>=150){pt.x=150;pt.state='pace';pt.t=0}}
 else if(pt.state=='pace'){pt.x+=Math.sin(S.T*1.5)*5*dt;
-if(pt.kind=='trader'){if(!pt.gave&&pt.t>0.9){pt.gave=true;S.booms.push({x:pt.x+18,y:132,t:0.1});if(Math.random()<0.22){log('A wanderer rides the trader car across to your rig...');recruitHero('wander')}else{const sc=Math.round(20+eff()*12),fd=4+Math.floor(Math.random()*4);S.scrap+=sc;S.food+=fd;log('The traders toss across supplies — +'+sc+' scrap, +'+fd+' food. They wave and pull ahead.')}}if(pt.t>2.6)pt.state='out'}
-else{const dps=gun()+troops()*1.5;pt.hp-=dps*dt*0.85;if(dps>0&&S.flash<0.3)S.flash=0.3;
-pt.atkT-=dt;if(pt.atkT<=0){pt.atkT=pt.elite?1.1:1.4;pt.muzzle=0.18;const dmg=pt.elite?Math.max(2,Math.round((6+eff()*1.5-troops()*0.4)*(1+(pt.guns||0)*0.2))):Math.max(1,Math.round(4+eff()-troops()*0.4));hurt(dmg);S.flash=1.0;S.booms.push({x:165,y:126,t:0.08});if(S.hull<=0){const r=Math.round(base()*0.25);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.ptrain=null;S.mode='idle';S.raiders=[];S.tracers=[];navFail();log((pt.elite?'The elite warband raked your rig apart':'The raider train shot your boiler out')+' — you limp home with '+r+' scrap.');cards();save()}}
-if(S.ptrain&&pt.hp<=0){if(pt.elite){const r=Math.round(base()*1.6*crewBuffs().scrapMult);S.scrap+=r;for(let i=0;i<8;i++)S.booms.push({x:pt.x+i*8,y:96+(i%3)*6,t:0.04+i*0.05});log('ELITE WARBAND WRECKED! You strip the convoy for '+r+' scrap as it derails in flames.');if(Math.random()<0.5)recruitHero('war');else{const b=Math.round(25+eff()*7);S.scrap+=b;log('You salvage another '+b+' scrap from the burning cars.')}}else{const r=Math.round(base()*0.8);S.scrap+=r;for(let i=0;i<5;i++)S.booms.push({x:pt.x+i*9,y:98+(i%2)*6,t:0.05+i*0.05});log('Raider train wrecked! You strip it for '+r+' scrap as it derails.')}pt.dead=true;pt.state='out'}
+if(pt.kind=='trader'){if(!pt.gave&&pt.t>0.9){pt.gave=true;S.booms.push({x:pt.x+18,y:132,t:0.1});if(Math.random()<0.22+(S.rep?S.rep.carav*0.012:0)){log('A wanderer rides the trader car across to your rig...');recruitHero('wander')}else{const sc=Math.round(20+eff()*12),fd=4+Math.floor(Math.random()*4);S.scrap+=sc;S.food+=fd;log('The traders toss across supplies — +'+sc+' scrap, +'+fd+' food. They wave and pull ahead.')}}if(pt.t>2.6)pt.state='out'}
+else if(pt.kind=='ghost'){if(pt.t>2.4){pt.state='out';if(cargoUsed()<cargoCap()){S.cargo.relic=(S.cargo.relic||0)+1;log('The GHOST HAULER fades ahead of you. A relic rests on your rear coupling, rimed with frost.')}else log('The GHOST HAULER fades into the haze. Your holds were full; whatever it left returns to the dark.')}}
+else{const dps=gunVs(pt.elite?'armored':'light')*markMult('ptrain')+troops()*1.5;pt.hp-=dps*dt*0.85;if(dps>0&&S.flash<0.3)S.flash=0.3;
+if(pt.boarder){pt.board=Math.max(0,Math.min(1,pt.board+dt*(0.085+eff()*0.003)-dt*troops()*0.011)); // the boarding meter: their grapples vs your manpower
+ if(pt.board>0.5&&!pt.bLog){pt.bLog=1;log('Grapples bite the hull \u2014 REPEL BOARDERS! (troops hold the meter down)')}
+ if(pt.board>=1){const steal=Math.round(base()*0.4);S.scrap=Math.max(0,S.scrap-steal);hurt(8+eff());pt.dead=false;pt.state='out';S.flash=1.4;log('BOARDED! They cut a hold open and swing away with '+steal+' scrap.');cards();save()}}
+pt.atkT-=dt;if(pt.atkT<=0){pt.atkT=pt.elite?(pt.boarder?1.6:1.1):1.4;pt.muzzle=0.18;const dmg=pt.elite?Math.max(2,Math.round((6+eff()*1.5-troops()*0.4)*(1+(pt.guns||0)*0.2)*(pt.boarder?0.5:1))):Math.max(1,Math.round(4+eff()-troops()*0.4));hurt(dmg);S.flash=1.0;S.booms.push({x:165,y:126,t:0.08});if(S.hull<=0){const r=Math.round(base()*0.25);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.ptrain=null;S.mode='idle';S.raiders=[];S.tracers=[];navFail();log((pt.elite?'The elite warband raked your rig apart':'The raider train shot your boiler out')+' — you limp home with '+r+' scrap.');cards();save()}}
+if(S.ptrain&&pt.hp<=0){if(pt.elite){const r=Math.round(base()*1.6*crewBuffs().scrapMult);S.scrap+=r;for(let i=0;i<8;i++)S.booms.push({x:pt.x+i*8,y:96+(i%3)*6,t:0.04+i*0.05});log('ELITE WARBAND WRECKED! You strip the convoy for '+r+' scrap as it derails in flames.');if(Math.random()<(pt.boarder?0.75:0.5))recruitHero('war');else{const b=Math.round(25+eff()*7);S.scrap+=b;log('You salvage another '+b+' scrap from the burning cars.')}}else{const r=Math.round(base()*0.8);S.scrap+=r;for(let i=0;i<5;i++)S.booms.push({x:pt.x+i*9,y:98+(i%2)*6,t:0.05+i*0.05});log('Raider train wrecked! You strip it for '+r+' scrap as it derails.')}pt.dead=true;pt.state='out'}
 else if(S.ptrain&&!pt.elite&&pt.t>3.6&&pt.state=='pace'){pt.state='out';log('The raider train breaks off and falls behind.')}}}
 else if(pt.state=='out'){pt.x+=(pt.dead?70:165)*dt;if(pt.x>384)S.ptrain=null}}
 if(S.crate){S.crate.x-=80*dt;if(S.crate.x<-16)S.crate=null}
+if(S.mark=='boss'&&(!S.boss||S.boss.dead))S.mark=null;
+if(S.mark=='ptrain'&&(!S.ptrain||S.ptrain.dead||S.ptrain.state=='out'))S.mark=null;
 if(S.mode=='run'&&!S.boss&&S.jt>=S.dur)finish();
 }
 S.saveT+=dt;

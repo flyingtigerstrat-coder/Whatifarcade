@@ -85,6 +85,14 @@ The rail ocean is **4 regions** (`REGIONS`): Rust Flats → Dead City → Bone R
 
 ---
 
+## The Teeth — combat depth (Wave 3)
+
+**Damage types are live.** Every weapon already carried a `dt` tag (kinetic/blast/fire); now enemies have **armor classes** (`AC`): *light* (neutral, fire +), *armored* (blast blooms ×1.5, kinetic sparks ×0.7), *swarm* (fire eats it ×1.6). `dtMix()` totals the rig's output per type; `gunVs(class)` prices the matchup — the refit choice finally matters, and the wave log says so ("your blast fire blooms…" / "kinetic rounds spark off…"). Waves roll a class (crawler-led armored columns, bike swarms); bosses and elites are armored. **MINELAYER**: an unrepelled armored wave may seed the rail — the next wave opens with mine damage. **MARK TARGET**: tap the duel enemy (boss or convoy) on the canvas — all guns focus (+30%), pulsing chevron overhead; tap again to lift.
+
+**Troops are manpower, not just mitigation.** The **BOARDER WAGON** (blockade legs, eff ≥ 6) grapples alongside: its boarding meter fills against your `troops()` — full meter cuts a hold open (scrap stolen); repelling it leans hard toward a war-hero drop. Troops also clear mined sidings at events, run send-a-party sweeps (≥8), and earn wall-duty scrap at OUTPOSTs; escorts pay a rifleman bonus. **Factions:** Dispatchers rep (+1 per contract, up to ★10 → +2%/★ contract pay) and Caravaneers rep (+1 per 4 trades → ±1%/★ market prices, friendlier traders). **Clans are enemies with names, never bookkeeping** (`CLANS`, one per region — the Rustborn, the Smoke Choir, the Marrow Kings, the Cindermen) — they color the logs and the crawler's band. **THE GHOST HAULER**: a rare pale train (≈3% of quiet legs) that passes without a sound and leaves a relic on the coupling if the holds have room.
+
+---
+
 ## Save schema — versioned, migrated stepwise
 
 `save()` stamps `v: SAVE_V`; `load()` runs `migrate(d)` **first**, so load logic only ever reads the current schema. `migrate()` is a **chain of stepwise upgrades** — one step per wave that grows state (v1→v2 normalized the live-shipped unversioned shape; v2→v3 will add map state and place veterans on the node graph). **Policy: a rig is sacred** — unknown/higher versions pass through untouched and load reads known fields defensively; only a genuinely unparseable blob falls back to a fresh boot. Extend save/load/reset (and the harness) together every time state grows.

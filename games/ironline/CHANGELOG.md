@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-07-02 · session 11 (cont.) — Wave 3 · THE TEETH: combat learns to bite back
+DECIDED: Damage types go LIVE — enemies carry armor classes (light/armored/swarm) and gunVs() prices the matchup: blast blooms on plate (×1.5), kinetic sparks off it (×0.7), fire eats swarms (×1.6); the wave log narrates the matchup so the refit choice teaches itself. New enemies: CRAWLER (tracked hulk leading armored columns, clan-banded), MINELAYER (an unrepelled armored wave seeds the rail — next wave opens with mine damage), bike SWARMS, and the BOARDER WAGON (blockade legs, eff≥6): a boarding meter vs troops() — full meter cuts a hold open and steals scrap; repelling leans 75% toward a war hero. MARK TARGET tap verb (+30% focus, pulsing chevron). Troops become manpower: mine-clearing, send-a-party sweeps, OUTPOST wall duty, escort rifleman bonus. Factions: Dispatchers rep (contract pay +2%/★) + Caravaneers rep (market ±1%/★, friendlier traders); CLANS stay enemies-with-names, zero bookkeeping. THE GHOST HAULER: rare, pale, silent — leaves a relic if the holds have room. SAVE_V=5 (rep).
+TRIED: Crawler draft 1 was a black slab — dark-on-dark tracks; v2 lifts the hull ramp, rolls visible track links, and seats road wheels in the shroud.
+PARKED: Clan full-repaint of raider/ptrain sprites (Wave 6); dt-colored fx (Wave 6).
+CHANGED: wave() rebuilt (class roll, clan flavor, mine seeding); boss/ptrain dps through gunVs()+markMult(); boarding meter + grapple lines drawn band-7; harness 52 -> 61 assertions (version pins now track SAVE_V).
+OPEN: Human eyes on the boarding meter fight and the mark tap on a phone. Wave 4 next: THE LINEBREAKER — gate captains, rumors, and THE TERMINUS.
+FEELING: The wastes stopped being scenery tonight. They have names, grudges, and boarding hooks.
+
 ## 2026-07-02 · session 11 (cont.) — Wave 2 · THE LEDGER: stations get an economy
 DECIDED: Stations now have work to offer. 5 trade goods with a REGIONAL spread (base × GMKT supply-demand × per-node jitter, ▼/▲ visible on the board — trading is a read, not a memory test); CARGO CAR pools holds (4+2/lvl, crate-stack + side gauge show the fill); PASSENGER COACH seats fares (2+1/lvl, riders pay on disembark; named specials pay 5× and ride hooded in the window); station PERSONALITIES (2 of YARD/MARKET/OUTPOST/CHAPEL, seeded — the Railhead always teaches the trade) pin offers and open the market; DISPATCHER BOARD inks up to 2 contracts (haul ≈1.7× spot at the target region · escort N legs unbroken). Losses scatter passengers and reset escort clocks (navFail). SAVE_V=4 (clean ledger migration). Crew grows Quartermaster (+scrap%) and Conductor (−fuel%).
 TRIED: Proof consist (cargo+coach+gun) rendered at dusk — tarp, crates, lit berth windows and the hooded special all read at 320×180.

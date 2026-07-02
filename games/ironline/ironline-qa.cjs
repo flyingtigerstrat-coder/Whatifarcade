@@ -11,12 +11,12 @@ global.document={getElementById:()=>anyElCache,querySelector:()=>anyElCache,quer
 global.Image=class{set src(v){}};
 global.requestAnimationFrame=()=>{};
 const script=fs.readFileSync(__dirname+'/battle-train-hd.html','utf8').match(/<script>([\s\S]*)<\/script>/)[1]
- +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers};';
+ +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave};';
 eval(script);
 (async()=>{
 await new Promise(r=>setTimeout(r,20)); // let the async boot IIFE settle
-const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers}=globalThis.__T;
-let t=0,fails=0;const step=n=>{for(let i=0;i<n;i++){t+=16;tick(t)}};
+const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave}=globalThis.__T;
+let t=0,fails=0;const maxHullSafe=()=>60+S.engine*30;const step=n=>{for(let i=0;i<n;i++){t+=16;tick(t)}};
 const ok=(name,cond)=>{console.log((cond?'PASS':'FAIL')+'  '+name);if(!cond)fails++};
 
 // ===== THE STOP (choreography) =====
@@ -78,7 +78,7 @@ ok('v1 save: missing fuel gets default', S.fuel===30);
 ok('v1 save: gun slot normalized (wpn/port)', S.slots[0].wpn==='cannon'&&S.slots[0].port==='auto');
 ok('v1 save: no origin flag -> not docked', S.origin===false&&!S.stop);
 await save();
-ok('v1 save: re-saves stamped current ('+JSON.parse(__getStore()).v+')', JSON.parse(__getStore()).v===4);
+ok('v1 save: re-saves stamped current ('+JSON.parse(__getStore()).v+')', JSON.parse(__getStore()).v===SAVE_V);
 ok('v1 save: 7 crossings land the veteran in region 1', S.nav.reg===1&&S.nav.col===0);
 
 // 7 · v2 round-trip preserves the rig
@@ -122,9 +122,9 @@ const t1=nodeType(0,1,0);
 ok('leg: the node greets by type ('+t1+')', t1==='S'?(S.mode==='depot'&&!!S.depot):(!!S.stop&&S.stop.auto===true));
 // 13 · v2->v3 migration places the veteran on the graph (one region per 5 crossings)
 const m12=migrate({v:2,journeys:12,dist:140,scrap:500,origin:1});
-ok('v2->v3: 12 crossings -> region 2 entry, Railhead dock released', m12.v===4&&m12.nav.reg===2&&m12.nav.col===0&&!m12.origin&&m12.visited.length===1);
+ok('v2->v3: 12 crossings -> region 2 entry, Railhead dock released', m12.v===SAVE_V&&m12.nav.reg===2&&m12.nav.col===0&&!m12.origin&&m12.visited.length===1);
 const m3=migrate({v:2,journeys:3,dist:20,scrap:100,origin:1});
-ok('v2->v3: 3 crossings -> region 0, origin dock kept', m3.v===4&&m3.nav.reg===0&&m3.origin===1);
+ok('v2->v3: 3 crossings -> region 0, origin dock kept', m3.v===SAVE_V&&m3.nav.reg===0&&m3.origin===1);
 // 14 · v3+ round-trips the map
 S.nav={seed:41,reg:1,col:2,row:1};S.visited=['1:0:0','1:1:0','1:2:1'];S.origin=false;S.stop=null;S.stationX=null;S.mode='idle';S.depot=null;
 await save();
@@ -135,7 +135,7 @@ ok('v3 save: nav + visited round-trip', S.nav.seed===41&&S.nav.reg===1&&S.nav.co
 // ===== THE ECONOMY: goods, cars, fares, contracts (Wave 2) =====
 // 15 · v3 -> v4 migration gives a clean ledger
 const m4=migrate({v:3,journeys:2,nav:{seed:5,reg:0,col:1,row:0},visited:['0:0:0'],scrap:100});
-ok('v3->v4: empty holds, seats, ledger', m4.v===4&&typeof m4.cargo==='object'&&Array.isArray(m4.pax)&&Array.isArray(m4.contracts));
+ok('v3->v4: empty holds, seats, ledger', m4.v===SAVE_V&&typeof m4.cargo==='object'&&Array.isArray(m4.pax)&&Array.isArray(m4.contracts));
 // 16 · the regional spread is real: what the Flats sell cheap, the Seam pays dear for
 S.nav={seed:7,reg:0,col:1,row:0};const pOre0=gPrice('ore');
 S.nav={seed:7,reg:3,col:1,row:0};const pOre3=gPrice('ore');
@@ -160,6 +160,44 @@ finish();                                                   // arrives at 0:1:0 
 Math.random=rnd;
 ok('escort: pays out after the promised legs', S.contracts.length===0&&S.scrap>sc0+49);
 ok('fares: the rider pays and steps down at the station', S.pax.length===0);
+// ===== COMBAT DEPTH: damage types, boarding, factions (Wave 3) =====
+// 22 · the refit choice matters: blast blooms on armor, kinetic sparks off it
+S.slots=[{type:'gun',wpn:'rocket',port:'flak',lvl:2}];
+ok('dt: blast-heavy rig hits armor harder ('+Math.round(gunVs('armored'))+' vs '+Math.round(gunVs('light'))+')', gunVs('armored')>gunVs('light'));
+S.slots=[{type:'gun',wpn:'cannon',port:'auto',lvl:2}];
+ok('dt: kinetic rig sparks off armor', gunVs('armored')<gunVs('light'));
+ok('dt: fire eats a swarm', (()=>{S.slots=[{type:'gun',wpn:'cannon',port:'flame',lvl:2}];return gunVs('swarm')>gunVs('light')})());
+// 23 · MARK TARGET focuses the guns
+S.mark='boss';
+ok('mark: +30% on the marked duel target', markMult('boss')===1.3&&markMult('ptrain')===1);
+S.mark=null;
+// 24 · the boarding meter: unopposed grapples take the hold
+S.mode='run';S.jt=0;S.dur=9999;S.waves=[];S.wi=0;S.boss=null;S.crate=null;S.crateAt=-1;S.ptrainAt=-1;S.stop=null;S.origin=false;
+S.slots=[{type:'gun',wpn:'cannon',port:'auto',lvl:1}];S.scrap=1000;S.hull=maxHullSafe();
+S.ptrain={kind:'raider',elite:true,boarder:true,board:0.97,bLog:1,cars:[{wpn:'cannon'}],guns:1,x:150,state:'pace',t:1,gave:false,atkT:99,muzzle:0,hp:1e9,max:1e9,dead:false};
+step(40);
+ok('boarding: a full meter cuts the hold open', S.scrap<1000&&(!S.ptrain||S.ptrain.state==='out'));
+// 25 · troops hold the meter down
+S.slots=[{type:'gun',wpn:'cannon',port:'auto',lvl:1},{type:'troop',lvl:5}];
+S.ptrain={kind:'raider',elite:true,boarder:true,board:0.5,bLog:1,cars:[{wpn:'cannon'}],guns:1,x:150,state:'pace',t:1,gave:false,atkT:99,muzzle:0,hp:1e9,max:1e9,dead:false};
+const b0=S.ptrain.board;step(60);
+ok('boarding: 20 troops drain the meter', S.ptrain&&S.ptrain.board<b0);
+S.ptrain=null;S.mode='idle';
+// 26 · the Ghost Hauler leaves a relic if the holds have room
+S.slots=[{type:'cargo',lvl:1}];S.cargo={};S.mode='run';
+S.ptrain={kind:'ghost',x:150,state:'pace',t:2.5,gave:false,atkT:99,muzzle:0,hp:999,max:999,dead:false};
+step(5);
+ok('ghost hauler: a relic rimed with frost', S.cargo.relic===1&&S.ptrain&&S.ptrain.state==='out');
+S.ptrain=null;S.mode='idle';
+// 27 · v4 -> v5 gives a clean name with both factions
+const m5=migrate({v:4,journeys:1,nav:{seed:2,reg:0,col:0,row:0},visited:['0:0:0'],cargo:{},pax:[],contracts:[]});
+ok('v4->v5: factions rep defaults', m5.v===SAVE_V&&m5.rep&&m5.rep.disp===0&&m5.rep.carav===0);
+// 28 · rep survives a save
+S.rep={disp:3,carav:2,tr:9};S.mode='idle';S.depot=null;S.origin=false;S.stop=null;
+await save();S.rep={disp:0,carav:0,tr:0};
+await load();
+ok('v5 save: rep round-trips', S.rep.disp===3&&S.rep.carav===2&&S.rep.tr===9);
+
 // 21 · the ledger survives a save
 S.cargo={ore:3,relic:1};S.contracts=[{k:'haul',g:'grain',n:2,reg:1,src:'0:1:0',pay:60}];S.pax=[{special:true,nm:'X',fare:99,legs:2}];
 S.mode='idle';S.depot=null;S.origin=false;S.stop=null;
@@ -167,5 +205,5 @@ await save();S.cargo={};S.contracts=[];S.pax=[];
 await load();
 ok('v4 save: cargo + contracts + passengers round-trip', S.cargo.ore===3&&S.cargo.relic===1&&S.contracts.length===1&&S.contracts[0].pay===60&&S.pax.length===1&&S.pax[0].fare===99);
 
-console.log(fails? '\n'+fails+' FAILURES':'\nALL CHECKS PASS ('+((s=>s)(0)||'choreography + schema + spine + economy')+')');process.exit(fails?1:0);
+console.log(fails? '\n'+fails+' FAILURES':'\nALL CHECKS PASS ('+((s=>s)(0)||'choreography + schema + spine + economy + combat')+')');process.exit(fails?1:0);
 })();
