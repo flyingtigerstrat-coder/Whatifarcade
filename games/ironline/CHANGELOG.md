@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-07-02 · session 9 — SHIPPED to whatifarcade.com + live hotfixes
+DECIDED: Phase A deployed (PR #21) with a standalone localStorage save shim (window.storage was undefined on the live site — saves now persist for real players; brief -> shipped). Live QA with the human's eyes caught three bugs, hotfixed same-day: (1) landscape DOM chrome (route pill + ticker) stacked on the canvas banner — the banner now draws only in portrait/immersive where no chrome announces the place, and the landscape ticker got readable (17px, darker backing) (PR #22); (2) the foreground wreck-tire was CAR-SIZED — broke the world's proportions at any speed — retired entirely (trackside debris lives in the deb cells); (3) the floating DEPART button sat on top of open panel text in landscape — the panel now reserves a lane for it.
+TRIED: Verifying the live domain from the sandbox (network policy blocks it) — Pages deploy success per merge SHA is the authoritative signal instead.
+PARKED: —
+CHANGED: drawFgWreck removed; canvas banner layout-gated; landscape ticker/panel CSS; save shim.
+OPEN: The human plays a full loop live (origin -> depart -> crossing -> depot -> return). Then the parked threads, in order: node-graph map first.
+FEELING: Shipped, and the first live players start at the lamplit platform. The machine that makes games made one.
+
 ## 2026-06-23 · session 8 — the arrival choreography: the world comes to rest
 DECIDED: Built THE STOP — the reusable arrival/departure state machine (S.stop: arriving/docked/departing in tick). Arriving = linear decel to rest with the station gliding in on the decel's EXACT integral (settles precisely as the wheels stop); docked = spd 0 (wheels frozen, smoke thins to nothing, tumbleweed still drifts — still, not frozen); departing = ease-in spin-up, the settlement slides away west, lamps left burning. BEGIN-AT-ORIGIN live: a fresh game boots docked at The Railhead with the Dispatcher's greeting in the ticker; depart gets his send-off ("We'll keep a lamp burning"). Depots now physically HALT the world too (visual-less stops). Save/load/reset extended together (origin flag persists a pre-departure dock; load is authoritative).
 TRIED: Headless behavioral harness (boots the real script, drives tick manually) — 20 assertions across boot/depart/arrive/depot/save. Caught one real gap: load() didn't clear stale dock state (fixed; load authoritative). Exporter gained --sx/--lamp choreography keyframes + live-matched idle camera.
