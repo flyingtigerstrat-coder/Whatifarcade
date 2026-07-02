@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-07-02 · session 11 (cont.) — Wave 2 · THE LEDGER: stations get an economy
+DECIDED: Stations now have work to offer. 5 trade goods with a REGIONAL spread (base × GMKT supply-demand × per-node jitter, ▼/▲ visible on the board — trading is a read, not a memory test); CARGO CAR pools holds (4+2/lvl, crate-stack + side gauge show the fill); PASSENGER COACH seats fares (2+1/lvl, riders pay on disembark; named specials pay 5× and ride hooded in the window); station PERSONALITIES (2 of YARD/MARKET/OUTPOST/CHAPEL, seeded — the Railhead always teaches the trade) pin offers and open the market; DISPATCHER BOARD inks up to 2 contracts (haul ≈1.7× spot at the target region · escort N legs unbroken). Losses scatter passengers and reset escort clocks (navFail). SAVE_V=4 (clean ledger migration). Crew grows Quartermaster (+scrap%) and Conductor (−fuel%).
+TRIED: Proof consist (cargo+coach+gun) rendered at dusk — tarp, crates, lit berth windows and the hooded special all read at 320×180.
+PARKED: Special-passenger mini-quests beyond the fare (Wave 5 hero hooks); market styling pass (Wave 6).
+CHANGED: renderDepot gains market + contract sections (trades keep the panel open; offers still close it); navArrive ticks escorts and fares; depot handler split (data-g/data-cact/data-k); exporter --cars; harness 43 -> 52 assertions.
+OPEN: Human phone QA on the depot panel (market rows + board) and the new weld buttons. Wave 3 next: damage types live, boarding, troops-as-manpower, factions.
+FEELING: The rig used to carry guns and hope. Now it carries grain somebody's waiting for.
+
 ## 2026-07-02 · session 11 — Wave 1 · THE SPINE: the rail ocean becomes a map
 DECIDED: The journey is now a place. Four REGIONS (Rust Flats -> Dead City -> Bone Reef -> Cinder Seam), each a seeded node graph — 6/6/6/7 columns, 1–2 forward edges per node, named anchors at entry/mid/gate, node types S station · E event (light, per ratified call 4) · H hazard (4-wave leg) · B blockade (elite leg) · G gate (warlord boss, tier = region). Depart targets a chosen edge (labeled fork buttons in the travel strip + tappable lit nodes on the Map tab — ratified call 3); a lost leg leaves the rig where it departed. Difficulty rebased: eff()=reg*6+col drives every combat/economy formula — position is threat, journeys are flavor. The MAP owns the biome (biomeIdx-by-distance retired); gate legs blend the next region in across the back half of the crossing. SAVE_V=3: v2 saves migrate veterans onto the graph at one region per 5 crossings (ratified calls 1+2), origin dock kept only at the Railhead.
 TRIED: The Cinder Seam ships as placeholder art (char ground, ember haze, seam-glow fissures, ember-tipped stacks, ash-heavy weather) — proof stills at dusk + night read hot and dark; Wave 6 does the full pass. Railhead render byte-IDENTICAL to HEAD after the backdrop rewiring.

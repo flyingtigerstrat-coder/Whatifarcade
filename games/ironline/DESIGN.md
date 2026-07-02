@@ -77,6 +77,14 @@ The rail ocean is **4 regions** (`REGIONS`): Rust Flats → Dead City → Bone R
 
 ---
 
+## The Ledger — station economics (Wave 2)
+
+**Goods with a regional spread.** 5 trade goods (`GOODS`: Ore/Parts/Medicine/Grain/Relics); price = base × **region supply-demand** (`GMKT` — what a region makes is cheap there, what it lacks is dear; the Seam pays dear for nearly everything) × a deterministic per-node jitter. The spread is *visible* (▼ cheap / ▲ dear on the market board) so trading is a read, not a memory test. **Cargo car** pools holds (4 at lvl 1, +2/lvl) — the crate stack and side gauge show the fill. **Passenger coach** seats fares (2 at lvl 1, +1/lvl) — riders board at stations, pay on disembarking; rare **special passengers** (named, hooded in the window) pay 5×. A lost leg scatters passengers and resets escort clocks (`navFail`).
+
+**Station personalities.** Every station carries 2 of YARD / MARKET / OUTPOST / CHAPEL (seeded; the Railhead is always YARD+MARKET so the first stop teaches the trade). Personalities pin their offer (yard→repair, outpost→recruit, chapel→blessing) and MARKET adds the trade board. **The Dispatcher board** offers 2 contracts per visit (refreshed by crossing count): **haul** (deliver N of a good to a region, pay ≈ 1.7× spot there, delivery at any station in the target region other than where it was inked) and **escort** (ride N legs unbroken). Max 2 inked. Crew grows two roles: Quartermaster (cargo, +scrap%) and Conductor (coach, −fuel%).
+
+---
+
 ## Save schema — versioned, migrated stepwise
 
 `save()` stamps `v: SAVE_V`; `load()` runs `migrate(d)` **first**, so load logic only ever reads the current schema. `migrate()` is a **chain of stepwise upgrades** — one step per wave that grows state (v1→v2 normalized the live-shipped unversioned shape; v2→v3 will add map state and place veterans on the node graph). **Policy: a rig is sacred** — unknown/higher versions pass through untouched and load reads known fields defensively; only a genuinely unparseable blob falls back to a fresh boot. Extend save/load/reset (and the harness) together every time state grows.

@@ -354,6 +354,11 @@ const SUBJECTS = {
     if (o.reg != null) { S.nav = { seed: 1, reg: Math.max(0, Math.min(3, +o.reg)), col: 1, row: 0 }; S.origin = false; S.stop = null; S.stationX = null; }
     S.engine = 8; S.ex = 216; S.pan = 0; S.engineSkin = o.engine || null;
     S.slots = [{ type: 'oil', lvl: 8 }, { type: 'troop', lvl: 8 }, { type: 'gun', lvl: 8, wpn: 'cannon' }];
+    if (o.cars) { // --cars=cargo,pass,... : stage a custom consist (economy cars come pre-dressed for the proof still)
+      S.slots = o.cars.split(',').map(t => t == 'gun' ? { type: 'gun', wpn: 'cannon', port: 'auto', lvl: 3 } : { type: t, lvl: 2 });
+      if (o.cars.includes('pass')) S.pax = [{ special: false, fare: 10, legs: 1 }, { special: true, nm: 'X', fare: 50, legs: 2 }];
+      if (o.cars.includes('cargo')) S.cargo = { ore: 3, grain: 2 };
+    }
     G.drawBackdrop(); G.drawTrain();
     return { scale: 4, fixedBox: { minx: 0, miny: 0, maxx: 319, maxy: 179 } };
   }
@@ -424,6 +429,7 @@ function run(subject, arg, opt) {
     else if (a.startsWith('--sx=')) opt.sx = +a.slice(5);
     else if (a.startsWith('--lamp=')) opt.lamp = +a.slice(7);
     else if (a.startsWith('--reg=')) opt.reg = +a.slice(6);
+    else if (a.startsWith('--cars=')) opt.cars = a.slice(7);
     else pos.push(a);
   }
   const subject = pos[0];

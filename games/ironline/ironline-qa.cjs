@@ -11,11 +11,11 @@ global.document={getElementById:()=>anyElCache,querySelector:()=>anyElCache,quer
 global.Image=class{set src(v){}};
 global.requestAnimationFrame=()=>{};
 const script=fs.readFileSync(__dirname+'/battle-train-hd.html','utf8').match(/<script>([\s\S]*)<\/script>/)[1]
- +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive};';
+ +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers};';
 eval(script);
 (async()=>{
 await new Promise(r=>setTimeout(r,20)); // let the async boot IIFE settle
-const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive}=globalThis.__T;
+const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers}=globalThis.__T;
 let t=0,fails=0;const step=n=>{for(let i=0;i<n;i++){t+=16;tick(t)}};
 const ok=(name,cond)=>{console.log((cond?'PASS':'FAIL')+'  '+name);if(!cond)fails++};
 
@@ -78,7 +78,7 @@ ok('v1 save: missing fuel gets default', S.fuel===30);
 ok('v1 save: gun slot normalized (wpn/port)', S.slots[0].wpn==='cannon'&&S.slots[0].port==='auto');
 ok('v1 save: no origin flag -> not docked', S.origin===false&&!S.stop);
 await save();
-ok('v1 save: re-saves stamped current ('+JSON.parse(__getStore()).v+')', JSON.parse(__getStore()).v===3);
+ok('v1 save: re-saves stamped current ('+JSON.parse(__getStore()).v+')', JSON.parse(__getStore()).v===4);
 ok('v1 save: 7 crossings land the veteran in region 1', S.nav.reg===1&&S.nav.col===0);
 
 // 7 · v2 round-trip preserves the rig
@@ -122,15 +122,50 @@ const t1=nodeType(0,1,0);
 ok('leg: the node greets by type ('+t1+')', t1==='S'?(S.mode==='depot'&&!!S.depot):(!!S.stop&&S.stop.auto===true));
 // 13 · v2->v3 migration places the veteran on the graph (one region per 5 crossings)
 const m12=migrate({v:2,journeys:12,dist:140,scrap:500,origin:1});
-ok('v2->v3: 12 crossings -> region 2 entry, Railhead dock released', m12.v===3&&m12.nav.reg===2&&m12.nav.col===0&&!m12.origin&&m12.visited.length===1);
+ok('v2->v3: 12 crossings -> region 2 entry, Railhead dock released', m12.v===4&&m12.nav.reg===2&&m12.nav.col===0&&!m12.origin&&m12.visited.length===1);
 const m3=migrate({v:2,journeys:3,dist:20,scrap:100,origin:1});
-ok('v2->v3: 3 crossings -> region 0, origin dock kept', m3.v===3&&m3.nav.reg===0&&m3.origin===1);
-// 14 · v3 round-trips the map
+ok('v2->v3: 3 crossings -> region 0, origin dock kept', m3.v===4&&m3.nav.reg===0&&m3.origin===1);
+// 14 · v3+ round-trips the map
 S.nav={seed:41,reg:1,col:2,row:1};S.visited=['1:0:0','1:1:0','1:2:1'];S.origin=false;S.stop=null;S.stationX=null;S.mode='idle';S.depot=null;
 await save();
 S.nav={seed:1,reg:0,col:0,row:0};S.visited=['0:0:0'];
 await load();
 ok('v3 save: nav + visited round-trip', S.nav.seed===41&&S.nav.reg===1&&S.nav.col===2&&S.nav.row===1&&S.visited.length===3);
 
-console.log(fails? '\n'+fails+' FAILURES':'\nALL CHECKS PASS ('+((s=>s)(0)||'choreography + save schema + the spine')+')');process.exit(fails?1:0);
+// ===== THE ECONOMY: goods, cars, fares, contracts (Wave 2) =====
+// 15 · v3 -> v4 migration gives a clean ledger
+const m4=migrate({v:3,journeys:2,nav:{seed:5,reg:0,col:1,row:0},visited:['0:0:0'],scrap:100});
+ok('v3->v4: empty holds, seats, ledger', m4.v===4&&typeof m4.cargo==='object'&&Array.isArray(m4.pax)&&Array.isArray(m4.contracts));
+// 16 · the regional spread is real: what the Flats sell cheap, the Seam pays dear for
+S.nav={seed:7,reg:0,col:1,row:0};const pOre0=gPrice('ore');
+S.nav={seed:7,reg:3,col:1,row:0};const pOre3=gPrice('ore');
+ok('market: ore cheap in the Flats, dear in the Seam ('+pOre0+' < '+pOre3+')', pOre0<pOre3&&pOre0>=2);
+ok('market: prices deterministic per node', gPrice('relic')===gPrice('relic'));
+// 17 · capacity math
+S.slots=[{type:'cargo',lvl:2},{type:'pass',lvl:1},null];S.slots.forEach(s=>{if(s)s.crew=null});
+ok('cars: cargo lvl2 = 6 holds, coach lvl1 = 2 seats', cargoCap()===6&&seats()===2);
+// 18 · station personalities: 2 distinct, the Railhead teaches the trade
+const ps=stationPers(1,2,0);
+ok('stations: 2 distinct personalities', ps.length===2&&ps[0]!==ps[1]);
+ok('stations: the Railhead is YARD + MARKET', stationPers(0,0,0).join(',')==='yard,market');
+// 19 · the Dispatcher board: 2 contracts, valid shapes, pay above spot
+S.nav={seed:7,reg:0,col:1,row:0};const bd=mkBoard();
+ok('board: 2 contracts, valid kinds', bd.length===2&&bd.every(c=>c.k==='haul'?(GKEYS.includes(c.g)&&c.n>=2&&c.pay>0):(c.k==='escort'&&c.legs>=2&&c.pay>0)));
+// 20 · an escort pays out on the promised leg; a fare pays at the platform
+const rnd=Math.random;Math.random=()=>0.99;                 // hold the platform crowd back for determinism
+S.nav={seed:7,reg:0,col:0,row:0};S.visited=['0:0:0'];S.sel=0;S.mode='run';S.origin=false;S.stop=null;S.depot=null;
+S.contracts=[{k:'escort',legs:1,left:1,pay:50}];S.pax=[{special:false,fare:10,legs:1}];S.cargo={};
+const sc0=S.scrap;S.navT={to:{reg:0,col:1,row:0},regChange:false};
+finish();                                                   // arrives at 0:1:0 — a station (asserted in wave 1)
+Math.random=rnd;
+ok('escort: pays out after the promised legs', S.contracts.length===0&&S.scrap>sc0+49);
+ok('fares: the rider pays and steps down at the station', S.pax.length===0);
+// 21 · the ledger survives a save
+S.cargo={ore:3,relic:1};S.contracts=[{k:'haul',g:'grain',n:2,reg:1,src:'0:1:0',pay:60}];S.pax=[{special:true,nm:'X',fare:99,legs:2}];
+S.mode='idle';S.depot=null;S.origin=false;S.stop=null;
+await save();S.cargo={};S.contracts=[];S.pax=[];
+await load();
+ok('v4 save: cargo + contracts + passengers round-trip', S.cargo.ore===3&&S.cargo.relic===1&&S.contracts.length===1&&S.contracts[0].pay===60&&S.pax.length===1&&S.pax[0].fare===99);
+
+console.log(fails? '\n'+fails+' FAILURES':'\nALL CHECKS PASS ('+((s=>s)(0)||'choreography + schema + spine + economy')+')');process.exit(fails?1:0);
 })();

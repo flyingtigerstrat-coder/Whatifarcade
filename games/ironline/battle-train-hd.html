@@ -42,6 +42,16 @@ canvas{width:100%;display:block;image-rendering:pixelated;background:#d9a05e}
 #depot .opt:disabled{opacity:0.4;transform:none}
 #depot .opt .od{font-size:14px;color:#a8957a;font-family:'VT323',monospace}
 #depot .leave{width:100%;min-height:40px;font-size:16px;background:none;color:#a8957a;border:2px solid #4a3a2c;margin-top:4px}
+#depot .flav .pers{color:#e0a33a;letter-spacing:1px}
+#depot .mkthd{font-size:14px;letter-spacing:1px;color:#e0a33a;background:#241c14;border:2px solid #5f4d38;padding:5px 8px;margin:10px 0 6px;text-align:center}
+#depot .mrow{display:flex;align-items:center;gap:7px;padding:5px 8px;background:#1d1814;border:2px solid #3a2e22;margin-bottom:5px;font-size:16px}
+#depot .mrow .gn{flex:1;color:#cdb894;text-align:left}
+#depot .mrow .gp{color:#8a7a64;white-space:nowrap}
+#depot .mrow .gp.lo{color:#9fc25f}
+#depot .mrow .gp.hi{color:#e0a33a}
+#depot .tbtn{font:inherit;font-size:15px;min-height:34px;padding:3px 10px;background:#2c241c;border:2px solid #5f4d38;border-bottom-width:3px;color:#efe3cc}
+#depot .tbtn:disabled{opacity:0.35}
+#depot .tbtn.hot{border-color:#8a5a1a;color:#f2c560}
 #travelstatus{font-size:16px;color:#a8957a;text-align:center;line-height:1.5}
 #travelstatus b{color:#cdb894;font-weight:400}
 button{font-family:'VT323',monospace;cursor:pointer;border:none}
@@ -229,11 +239,13 @@ const KEY='battle-train-save';
 const S={scrap:120,food:20,fuel:30,heroes:[],crewSel:-1,journeys:0,engine:1,caboose:1,maxSlots:3,
 slots:[{type:'gun',wpn:'cannon',port:'auto',lvl:1},{type:'farm',lvl:1},null],
 mode:'idle',jt:0,dur:14,waves:[],wi:0,hull:0,off:0,flash:0,raiders:[],smoke:[],booms:[],tracers:[],smT:0,saveT:0,resetArm:0,T:0,dt:0.016,ex:216,stackX:286,pan:0,maxPan:0,panHintT:0,tw:{x:360,r:0},turr:{},boss:null,crate:null,crateAt:-1,lastRegion:-1,lastWx:-1,ptrain:null,ptrainAt:-1,ptrainKind:'trader',ptrainElite:false,dist:0,depot:null,discount:false,view:'travel',logHist:[],layout:'',layoutManual:false,immersive:false,engineSkin:null,fortressUnlocked:false,origin:false,stationX:null,stop:null,lampK:1,
-nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null};
+nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null,cargo:{},pax:[],contracts:[]};
 const gun=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='gun'?s.lvl*wpow(s.wpn||'cannon',s.port||'auto'):0),0)*crewBuffs().gunMult;
 const troops=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='troop'?s.lvl*4:0),0);
 const farm=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='farm'?s.lvl*0.5:0),0)*crewBuffs().foodMult;
 const repairRate=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='repair'?s.lvl*3:0),0);
+const cargoCap=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='cargo'?2+s.lvl*2:0),0);   // 4 holds at lvl 1, +2/lvl
+const seats=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='pass'?1+s.lvl:0),0);         // 2 seats at lvl 1, +1/lvl
 const maxHull=()=>60+S.engine*30;
 const loot=()=>1+S.caboose*0.1;
 S.hull=maxHull();
@@ -246,8 +258,8 @@ const fdC=()=>Math.max(5,troops()*2);
 const eff=()=>S.nav?S.nav.reg*6+S.nav.col:Math.min(24,S.journeys); // effective threat: region tier drives difficulty (BRIEF v1.2 rule 6); journeys is flavor
 const base=()=>Math.round((50+eff()*30+S.maxSlots*10)*loot());
 const log=t=>{S.logHist.unshift(t);if(S.logHist.length>16)S.logHist.pop();const tk=document.getElementById('ticker');if(tk)tk.textContent=t;if(S.view=='log')renderLog()};
-const NM={gun:'Gun car',farm:'Farm car',troop:'Troop car',repair:'Repair bay',oil:'Oil car'};
-const PIP={gun:'#9aa0a6',farm:'#9fc25f',troop:'#cfe3e6',repair:'#e2655a',oil:'#caa15a'};
+const NM={gun:'Gun car',farm:'Farm car',troop:'Troop car',repair:'Repair bay',oil:'Oil car',cargo:'Cargo car',pass:'Passenger coach'};
+const PIP={gun:'#9aa0a6',farm:'#9fc25f',troop:'#cfe3e6',repair:'#e2655a',oil:'#caa15a',cargo:'#b89a4a',pass:'#d8c6a8'};
 const WN={cannon:'Cannon car',rocket:'Rocket car',mortar:'Mortar car'};
 const WP={cannon:'#9aa0a6',rocket:'#e07b2a',mortar:'#c2a35a'};
 const WPOW=w=>w=='rocket'?7:w=='mortar'?6:5;
@@ -266,6 +278,8 @@ const CREW={
  farmhand:{nm:'Farmhand',   role:'farm',  buff:r=>'+'+(r*12)+'% food'},
  mechanic:{nm:'Mechanic',   role:'repair',buff:r=>'+'+r+' hull/s always'},
  stoker  :{nm:'Stoker',     role:'oil',   buff:r=>'\u2212'+(r*6)+'% fuel burn'},
+ quartermaster:{nm:'Quartermaster',role:'cargo',buff:r=>'+'+(r*8)+'% scrap'},
+ conductor:{nm:'Conductor', role:'pass',  buff:r=>'\u2212'+(r*4)+'% fuel burn'},
  // ---- WANDERERS (friendly: depot recruiter + passing traders) ----
  cook    :{nm:'Cook',     hero:true, grp:'wander', buff:r=>'+'+(r*18)+'% food'},
  medic   :{nm:'Medic',    hero:true, grp:'wander', buff:r=>'hull floor '+(20+r*10)+'%'},
@@ -280,7 +294,7 @@ const CREW={
 };
 const WANDER_HEROES=['cook','medic','greaser','tinker'];
 const WAR_HEROES=['bombardier','ironside','reaver']; // + warboss (rare), rolled separately
-const ROLECREW={gun:'captain',troop:'sergeant',farm:'farmhand',repair:'mechanic',oil:'stoker'};
+const ROLECREW={gun:'captain',troop:'sergeant',farm:'farmhand',repair:'mechanic',oil:'stoker',cargo:'quartermaster',pass:'conductor'};
 const RNK=['','I','II','III'];
 const MAXRANK=3;
 function crewOf(s){if(!s)return null;if(!s.crew)s.crew={kind:ROLECREW[s.type]||'captain',rank:1};return s.crew}
@@ -293,6 +307,8 @@ function crewBuffs(){
   else if(c.kind=='farmhand')b.foodMult+=r*0.12;
   else if(c.kind=='mechanic')b.hullRegen+=r;
   else if(c.kind=='stoker')b.fuelMult-=r*0.06;
+  else if(c.kind=='quartermaster')b.scrapMult+=r*0.08;
+  else if(c.kind=='conductor')b.fuelMult-=r*0.04;
   else if(c.kind=='cook')b.foodMult+=r*0.18;
   else if(c.kind=='medic')b.hullFloor=Math.max(b.hullFloor,0.20+r*0.10);
   else if(c.kind=='greaser')b.fuelMult-=r*0.07;
@@ -341,7 +357,7 @@ let canSave=typeof window.storage!=='undefined';
 // ---- save schema: versioned, migrated stepwise (one step per state-growing wave; BRIEF v1.2 rule 2) ----
 // POLICY: a rig is sacred. Unknown/higher versions pass through untouched and load reads known fields
 // defensively — we never wipe. Only a genuinely unparseable blob falls back to a fresh boot.
-const SAVE_V=3;
+const SAVE_V=4;
 function migrate(d){
  if(!d||typeof d!=='object')return null;
  if(!d.v){                                  // v1: the unversioned live-shipped shape -> v2 (normalize, no behavior change)
@@ -360,7 +376,11 @@ function migrate(d){
   if(reg>0)d.origin=0;                      // a veteran deep in the wastes wakes at their region's entry, not the Railhead
   d.v=3;
  }
- // future steps append here, in order: if(d.v==3){ ... d.v=4 }
+ if(d.v==3){                                // v3 -> v4: the station economy — empty holds, empty seats, a clean ledger
+  d.cargo={};d.pax=[];d.contracts=[];
+  d.v=4;
+ }
+ // future steps append here, in order: if(d.v==4){ ... d.v=5 }
  return d;
 }
 function setSaveMsg(t){document.getElementById('savemsg').textContent=t}
@@ -368,7 +388,7 @@ let saveTimer=null;
 async function save(){
 if(!canSave){setSaveMsg('Saving unavailable here');return}
 try{
-const d={v:SAVE_V,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0,nav:S.nav,visited:S.visited};
+const d={v:SAVE_V,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0,nav:S.nav,visited:S.visited,cargo:S.cargo,pax:S.pax,contracts:S.contracts};
 const r=await window.storage.set(KEY,JSON.stringify(d));
 if(r){setSaveMsg('Progress saved');clearTimeout(saveTimer);saveTimer=setTimeout(()=>setSaveMsg(''),2500)}
 }catch(e){canSave=false;setSaveMsg('Saving unavailable here')}
@@ -385,13 +405,14 @@ if(d.nav&&typeof d.nav=='object')S.nav={seed:(d.nav.seed|0)||1,reg:Math.max(0,Ma
 else S.nav={seed:1,reg:0,col:0,row:0};                                                           // defensive: a future save without nav still boots ON the map
 S.visited=Array.isArray(d.visited)&&d.visited.length?d.visited.slice():[navVK(S.nav.reg,S.nav.col,S.nav.row)];
 S.sel=0;S.navT=null;
+S.cargo=(d.cargo&&typeof d.cargo=='object')?d.cargo:{};S.pax=Array.isArray(d.pax)?d.pax:[];S.contracts=Array.isArray(d.contracts)?d.contracts:[];
 if(d.origin&&S.nav.reg==0&&S.nav.col==0){S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1} // saved while docked at the origin — wake up there
 else{S.origin=false;S.stop=null;S.stationX=null;S.lampK=1}                                       // ...otherwise the load is authoritative: mid-journey, no stop
 return true}
 }catch(e){}
 return false;
 }
-function statLine(s){if(s.type=='gun')return TOPW[s.wpn||'cannon'].nm+' + '+PORTW[s.port||'auto'].nm+' · pow '+Math.round(s.lvl*wpow(s.wpn||'cannon',s.port||'auto'));if(s.type=='farm')return '+'+(s.lvl*0.5).toFixed(1)+' food/s';if(s.type=='oil')return '+'+(s.lvl*0.4).toFixed(1)+' fuel/s';if(s.type=='repair')return '+'+(s.lvl*3)+' hull/s in combat';return s.lvl*4+' troops · escort'}
+function statLine(s){if(s.type=='gun')return TOPW[s.wpn||'cannon'].nm+' + '+PORTW[s.port||'auto'].nm+' · pow '+Math.round(s.lvl*wpow(s.wpn||'cannon',s.port||'auto'));if(s.type=='farm')return '+'+(s.lvl*0.5).toFixed(1)+' food/s';if(s.type=='oil')return '+'+(s.lvl*0.4).toFixed(1)+' fuel/s';if(s.type=='repair')return '+'+(s.lvl*3)+' hull/s in combat';if(s.type=='cargo')return (2+s.lvl*2)+' cargo holds · trade the spread';if(s.type=='pass')return (1+s.lvl)+' coach seats · fares on arrival';return s.lvl*4+' troops · escort'}
 function pip(c){return '<span class="pip" style="background:'+c+'"></span>'}
 function tierMk(l){const t=vtier(l);return '<span style="color:#e0a33a;letter-spacing:1px">'+('★'.repeat(t+1))+'</span>'}
 function renderCrew(){
@@ -435,6 +456,8 @@ h+='<div class="card empty"><div class="hd"><span class="nm">Empty slot</span></
 '<button class="up build" data-act="build" data-i="'+i+'" data-t="oil" '+cant+'>Oil · fuel</button>'+
 '<button class="up build" data-act="build" data-i="'+i+'" data-t="troop" '+cant+'>Troops</button>'+
 '<button class="up build" data-act="build" data-i="'+i+'" data-t="repair" '+cant+'>Repair bay</button>'+
+'<button class="up build" data-act="build" data-i="'+i+'" data-t="cargo" '+cant+'>Cargo · holds</button>'+
+'<button class="up build" data-act="build" data-i="'+i+'" data-t="pass" '+cant+'>Coach · fares</button>'+
 '<button class="up build" data-act="build" data-i="'+i+'" data-t="gun" data-w="cannon" '+cant+'>Cannon · fast</button>'+
 '<button class="up build" data-act="build" data-i="'+i+'" data-t="gun" data-w="rocket" '+cant+'>Rockets · hard hit</button>'+
 '<button class="up build" data-act="build" data-i="'+i+'" data-t="gun" data-w="mortar" '+cant+'>Mortar · lobbed</button></div>'}});
@@ -491,6 +514,7 @@ S.scrap=120;S.food=20;S.fuel=30;S.heroes=[];S.crewSel=-1;S.journeys=0;S.engine=1
 S.slots=[{type:'gun',wpn:'cannon',port:'auto',lvl:1},{type:'farm',lvl:1},null];S.slots.forEach(s=>crewOf(s));
 S.hull=maxHull();S.mode='idle';S.raiders=[];S.booms=[];S.tracers=[];S.boss=null;S.crate=null;S.dist=0;S.depot=null;S.discount=false;renderDepot();
 S.nav={seed:1+Math.floor(Math.random()*99999),reg:0,col:0,row:0};S.visited=['0:0:0'];S.sel=0;S.navT=null;
+S.cargo={};S.pax=[];S.contracts=[];
 S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1;   // a fresh rig begins where every rig begins — docked at THE RAILHEAD
 if(canSave){try{await window.storage.delete(KEY)}catch(e){}}
 log('The old rig burns behind you. A fresh engine waits on the line.');
@@ -511,11 +535,11 @@ for(let i=0;i<n;i++)S.raiders.push(raiderSpawn(340+i*26));
 S.flash=1.4;
 if(dmg<=0)log('Wave repelled — '+enemy+' raider strength shredded by your guns.');
 else{const tk=hurt(dmg);log('Raiders breached the firing line — hull takes '+tk+'!')}
-if(S.hull<=0){const r=Math.round(base()*0.25);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.mode='idle';S.raiders=[];S.ptrain=null;S.navT=null;log('Hull failure! You limp back to '+nodeName(S.nav.reg,S.nav.col,S.nav.row)+' with only '+r+' scrap. Repair and rearm.');cards();save()}
+if(S.hull<=0){const r=Math.round(base()*0.25);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.mode='idle';S.raiders=[];S.ptrain=null;navFail();log('Hull failure! You limp back to '+nodeName(S.nav.reg,S.nav.col,S.nav.row)+' with only '+r+' scrap. Repair and rearm.');cards();save()}
 }
 function finish(){const r=Math.round(base()*crewBuffs().scrapMult);S.scrap+=r;S.journeys++;S.mode='idle';S.ptrain=null;S.crate=null;log('Crossing complete. Salvaged '+r+' scrap from the far shore.');navArrive()}
 function bossKill(){const r=Math.round(base()*2.2*crewBuffs().scrapMult);S.scrap+=r;S.journeys++;const cn=(S.boss.cars||[1,1]).length;for(let i=0;i<7+cn*2;i++)S.booms.push({x:S.boss.x-26+i*(BENGW+(cn-1)*BCARW)/(7+cn*2),y:138+(i%3)*7,t:0.04+i*0.04});S.boss=null;S.mode='idle';S.raiders=[];S.tracers=[];S.crate=null;log('Warlord convoy destroyed! You haul back '+r+' scrap and the wastes learn your name.');if(Math.random()<0.85)recruitHero('war');else{const b=Math.round(30+eff()*8);S.scrap+=b;log('No survivors worth taking \u2014 you strip the wreck for '+b+' more scrap.');}navArrive()}
-function bossEscape(){const r=Math.round(base()*0.3);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.boss=null;S.mode='idle';S.raiders=[];S.tracers=[];S.crate=null;S.navT=null;log('The warlord overran your line \u2014 you uncouple and limp home with '+r+' scrap. The gate still answers to them.');cards();save()}
+function bossEscape(){const r=Math.round(base()*0.3);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.boss=null;S.mode='idle';S.raiders=[];S.tracers=[];S.crate=null;navFail();log('The warlord overran your line \u2014 you uncouple and limp home with '+r+' scrap. The gate still answers to them.');cards();save()}
 function grabCrate(){const c=S.crate;if(!c||c.grabbed)return;c.grabbed=true;if(Math.random()<0.65){const sc=Math.round(28+eff()*14),fd=4+Math.floor(Math.random()*5);S.scrap+=sc;S.food+=fd;S.booms.push({x:c.x+5,y:c.y+4,t:0.12});log('Salvage secured — +'+sc+' scrap, +'+fd+' food.')}else{const dmg=Math.round(5+eff()*1.5);S.hull=Math.max(Math.round(maxHull()*0.35),S.hull-dmg);S.flash=1.2;for(let i=0;i<2;i++)S.raiders.push(raiderSpawn(340+i*22));log('Ambush! The wreck was bait — hull takes '+dmg+' and raiders close in.')}S.crate=null}
 /* ---- THE SPINE: the node-graph journey (BRIEF v1.2 wave 1) ----
    The rail ocean is 4 REGIONS, each a seeded node graph: columns of stops, 1-2 forward edges per node,
@@ -547,6 +571,41 @@ function nodeName(reg,col,row){const R=REGIONS[reg];
  return DPRE[Math.floor(hash(S.nav.seed+k*3+1)*DPRE.length)]+' '+DSUF[Math.floor(hash(S.nav.seed+k*7+2)*DSUF.length)]}
 const edgeLabel=e=>{const t=nodeType(e.reg,e.col,e.row);return nodeName(e.reg,e.col,e.row)+' '+(t=='S'?'◉':t=='E'?'?':t=='H'?'~':t=='B'?'✕':'♜')};
 function depotFlavor(idx){return DFLAV[Math.floor(hash(idx*5+4)*DFLAV.length)]}
+/* ---- WAVE 2: the station economy — goods with a regional spread, personalities, fares, contracts ---- */
+const GOODS={ore:{nm:'Ore',base:10,c:'#9aa0a6'},parts:{nm:'Parts',base:16,c:'#cdb894'},med:{nm:'Medicine',base:24,c:'#e2655a'},grain:{nm:'Grain',base:8,c:'#9fc25f'},relic:{nm:'Relics',base:34,c:'#c9a15a'}};
+const GKEYS=Object.keys(GOODS);
+const GMKT={ // per-region price multiplier: <1 they sell cheap (supply) · >1 they pay dear (demand). The Seam makes everything dear.
+ ore:[0.6,1.2,1.1,1.4],parts:[1.2,0.6,1.1,1.3],med:[1.3,1.1,0.7,1.5],grain:[0.8,1.5,1.2,1.6],relic:[1.2,0.8,0.6,1.1]};
+const navK=()=>S.nav.reg*1000+S.nav.col*37+S.nav.row*7;
+function gPrice(g){return Math.max(2,Math.round(GOODS[g].base*GMKT[g][S.nav.reg]*(0.85+0.3*hash(S.nav.seed+navK()*11+GKEYS.indexOf(g)*29+13))))}
+const gTrend=g=>GMKT[g][S.nav.reg]<0.95?'▼':GMKT[g][S.nav.reg]>1.15?'▲':'·'; // the visible spread: ▼ cheap here, ▲ dear here
+const cargoUsed=()=>GKEYS.reduce((a,g)=>a+(S.cargo[g]||0),0);
+const PERS={yard:'YARD',market:'MARKET',outpost:'OUTPOST',chapel:'CHAPEL'};
+function stationPers(reg,col,row){if(reg==0&&col==0)return['yard','market']; // the Railhead teaches the trade
+ const k=reg*1000+col*37+row*7,p=['yard','market','outpost','chapel'],a=Math.floor(hash(S.nav.seed+k*17+21)*4);let b=Math.floor(hash(S.nav.seed+k*23+27)*4);if(b==a)b=(b+1)%4;return[p[a],p[b]]}
+const cLabel=c=>c.k=='haul'?('Haul '+c.n+' '+GOODS[c.g].nm+' → '+REGIONS[c.reg].name):('Ride escort '+c.legs+' legs unbroken');
+function mkBoard(){ // the Dispatcher board: 2 contracts per visit, refreshed by the crossing count (journeys as salt, never as difficulty)
+ const k=navK(),out=[];
+ for(let i=0;i<2;i++){const h=hash(S.nav.seed+k*41+S.journeys*13+i*97+7),h2=hash(S.nav.seed+k*43+S.journeys*17+i*89+3);
+  if(h<0.6){const g=GKEYS[Math.floor(h2*GKEYS.length)],n=2+Math.floor(hash(S.nav.seed+k*47+i*83+S.journeys*7+1)*4),tr=Math.min(REGIONS.length-1,S.nav.reg+(h2>0.5?1:0));
+   out.push({k:'haul',g,n,reg:tr,src:navVK(S.nav.reg,S.nav.col,S.nav.row),pay:Math.round(GOODS[g].base*GMKT[g][tr]*1.7*n)})}
+  else{const legs=2+Math.floor(h2*3);out.push({k:'escort',legs,left:legs,pay:Math.round((26+eff()*10)*legs)})}}
+ return out}
+const PAXN=['The Cartographer','A Quiet Bride','The Bone-Doctor','A Debt-Runner','The Lantern Widow','The Deaf Surveyor'];
+function paxBoard(){ // seats fill at stations; specials pay 5x and carry a name
+ let on=0;const free=seats()-S.pax.length;
+ for(let i=0;i<free;i++){const r=Math.random();
+  if(r<0.10){const sp={special:true,nm:PAXN[Math.floor(Math.random()*PAXN.length)],fare:(8+eff()*3)*5,legs:2+Math.floor(Math.random()*2)};S.pax.push(sp);log(sp.nm+' pays for a private berth — '+sp.legs+' stops down the line.')}
+  else if(r<0.62){S.pax.push({special:false,fare:8+eff()*3,legs:1+Math.floor(Math.random()*2)});on++}}
+ if(on)log(on+' passenger'+(on>1?'s':'')+' climb'+(on>1?'':'s')+' aboard the coach.')}
+function paxArrive(atStation){S.pax.forEach(p=>p.legs--);
+ if(!atStation)return;
+ const stay=[],out=[];S.pax.forEach(p=>(p.legs<=0?out:stay).push(p));S.pax=stay;
+ let fares=0,n=0;out.forEach(p=>{S.scrap+=p.fare;if(p.special)log(p.nm+' steps down, presses '+p.fare+' scrap into your hand, and vanishes into the crowd.');else{fares+=p.fare;n++}});
+ if(n)log(n+' fare'+(n>1?'s':'')+' paid at the platform — +'+fares+' scrap.')}
+function navFail(){S.navT=null; // a lost leg: the map doesn't move, passengers scatter, escort clocks reset
+ if(S.pax.length){S.pax=[];log('Your passengers scatter into the wastes.')}
+ S.contracts.forEach(c=>{if(c.k=='escort'&&c.left<c.legs){c.left=c.legs;log('The escort clock resets — the convoy scatters.')}})}
 function navEvent(nm){const r=Math.random(); // wave-1 light events; wave 3 deepens these into real encounters
  if(r<0.5){const g=Math.round(30+eff()*12);S.scrap+=g;log('At '+nm+', scavengers wave you down — an honest trade nets +'+g+' scrap.')}
  else if(r<0.8){const g=Math.round(10+eff()*3);S.food+=g;log('At '+nm+', a half-buried silo still holds grain — +'+g+' food.')}
@@ -559,7 +618,10 @@ function navArrive(){ // every completed leg lands here: move the rig on the map
  const vk=navVK(to.reg,to.col,to.row);if(!S.visited.includes(vk))S.visited.push(vk);
  S.sel=0;
  const ty=nodeType(to.reg,to.col,to.row),nm=nodeName(to.reg,to.col,to.row);
- if(ty=='S'){openDepot(nm)}
+ S.contracts.forEach(c=>{if(c.k=='escort')c.left--});                              // every safe leg counts toward an escort
+ S.contracts=S.contracts.filter(c=>{if(c.k=='escort'&&c.left<=0){S.scrap+=c.pay;log('Escort complete — the caravan pays out '+c.pay+' scrap.');return false}return true});
+ paxArrive(ty=='S');
+ if(ty=='S'){openDepot(nm);paxBoard()}
  else{stopArrive(false);S.stop.auto=true; // a real halt at every stop — then she rolls on her own
   if(ty=='E')navEvent(nm);
   else if(ty=='H'){const heal=Math.round(maxHull()*0.25);S.hull=Math.min(maxHull(),S.hull+heal);log('You clear the bad country and breathe at '+nm+'. The crew patches plate — +'+heal+' hull.')}
@@ -575,16 +637,48 @@ if(type=='recruit'){const c=Math.round(70+idx*22);return{label:'Wandering specia
 if(type=='scrap'){const c=Math.round(12+idx*4),g=Math.round(40+idx*14);return{label:'Scrap broker',desc:'−'+c+' food · +'+g+' scrap',can:()=>S.food>=c,act:()=>{S.food-=c;S.scrap+=g;log('Sold rations for '+g+' scrap.')}}}
 if(type=='scavenge'){return{label:'Pick the wreck-stacks',desc:'free · gamble',can:()=>true,act:()=>{const r=Math.random();if(r<0.5){const g=Math.round(35+idx*13);S.scrap+=g;log('Scavenging paid off — +'+g+' scrap.')}else if(r<0.8){const g=Math.round(12+idx*5);S.food+=g;log('Found a food cache — +'+g+' food.')}else log('The stacks were already picked clean. Nothing here.')}}}
 if(type=='cache'){const g=Math.round(24+idx*10);return{label:'Supply cache',desc:'free · +'+g+' scrap',can:()=>true,act:()=>{S.scrap+=g;log('Cracked a supply cache — +'+g+' scrap.')}}}
+if(type=='blessing'){const heal=Math.round(maxHull()*0.2);return{label:'Chapel of the Open Rail',desc:'free · the crew breathes',can:()=>true,act:()=>{S.hull=Math.min(maxHull(),S.hull+heal);S.food+=4;log('Lamp-smoke and quiet in the chapel car. The crew breathes — +'+heal+' hull, +4 food.')}}}
 return{label:'Black-market fixer',desc:'free · next upgrade ½ price',can:()=>!S.discount,act:()=>{S.discount=true;log('A fixer marks down your next upgrade to half price.')}}}
-function depotOffers(idx){const pool=['repair','food','scrap','fuel','recruit','scavenge','cache','discount'],pick=[],used={};let k=0;while(pick.length<3&&k<20){const t=pool[Math.floor(hash(idx*13+k*7+9)*pool.length)];if(!used[t]){used[t]=1;pick.push(t)}k++}if(!pick.includes('scavenge')&&!pick.includes('cache'))pick[2]='scavenge';return pick.map(t=>offerObj(t,idx))}
-function openDepot(nm){const idx=eff();S.depot={idx,name:nm,offers:depotOffers(idx)};S.mode='depot';stopArrive(false);log('You pull into '+nm+'. '+depotFlavor(idx));renderDepot();showView('travel')}
+function depotOffers(idx,pers){ // personalities pin their trade first (YARD repairs, OUTPOST recruits, CHAPEL blesses); the rest rolls from the pool
+const pool=['repair','food','scrap','fuel','recruit','scavenge','cache','discount'],pick=[],used={};
+if(pers&&pers.includes('yard')){used.repair=1;pick.push('repair')}
+if(pers&&pers.includes('outpost')){used.recruit=1;pick.push('recruit')}
+if(pers&&pers.includes('chapel')){used.blessing=1;pick.push('blessing')}
+let k=0;while(pick.length<3&&k<20){const t=pool[Math.floor(hash(idx*13+k*7+9)*pool.length)];if(!used[t]){used[t]=1;pick.push(t)}k++}
+if(!pick.includes('scavenge')&&!pick.includes('cache'))pick[pick.length-1]='scavenge';
+return pick.map(t=>offerObj(t,idx))}
+function openDepot(nm){const idx=eff(),pers=stationPers(S.nav.reg,S.nav.col,S.nav.row);
+S.depot={idx,name:nm,pers,key:navVK(S.nav.reg,S.nav.col,S.nav.row),offers:depotOffers(idx,pers),board:mkBoard()};
+S.mode='depot';stopArrive(false);log('You pull into '+nm+'. '+depotFlavor(idx));renderDepot();showView('travel')}
 function renderDepot(){const d=S.depot,el=document.getElementById('depot');if(!d){el.className='';el.innerHTML='';return}
-let h='<h3>'+d.name+'</h3><div class="flav">'+depotFlavor(d.idx)+'</div>';
+let h='<h3>'+d.name+'</h3><div class="flav"><span class="pers">'+d.pers.map(p=>PERS[p]).join(' + ')+'</span> — '+depotFlavor(d.idx)+'</div>';
 d.offers.forEach((o,k)=>{h+='<button class="opt" data-k="'+k+'" '+(o.can()?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'});
+if(d.pers.includes('market')){ // the trade board: spot prices with the regional spread visible
+ h+='<div class="mkthd">MARKET · hold '+cargoUsed()+'/'+cargoCap()+(cargoCap()?'':' — weld a Cargo car to trade')+'</div>';
+ GKEYS.forEach(g=>{const p=gPrice(g),held=S.cargo[g]||0,tr=gTrend(g);
+  h+='<div class="mrow"><span class="pip" style="background:'+GOODS[g].c+'"></span><span class="gn">'+GOODS[g].nm+(held?' ×'+held:'')+'</span>'
+   +'<span class="gp '+(tr=='▼'?'lo':tr=='▲'?'hi':'')+'">'+tr+' '+p+'</span>'
+   +'<button class="tbtn" data-g="'+g+'" data-tact="buy" '+((S.scrap>=p&&cargoUsed()<cargoCap())?'':'disabled')+'>Buy</button>'
+   +'<button class="tbtn" data-g="'+g+'" data-tact="sell" '+(held?'':'disabled')+'>Sell</button></div>'})}
+{h+='<div class="mkthd">DISPATCHER BOARD · '+S.contracts.length+'/2 inked</div>';
+ S.contracts.forEach((c,i)=>{const dl=c.k=='haul'&&c.reg==S.nav.reg&&d.key!=c.src&&(S.cargo[c.g]||0)>=c.n;
+  h+='<div class="mrow crow"><span class="gn">'+cLabel(c)+'</span><span class="gp">'+(c.k=='escort'?c.left+' to go':(S.cargo[c.g]||0)+'/'+c.n+' held')+'</span>'
+   +(dl?'<button class="tbtn hot" data-cact="deliver" data-ci="'+i+'">Deliver · +'+c.pay+'</button>':'<span class="gp">'+c.pay+' scrap</span>')+'</div>'});
+ d.board.forEach((c,i)=>{if(S.contracts.length>=2)return;
+  h+='<div class="mrow crow"><span class="gn">'+cLabel(c)+'</span><span class="gp">'+c.pay+' scrap</span><button class="tbtn" data-cact="accept" data-ci="'+i+'">Ink it</button></div>'})}
 h+='<button class="leave" data-k="-1">Press on without stopping</button>';
 el.innerHTML=h;el.className='show';
 }
-document.getElementById('depot').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||!S.depot)return;const k=+b.dataset.k;if(k>=0)S.depot.offers[k].act();S.depot=null;S.mode='idle';if(S.stop)stopDepart();renderDepot();cards();save();showView('travel')});
+document.getElementById('depot').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||!S.depot)return;
+if(b.dataset.g){const g=b.dataset.g,p=gPrice(g); // trading keeps the depot open
+ if(b.dataset.tact=='buy'&&S.scrap>=p&&cargoUsed()<cargoCap()){S.scrap-=p;S.cargo[g]=(S.cargo[g]||0)+1;log('Bought 1 '+GOODS[g].nm+' — −'+p+' scrap.')}
+ else if(b.dataset.tact=='sell'&&(S.cargo[g]||0)>0){S.cargo[g]--;S.scrap+=p;log('Sold 1 '+GOODS[g].nm+' — +'+p+' scrap.')}
+ renderDepot();upd();save();return}
+if(b.dataset.cact){const ci=+b.dataset.ci; // contracts keep it open too
+ if(b.dataset.cact=='accept'&&S.contracts.length<2){const c=S.depot.board.splice(ci,1)[0];S.contracts.push(c);log('Contract inked: '+cLabel(c)+' — '+c.pay+' scrap on completion.')}
+ else if(b.dataset.cact=='deliver'){const c=S.contracts[ci];if(c&&c.k=='haul'&&(S.cargo[c.g]||0)>=c.n){S.cargo[c.g]-=c.n;S.scrap+=c.pay;S.contracts.splice(ci,1);log('Delivered '+c.n+' '+GOODS[c.g].nm+' — the Dispatcher counts out '+c.pay+' scrap.')}}
+ renderDepot();upd();save();return}
+const k=+b.dataset.k;if(k>=0)S.depot.offers[k].act();S.depot=null;S.mode='idle';if(S.stop)stopDepart();renderDepot();cards();save();showView('travel')});
 /* ---- view router: persistent shell + swappable content ---- */
 function showView(v){S.view=v;
 for(const id of ['travel','train','crew','map','log'])document.getElementById('v-'+id).hidden=(id!=v);
@@ -982,7 +1076,7 @@ px(dx2+1,DECK+6,1,5,'#9a8a64');px(dx2+3,DECK+6,3,1,'#9a8a64');px(dx2+3,DECK+8,2,
 }
 }
 const vt=vtier(s.lvl);
-if(vt>=1&&s.type!='farm'&&s.type!='gun'&&s.type!='troop'&&s.type!='oil'){px(cx+carW-8,DECK-3,4+vt,3,'#5a4632');px(cx+carW-7,DECK-4,3+vt,1,'#7a6248')}
+if(vt>=1&&s.type!='farm'&&s.type!='gun'&&s.type!='troop'&&s.type!='oil'&&s.type!='cargo'&&s.type!='pass'){px(cx+carW-8,DECK-3,4+vt,3,'#5a4632');px(cx+carW-7,DECK-4,3+vt,1,'#7a6248')}
 armorPass(cx,carW,vt);
 carStruct(cx,carW,cm,i);
 if(s.type=='farm'){
@@ -1006,6 +1100,33 @@ px(fpk-2,DECK-frh-1,5,2,'#5a4632');px(fpk-2,DECK-frh-1,5,1,'#7a6248');
 px(fpk-1,DECK-frh-2-fvo,3,1+fvo,'#3a2f22');
 if(Math.floor(S.T*1.5+i)%3==0)px(fpk,DECK-frh-3-Math.round((S.T*4+i)%3),1,2,'#cfe3dd');
 // FARMHAND (crew) tending at the greenhouse's rear corner
+crewFig(cx+2,activeCrew(s).kind,activeCrew(s).rank);
+}
+if(s.type=='cargo'){
+// slat-walled freight body with an open top: the crate stack + lashed tarp — the fill reads at a glance
+const fill=cargoCap()?Math.min(1,cargoUsed()/cargoCap()):0,ncr=Math.round(fill*4);
+for(let sl=DECK+4;sl<BASE-5;sl+=3)px(cx+2,sl,carW-4,1,'rgba(20,14,10,0.35)');
+px(cx+2,DECK+1,carW-4,2,'#241a12');
+for(let c2=0;c2<ncr;c2++){const bx2=cx+4+c2*Math.floor((carW-14)/3),bh=5+(c2%2)*2;
+ px(bx2,DECK-bh+2,7,bh,'#6e5436');px(bx2,DECK-bh+2,7,1,'#8a6a42');px(bx2+3,DECK-bh+2,1,bh,'#4a3826')}
+const tw2=Math.floor(carW*0.44),tx2=cx+carW-tw2-2;
+px(tx2,DECK-3,tw2,4,'#5a6248');px(tx2,DECK-3,tw2,1,'#6e765a');
+for(let r2=tx2+2;r2<tx2+tw2;r2+=5)px(r2,DECK-3,1,4,'#3c4434');
+px(cx+3,DECK+6,Math.max(0,Math.round((carW-6)*fill)),2,'#8a6a42');   // hold gauge painted on the flank
+px(cx+3,DECK+6,carW-6,1,'rgba(20,14,10,0.3)');
+crewFig(cx+2,activeCrew(s).kind,activeCrew(s).rank);
+}
+if(s.type=='pass'){
+// the coach: clerestory roof + a row of berth windows that light as fares board
+px(cx+1,DECK-2,carW-2,3,'#3a322c');px(cx+2,DECK-3,carW-4,1,'#4a443c');
+for(let v2=cx+5;v2<cx+carW-4;v2+=7)px(v2,DECK-2,2,1,'#241a12');
+const wn2=Math.min(5,Math.max(2,Math.floor((carW-8)/8))),wgap=Math.floor((carW-8)/Math.max(1,wn2));
+for(let w2=0;w2<wn2;w2++){const wx2=cx+5+w2*wgap,lit=w2<S.pax.length;
+ px(wx2-1,DECK+3,7,1,'#241a12');px(wx2-1,DECK+10,7,1,'#241a12');
+ px(wx2,DECK+4,5,6,lit?'#e8c37a':'#22262a');px(wx2,DECK+4,5,1,lit?'#f4dca0':'#2e343a');
+ if(lit){const hood=S.pax[w2]&&S.pax[w2].special;px(wx2+1,DECK+6,2,3,hood?'#2a2230':'#4a3826');px(wx2+1,DECK+5,2,1,hood?'#3a3242':'#c9a07a')}}
+px(cx+2,DECK+3,2,BASE-DECK-9,'#241a12');px(cx+carW-4,DECK+3,2,BASE-DECK-9,'#241a12'); // end doors
+px(cx+2,BASE-5,3,1,'#4a443c');px(cx+carW-5,BASE-5,3,1,'#4a443c');                     // boarding steps
 crewFig(cx+2,activeCrew(s).kind,activeCrew(s).rank);
 }
 if(s.type=='gun'){
@@ -2089,7 +2210,7 @@ if(pt.state=='in'){pt.x+=128*dt;if(pt.x>=150){pt.x=150;pt.state='pace';pt.t=0}}
 else if(pt.state=='pace'){pt.x+=Math.sin(S.T*1.5)*5*dt;
 if(pt.kind=='trader'){if(!pt.gave&&pt.t>0.9){pt.gave=true;S.booms.push({x:pt.x+18,y:132,t:0.1});if(Math.random()<0.22){log('A wanderer rides the trader car across to your rig...');recruitHero('wander')}else{const sc=Math.round(20+eff()*12),fd=4+Math.floor(Math.random()*4);S.scrap+=sc;S.food+=fd;log('The traders toss across supplies — +'+sc+' scrap, +'+fd+' food. They wave and pull ahead.')}}if(pt.t>2.6)pt.state='out'}
 else{const dps=gun()+troops()*1.5;pt.hp-=dps*dt*0.85;if(dps>0&&S.flash<0.3)S.flash=0.3;
-pt.atkT-=dt;if(pt.atkT<=0){pt.atkT=pt.elite?1.1:1.4;pt.muzzle=0.18;const dmg=pt.elite?Math.max(2,Math.round((6+eff()*1.5-troops()*0.4)*(1+(pt.guns||0)*0.2))):Math.max(1,Math.round(4+eff()-troops()*0.4));hurt(dmg);S.flash=1.0;S.booms.push({x:165,y:126,t:0.08});if(S.hull<=0){const r=Math.round(base()*0.25);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.ptrain=null;S.mode='idle';S.raiders=[];S.tracers=[];S.navT=null;log((pt.elite?'The elite warband raked your rig apart':'The raider train shot your boiler out')+' — you limp home with '+r+' scrap.');cards();save()}}
+pt.atkT-=dt;if(pt.atkT<=0){pt.atkT=pt.elite?1.1:1.4;pt.muzzle=0.18;const dmg=pt.elite?Math.max(2,Math.round((6+eff()*1.5-troops()*0.4)*(1+(pt.guns||0)*0.2))):Math.max(1,Math.round(4+eff()-troops()*0.4));hurt(dmg);S.flash=1.0;S.booms.push({x:165,y:126,t:0.08});if(S.hull<=0){const r=Math.round(base()*0.25);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.ptrain=null;S.mode='idle';S.raiders=[];S.tracers=[];navFail();log((pt.elite?'The elite warband raked your rig apart':'The raider train shot your boiler out')+' — you limp home with '+r+' scrap.');cards();save()}}
 if(S.ptrain&&pt.hp<=0){if(pt.elite){const r=Math.round(base()*1.6*crewBuffs().scrapMult);S.scrap+=r;for(let i=0;i<8;i++)S.booms.push({x:pt.x+i*8,y:96+(i%3)*6,t:0.04+i*0.05});log('ELITE WARBAND WRECKED! You strip the convoy for '+r+' scrap as it derails in flames.');if(Math.random()<0.5)recruitHero('war');else{const b=Math.round(25+eff()*7);S.scrap+=b;log('You salvage another '+b+' scrap from the burning cars.')}}else{const r=Math.round(base()*0.8);S.scrap+=r;for(let i=0;i<5;i++)S.booms.push({x:pt.x+i*9,y:98+(i%2)*6,t:0.05+i*0.05});log('Raider train wrecked! You strip it for '+r+' scrap as it derails.')}pt.dead=true;pt.state='out'}
 else if(S.ptrain&&!pt.elite&&pt.t>3.6&&pt.state=='pace'){pt.state='out';log('The raider train breaks off and falls behind.')}}}
 else if(pt.state=='out'){pt.x+=(pt.dead?70:165)*dt;if(pt.x>384)S.ptrain=null}}
