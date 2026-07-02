@@ -1619,6 +1619,17 @@ function rhFig(x,fy,kind){ // a station figure, feet at fy (reused on the platfo
  if(kind=='worker'){px(x+1,fy-16,3,1,'#23211a');px(x,fy-15,1,1,'#9fd8ff')} // welding cap + goggle glint
  else{px(x,fy-16,5,1,'#241a12');px(x-1,fy-15,7,1,'#2a201a');px(x-1,fy-11,1,5,'#2f261d');pxa(x+1,fy-10,1,2,'rgba(224,140,60,0.85)')} // dispatcher: brim hat + propped arm + cigarette ember
 }
+function rhPup(x,fy){ // NOODLE — a little black puppy, sat on the platform looking up at the kid, tail going
+ const wag=Math.sin(S.T*5)>0?0:1;
+ pxa(x-2,fy,7,1,'rgba(10,8,6,0.3)');
+ px(x,fy-4,5,4,'#17130f');px(x,fy-4,5,1,'#2c261e');            // seated body, curly top catching the dusk
+ px(x-2,fy-7,3,4,'#17130f');px(x-2,fy-8,3,1,'#2c261e');        // round head tipped up toward the kid + fluffy topknot
+ px(x-3,fy-6,1,1,'#17130f');                                   // button muzzle
+ px(x-2,fy-6,1,1,'#c9914f');                                   // one warm eye, catching the lantern light
+ px(x-2,fy-4,2,1,'#e3a948');                                   // the gold collar, tucked at the neck — Noodle's mark, and no one else's
+ px(x+5,fy-5+wag,1,2-wag,'#17130f');                           // tail, mid-wag
+ px(x-1,fy-1,1,1,'#17130f');                                   // a front paw
+}
 function rhBoard(bx,by,bw){ // the cream hand-painted name-board
  box(bx-2,by-2,bw+4,15,'#3a2c1c');
  px(bx,by,bw,13,'#f0ddb0');px(bx,by,bw,1,'#f6e7c4');px(bx,by+12,bw,1,'#cdb48a');
@@ -1659,6 +1670,9 @@ function bGable(x,y,w,m){const ph=Math.min(12,Math.max(6,w>>2));   // pitched ro
 function bWindow(x,y,h){h=h||5;box(x,y,4,h,'#160f08');pxa(x+1,y+1,2,h-2,'rgba(242,182,92,'+(0.38+0.5*bGlow())+')');px(x+1,y+1+((h-2)>>1),2,1,'rgba(18,11,6,0.55)')} // lit pane + muntin (h-tall)
 function bDoor(x,y){const h=RHGY-y;box(x,y,5,h,'#1c140d');px(x+1,y+1,3,h-2,'#332417');px(x+1,y+1,3,1,'#46341f');px(x+4,y+(h>>1),1,1,'#caa23a')} // plank door + knob
 function bPipe(x,topY,h){px(x,topY-h,2,h,'#2a2620');px(x,topY-h,2,1,'#3a342e');px(x-1,topY-h-2,4,2,'#3a342e');rustPatch(x,topY-h+3,x)} // stovepipe + cap
+function bWisp(x,topY){for(let k=0;k<5;k++)pxa(x+Math.sin(S.T*0.6+k*1.1+x*0.3)*(1+k*0.7),topY-k*4,k<2?2:1,1,'rgba(150,140,128,'+(0.20-k*0.033)+')')} // a lazy chimney wisp — somebody's home
+function bFence(x1,x2){for(let f=x1;f<x2;f+=6){const ln=hash(f*3.7)<0.25?1:0;px(f+ln,RHGY-6,1,6,'#241a12');px(f+ln,RHGY-6,1,1,'#3a2f22')} // leaning scrap-post fence
+ for(let s=x1;s<x2;s+=6){if(hash(s*1.3)<0.85)px(s,RHGY-5,Math.min(6,x2-s),1,'#2e2014');if(hash(s*2.9)<0.8)px(s,RHGY-3,Math.min(6,x2-s),1,'#2e2014')}}
 function bLadder(x,y,h){px(x,y,1,h,'#2a2018');px(x+3,y,1,h,'#2a2018');for(let r=y+1;r<y+h;r+=3)px(x+1,r,2,1,'#3a342e')}
 function bBraceX(x,y,w,h,m){for(let i=0;i<=h;i++){px(x+Math.round(i*w/h),y+i,1,1,m);px(x+w-Math.round(i*w/h),y+i,1,1,m)}} // X cross-brace
 function bPole(x,h){px(x,RHGY-h,2,h,'#241a12');px(x,RHGY-h,1,h,'#332619');       // telegraph pole: post + lit edge
@@ -1735,17 +1749,48 @@ function bStation(x){const w=64,y=80;
  bPipe(x+9,y-1,11);                                                // stovepipe
  rhLantern(x+(w>>1)+7,y+15,RHGY,bGlow()*0.9,false);                // porch lantern hung under the canopy — the heart of the stop
  for(const wx of [x+6,x+16,x+40]){pxa(wx,RHGY-1,5,1,'rgba(242,182,92,'+(0.10+0.16*bGlow())+')');pxa(wx+1,RHGY-3,3,2,'rgba(242,182,92,'+(0.06+0.10*bGlow())+')')} // window light spilling to the ground
- for(let k=0;k<5;k++)pxa(x+9+Math.sin(S.T*0.6+k*1.1)*(1+k*0.7),y-14-k*4,k<2?2:1,1,'rgba(150,140,128,'+(0.20-k*0.033)+')'); // a lazy wisp from the stovepipe — somebody's home
+ bWisp(x+9,y-14);                                                  // a lazy wisp from the stovepipe
 }
-// the railhead cluster, as a list of building entities (offsets from the station anchor)
-const RH_BUILDINGS=[{f:bWaterTower,dx:6},{f:bStation,dx:50},{f:bSilo,dx:160},{f:bSignal,dx:188}];
+function bShack(x){const w=22,y=96;                                // a settler's dwelling — the homes that grew around the stop
+ bFoot(x,w);bWall(x,y,w,BWOOD,true);bGable(x,y,w,BIRON);
+ bWindow(x+4,y+5);bDoor(x+14,y+6);
+ bPipe(x+4,y-2,7);bWisp(x+4,y-11);
+}
+function bShed(x){const w=12,y=103;                                // a scrap-roofed tool shed
+ bFoot(x,w);bWall(x,y,w,BWOOD,false);
+ px(x-1,y-2,w+3,2,BIRON[1]);px(x-1,y-2,w+3,1,BIRON[3]);pxa(x,y,w,1,'rgba(10,8,6,0.28)'); // flat scavenged roof, overhung
+ bDoor(x+4,y+2);
+}
+function bFreight(x){const w=32,y=92;                              // the freight house — a flat-parapet warehouse with a big sliding door
+ bFoot(x,w);bWall(x,y,w,BWOOD,true);
+ px(x-2,y-3,w+4,3,BIRON[1]);px(x-2,y-3,w+4,1,BIRON[3]);px(x+w+1,y-2,1,2,BIRON[0]);pxa(x,y,w,1,'rgba(10,8,6,0.28)'); // parapet cap
+ px(x+5,y+6,13,1,BSTL[1]);                                        // door track
+ box(x+6,y+8,10,RHGY-(y+8),'#221809');px(x+7,y+9,8,RHGY-y-9,'#3c2c18');px(x+11,y+9,1,RHGY-y-9,'#241a12'); // sliding freight door
+ bWindow(x+24,y+4,4);
+ px(x+w+3,RHGY-4,4,4,'#3a2c1a');px(x+w+3,RHGY-4,4,1,'#5a4128');   // a crate left out by the door
+}
+function bWindpump(x){const hy=66,cxx=x+5;                         // wind pump — the frontier's tall silhouette, fan turning over the roofline
+ px(x+1,hy+8,1,RHGY-hy-8,BSTL[1]);px(x+8,hy+8,1,RHGY-hy-8,BSTL[1]); // legs
+ px(x,RHGY-2,2,2,BSTL[1]);px(x+8,RHGY-2,2,2,BSTL[1]);bFoot(x,10);   // splayed feet
+ for(let b=hy+10;b<RHGY-4;b+=8)bBraceX(x+2,b,6,5,BSTL[0]);           // lattice bracing
+ px(x+3,hy+3,4,5,BSTL[1]);px(x+3,hy+3,4,1,BSTL[3]);                  // neck/gearbox
+ for(let k=0;k<6;k++){const a=S.T*0.7+k*1.047;for(const r of [2,3.2,4.4])px(cxx+Math.cos(a)*r,hy+Math.sin(a)*r,1,1,BSTL[3])} // the fan, slowly turning
+ px(cxx,hy,1,1,BSTL[4]);                                             // hub glint
+ px(cxx+2,hy,4,1,BSTL[1]);px(cxx+6,hy-1,2,3,BSTL[2]);                // tail vane
+}
+// the railhead settlement, as a list of building entities (offsets from the station anchor):
+// homes quarter west (shack · water tower · shed), the STATION as anchor, working quarter east
+// (freight house · silo · signal · wind pump) — two quarters flanking the anchor, tied by the wire.
+const RH_BUILDINGS=[{f:bShack,dx:-38},{f:bWaterTower,dx:6},{f:bShed,dx:31},{f:bStation,dx:50},
+ {f:bFreight,dx:118},{f:bSilo,dx:160},{f:bSignal,dx:188},{f:bWindpump,dx:224}];
 // THE RAILHEAD — BAND 4 (backdrop, BEHIND the train): the depot cluster, set on the far rail and
 // haze-dimmed by aerial perspective. No over-rail structures — the train stays alone on band 5.
 function drawRailhead(sx){
  for(let i=0;i<6;i++)pxa(sx-14-i*8,137,5,1,'rgba(46,34,24,'+Math.max(0,0.5-i*0.08)+')'); // empty rails west into the haze
  // the telegraph line — poles marching past the station, wires sagging span to span (the line goes on)
- bPole(sx-14,34);bPole(sx+218,36);
- bWire(0,74,sx-13,78,2);bWire(sx-13,78,sx+219,76,4);bWire(sx+219,76,320,73,2);
+ bPole(sx-14,34);bPole(sx+248,36);
+ bWire(0,74,sx-13,78,2);bWire(sx-13,78,sx+249,76,4);bWire(sx+249,76,320,74,1);
+ bFence(sx-11,sx+5);bFence(sx+176,sx+187);                                              // scrappy fence runs stitching the quarters
  for(const b of RH_BUILDINGS)b.f(sx+b.dx);                                              // draw each building entity
  // aerial-perspective haze veil — dims the cluster toward the far rail so it recedes behind the train
  {const a=0.4*(0.45+0.55*dnLight),hz=ctx.createLinearGradient(0,76,0,RHGY+2);
@@ -1775,6 +1820,7 @@ function drawRailheadFront(sx){
  px(pL,deck+7,pR-pL,1,AO);                                                                     // grimy sill
  rhLantern(pL+10,150,deck,glow,true);rhLantern(pR-10,150,deck,glow,true);                      // a lantern at each end — amber rhythm along the strip
  rhFig(pL+30,deck,'kid');rhFig(pL+52,deck,'disp');rhFig(pR-26,deck,'worker');                  // the people of the stop
+ rhPup(pL+38,deck);                                                                            // ...and Noodle, keeping the kid company
  for(const gx of [pL+11,pR-9])for(let g=0;g<3;g++)                                             // gnats drifting in the lamplight
   pxa(gx+Math.sin(S.T*1.1+g*2.4)*(3+g),148+g*2+Math.sin(S.T*1.7+g*1.3)*2,1,1,'rgba(240,207,134,'+Math.max(0.12,(0.28+0.2*Math.sin(S.T*3+g*2.2))*glow)+')');
 }
