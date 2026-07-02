@@ -13,7 +13,7 @@ phase: in-code
 DECIDED: The Railhead grew from a depot cluster into a TRUE SETTLEMENT — two quarters flanking the station anchor: homes west (shack with smoking chimney, water tower, tool shed), work east (freight house with sliding door, silo, signal, a wind pump whose fan turns above the train's roofline), stitched by scrap-fence runs and the telegraph wire. AND: the human ratified the dog — NOODLE is on the platform, a little black puppy sat in front of the kid, tail mid-wag, wearing the only gold pixels in the scene (gold is his mark alone).
 TRIED: East-side dwellings behind the engine (occluded — wasted; moved homes west where they read). Collar first landed mid-chest like a bib; tucked to the neck after zoom QA.
 PARKED: —
-CHANGED: New recipes bShack/bShed/bFreight/bWindpump + parts bWisp/bFence; RH_BUILDINGS is now the settlement list; rhPup added (band 6); east telegraph pole shifted clear of the pump; DESIGN.md grammar + worked example updated.
+CHANGED: New recipes bShack/bShed/bFreight/bWindpump + parts bWisp/bFence; RH_BUILDINGS is now the settlement list; rhPup added (band 6); east telegraph pole shifted clear of the pump; DESIGN.md grammar + worked example updated. Follow-up: the foreground wreck-tire (band-3 travel prop) parked as a cropped lump in the origin's bottom-left — the yard is now SWEPT while docked at the origin (wreckage returns the moment the world rolls).
 OPEN: Bless the settlement frame, then the arrival choreography (spd->0, begin-at-origin, the Dispatcher's ticker line) — the last piece of Phase A.
 FEELING: A kid and his dog waiting for a train at the edge of the world. That's the whole studio in one frame.
 

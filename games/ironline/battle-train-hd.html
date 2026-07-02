@@ -1573,7 +1573,7 @@ for(const c of CRACKS){let x=(c.x-oc)%340;if(x<0)x+=340;ctx.beginPath();ctx.move
 eachCell(0.6,40,53,(k,sx)=>{if(hash(k*131+53)>0.72)return;const b=BIOMES[cellBiomeIdx(k,53)];b.deb(sx,hash(k*53+53))});
 eachCell(0.6,52,71,(k,sx)=>{if(hash(k*131+71)>0.5)return;const x=sx,y=150+Math.floor(hash(k*17+71)*22);for(let bb=-2;bb<=2;bb++)pxa(x+bb,y-3-(2-Math.abs(bb)),1,3+(2-Math.abs(bb)),'rgba(120,98,46,0.8)');pxa(x-2,y,5,1,'rgba(86,68,30,0.8)')});
 for(const rr of [reg,reg+1]){if(hash(rr*97+9)<0.45){const sx=(rr+0.3)*BIOME_LEN-S.off*0.6;if(sx>-40&&sx<360)storyAt(sx,Math.floor(hash(rr*61+9)*3))}}
-const o4=Math.floor(S.off*0.6)%480;drawFgWreck(-o4);drawFgWreck(480-o4);
+const o4=Math.floor(S.off*0.6)%480;if(!S.origin){drawFgWreck(-o4);drawFgWreck(480-o4)} // the origin yard is swept — wreckage belongs to the open waste
 ambientLife(cur);
 if(S.origin)drawRailhead(S.stationX==null?STATION_HOME:S.stationX);
 }
