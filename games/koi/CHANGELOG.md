@@ -1,6 +1,22 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-02 — LIVING POND Phase C: the three planes come alive (BRIEF v1.1)
+DECIDED (human: "Go into phase C" after B.2.4's fins verified live). All C rulings were batch-ratified earlier (quick visitor unlocks; real-clock day cycle; ink keeps its eternal dusk; thresholds shelter≥6 / 3 mature pads / bloom≥3). Engine **v3.2.4 → v3.3 (living pond, phase C)**.
+
+CHANGED (the pond earns its visitors — none of this is bought):
+- **The school (BELOW):** 15–20 minnows in one boids flock, small/dark/soft under the koi, occasional shimmer glints. **Arrives on its own when shelter ≥ 6** (rocks + submerged grass + mature pads); earned trust lingers (hysteresis). Darts away from approaching koi — prey grammar, **zero predation, ever** (gate-tested: count constant). Never saved; re-derives from ecology.
+- **The frog (ON):** the pond's mayor — takes residence when 3+ mature pads + calm; **residency persists in the save**, position derives. Sits on a pad with an idle throat-bob; occasionally plops (real ripple) and glides below-plane to another pad. Never hunts. Reduced-motion: he just sits.
+- **The dragonfly (ABOVE):** visits in bright hours when bloom ≥ 3 — hover-dart flight, a **live shadow on the water**, occasional wingtip dip spawning a real ring. Perches on reeds/driftwood; always perched under reduced-motion. Transient; never saved.
+- **Day cycle LIVE:** the QA preview graduated — `auto` now follows the **real local clock** (day → amber dusk 17–21 → cool night → pale dawn, ~1.5h blends; felt, not watched). Ink keeps its eternal dusk; metal takes the grade as the mirror reflecting its sky (director tunes speculars later). Codex QA forcing + `?hour=N` dev override both work.
+- **Fireflies at dusk (the Firefly Jar nod, human-ratified):** when dusk/night + a grown pond + sustained calm (~40s unstirred) — up to 10 winking motes drifting among the reeds and lantern, faint reflections beneath, **the stone lantern's window glows**. A visitor, not a light show. Gone by day.
+- **Moments (zero UI):** first sightings stamp `seen{}` into the save (Almanac substrate) with small serenity gifts; frog plops, dragonfly dips, school flashes grant quiet throttled bursts. Presence rewarded; nothing demands watching.
+
+TRIED / VERIFIED: 25/25 Phase C gates (fresh pond earns NOTHING; earned pond gets school+frog+dragonfly within sim-minutes; no predation; day-cycle math; fireflies dusk-only ≤10; frog residency + seen persist, derived life does NOT; all four skins render everything with zero warnings; reduced-motion perch). A+B suites re-run green (37/37). REAL-BROWSER: school/frog/dragonfly live at noon, 10 fireflies + glowing lantern at forced dusk, koi trails still full — screenshots captured and shared.
+
+OPEN: director's read against Acceptance C wants a short RECORDING (motion is the point — the dip-ripple, the plop, the winking); metal's dusk speculars are the standing tune-later; Phase D (Almanac, lineage, breeding ~7–10 kept days, economy) is next and last.
+
+
 ## 2026-07-02 — B.2.4: trail commit fix — the fins bug, actually fixed and PROVEN
 DECIDED (human: "fin bug still present" — correctly). Engine v3.2.3 → **v3.2.4**.
 

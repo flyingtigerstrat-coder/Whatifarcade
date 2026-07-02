@@ -75,3 +75,10 @@ The featherlight budget is enforced by construction, not hope:
 - **Koi hot path** — one `Path2D` per fish per frame reused for shadow/fill/clip/sheen/rim; shadows are offset fills (never `ctx.filter` blur); scale/net arcs batch into two strokes per style; sashi feathers are stepped washes, not per-patch gradients.
 - **DPR capped at 1.5**; DOM chrome updates diff-guarded (`syncShop` writes only on change).
 - Budget check: `perf-count` harness (scratch tooling) counts gradients/strokes/filters per frame on a composed pond — keep natural under ~30 gradients/frame; any new per-frame gradient in a hot loop should be a sprite or a cached paint instead.
+
+## The three planes alive (Phase C)
+- **Visitors derive from ecology** (`VISIT={shelter:6,frogPads:3,bloom:3}` — quick-unlock rider): school when `Eco.shelter()>=6` (hysteresis −2 once seen); frog residence at 3+ mature pads + calm (persists in save; `Fauna.frogRt` position derives); dragonfly in bright hours at bloom≥3 (transient). Arrival rolls every ~5s live + `Eco.visitors` on idle return. **No predation, ever** — the school darts, is never eaten; the frog never hunts.
+- **Day cycle:** `dayMix()` maps the real local clock (or codex QA force / `?hour=` dev override) to dusk/night/dawn strengths with ~1.5h ramps; `dayTint()` applies multiply/screen grades scaled by strength. Ink exempt (eternal dusk). Lantern window glows when dusk+night strength > .25.
+- **Fireflies:** dusk/night + ≥5 mature plants + `calm>.3` (~40s unstirred) → ≤10 softSprite motes with winking phase, faint water reflections, reduced-motion drifts slower.
+- **Moments:** `firstSeen(key,gift)` stamps `Pond.seen{}` (saved; the Almanac's memory) + `momentT(key,gift,cooldown)` for quiet repeat rewards. Zero UI.
+- **Plane order in render:** water → BELOW plants → school/frog-glide → rocks → koi → ON plants → frog-sitting → fx/overlay/sparkles → dragonfly/fireflies → dayTint. Rain draws fauna inside its buffer (behind the glass).
