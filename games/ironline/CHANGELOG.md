@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-07-02 · session 12 — THE SPINE made legible: route board, station popups, map rework (human feedback pass)
+DECIDED: The human tested and called it straight: forks were invisible, stations buried in a submenu, the map unintuitive. Fixed all three. (1) ROUTE BOARD — the travel strip's tiny fork text becomes big tappable route cards (glyph + name + what the leg IS: station/event/hazard/BLOCKADE/GATE), the fork announces itself with a header and a ticker line on arrival, and DEPART names its destination ("Depart ▸ Rust Junction · 11 fuel"). Fork frequency raised 60%→70% — the choice is the point. (2) STATION POPUP — #depot is now a modal over the whole screen (scrim + ✕ step-away that keeps the stop open; the Depart button reopens it), not a panel under the canvas. (3) MAP REWORK — fog-of-war (names/glyphs only for you, your choices, anchors, and ridden rail), heading strip ("the line forks — tap a lit stop · heading: X"), fat 17px tap targets, past rail dimmed, edge labels anchored so they never clip.
+TRIED: Playwright + the sandbox's Chromium can screenshot the DOM UI headlessly — first time the pod could self-QA menus before the human's eyes. It caught a real bug immediately: upd() re-rendered the map EVERY FRAME while the tab was open, destroying tap targets mid-tap (why map taps felt broken on the phone). renderMap now caches on a state key.
+PARKED: —
+CHANGED: #depot moved out of v-travel to app-level overlay; .routecard/.rbhd CSS replaces .edgebtn; renderMap rebuilt + cached; upd() route board; harness still 77/77 green.
+OPEN: Human re-test on the phone: route cards, map taps, popup scroll depth at busy stations.
+FEELING: The spine was always there — tonight it learned to speak up.
+
 ## 2026-07-02 · session 11 (cont.) — Wave 6 · THE POLISH: the world earns its details
 DECIDED: The Cinder Seam full art lands — glowing cone crowns, ridge glow-veins, slag heaps alight, ember chimneys, collapsed gantries, pulsing fissures, and THE CRUCIBLE (a cracked foundry tower, fire standing in its ribs) as its landmark; EMBER GALE joins as a sixth weather the Seam alone can roll. Gun-port PARITY debt paid: hull ports grow bare-port -> casemate -> twin with the car's tier, kick with recoil, drop spent casings; booms inherit the round's dt color. Engine rank reads in silhouette (cab brow / plow horns / war pennant). Fortress-skin smoke finally respects THE STOP (old session-8 debt). One new prop per old region (pipeline arch / collapsed footbridge / skull dome); region-tinted atmosphere; passing raiders wear the local clan's warpaint.
 TRIED: THE RAILHEAD render stayed byte-IDENTICAL through the entire six-wave sprint — the origin scene was never collateral.
