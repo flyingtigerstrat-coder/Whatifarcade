@@ -1,14 +1,23 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v2.2 (per-patch hi tone) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.1 (living pond, phase B: the dream pond) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
-  RENDER CONTRACT — every skin implements:
+  RENDER CONTRACT v2 — every skin implements:
      water(ctx, t)              full-bleed water/background + light
      koi(ctx, k, sp, dim)       one koi, given its precomputed spine `sp`
      plant(ctx, p)              one plant (pad / lotus)         [optional -> falls back to Natural]
      fx(ctx)                    ripples + food                 [optional -> falls back to generic]
      overlay(ctx, t)           foreground (vignette/fog/petals)
+     roles                      palette-role tokens (foliage/foliageRim/stone/moss/wood/bloom/glow).
+                                An entity drawn ONCE against ROLES() reads correctly in every skin;
+                                a bespoke per-skin handler still wins when present. Standing rule:
+                                no entity ships unless it reads correctly in all four skins.
+  PLANES (living pond): every entity declares BELOW / ON / ABOVE; planes render
+  in order (below -> on -> above) to give the pond literal depth.
+  PERSISTENCE: save key koipond_v3 (lossless v2 upgrader; the old v2 key is left
+  in place for rollback safety — never eat a pond). Derived life (school,
+  dragonfly, fireflies) is never saved; it re-derives from ecology on load.
   The engine computes koi geometry once and calls the active skin. Skins are
   drop-in: register in SKINS and it appears. Natural is the canonical core;
   art skins are faithful performances of it.
@@ -41,6 +50,30 @@
   .buy:disabled{opacity:.32;cursor:default}
   .buy .cost{display:inline-flex;align-items:center;gap:3px;opacity:.72;font-variant-numeric:tabular-nums}
   .buy .cost::before{content:'❀';color:#f0b9cf;opacity:.9}
+  #tray{display:flex;flex-wrap:wrap;gap:6px;max-width:min(520px,92vw)}
+  #tray.hide{display:none}
+  .chip{appearance:none;border:0;cursor:pointer;border-radius:999px;padding:6px 12px;font-size:11.5px;
+    letter-spacing:.03em;color:rgba(238,240,234,.88);background:rgba(10,16,14,.42);white-space:nowrap;
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.08);
+    display:inline-flex;align-items:center;gap:6px;transition:background .25s,opacity .25s}
+  .chip:hover{background:rgba(255,255,255,.12)}
+  .chip:disabled{opacity:.32;cursor:default}
+  .chip.arm{background:rgba(240,207,134,.22);border-color:rgba(240,207,134,.4)}
+  .chip .c{opacity:.7;font-variant-numeric:tabular-nums}.chip .c::before{content:'❀ ';color:#f0b9cf}
+  #koicard{position:fixed;left:20px;bottom:24px;z-index:20;width:230px;padding:13px 15px;border-radius:14px;
+    color:rgba(240,238,230,.92);background:rgba(10,16,14,.55);border:1px solid rgba(255,255,255,.1);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-size:12.5px;line-height:1.5}
+  #koicard.hide{display:none}
+  #koicard b{font-size:13.5px}#koicard .jp{color:#9bc4b4;font-size:11px;margin-left:6px}
+  #koicard .ln{opacity:.7;font-size:11px}
+  #koicard .row{display:flex;gap:8px;margin-top:9px}
+  #kcSwim{flex:1;appearance:none;cursor:pointer;border-radius:9px;padding:7px 10px;font-size:11.5px;
+    color:#e8ecdf;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);transition:background .25s}
+  #kcSwim:hover{background:rgba(255,255,255,.14)}
+  #kcSwim.confirm{color:#1a120a;background:#f0cf86;border-color:#f0cf86;font-weight:600}
+  #kcX{appearance:none;cursor:pointer;border-radius:9px;padding:7px 10px;font-size:11.5px;color:rgba(238,240,234,.6);
+    background:transparent;border:1px solid rgba(255,255,255,.1)}
+  #devtray{position:fixed;right:16px;bottom:24px;z-index:30;display:flex;gap:5px;flex-wrap:wrap;max-width:300px;justify-content:flex-end}
   #skins{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);display:flex;gap:4px;align-items:center;
     padding:5px;border-radius:999px;background:rgba(10,16,14,.42);box-shadow:0 8px 40px rgba(0,0,0,.4);
     backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.10);z-index:10}
@@ -86,10 +119,16 @@
   <div id="ser"><span class="glyph">❀</span><b id="serN">0</b><span class="lbl">serenity</span></div>
   <div id="tend" class="chrome">
     <button class="buy" id="buyKoi">release koi <span class="cost"><span id="cKoi">5</span></span></button>
-    <button class="buy" id="buyLotus">plant lotus <span class="cost"><span id="cLotus">8</span></span></button>
+    <button class="buy" id="openPlant">plant &#9662;</button>
+    <button class="buy" id="openPlace">place &#9662;</button>
   </div>
+  <div id="tray" class="chrome hide"></div>
 </div>
 <div id="hint" class="chrome">drag to stir &nbsp;·&nbsp; click to feed &nbsp;·&nbsp; tend &amp; grow</div>
+<div id="koicard" class="hide"><b id="kcName"></b><span class="jp" id="kcJp"></span>
+  <div id="kcStage"></div><div class="ln" id="kcLin"></div>
+  <div class="row"><button id="kcSwim">let it swim on</button><button id="kcX">&times;</button></div></div>
+<div id="devtray" class="chrome" style="display:none"></div>
 <div id="skins" class="chrome">
   <button class="pill on" data-skin="natural">natural</button>
   <button class="pill" data-skin="metal">liquid metal</button>
@@ -114,8 +153,23 @@ function mixHex(a,b,t){const A=a.replace('#',''),B=b.replace('#',''),h=n=>('0'+(
            +h(lerp(parseInt(A.substr(4,2),16),parseInt(B.substr(4,2),16),t));}
 
 // ---------- persistence (pond you keep) ----------
-const Store={save(o){try{localStorage.setItem('koipond_v2',JSON.stringify(o));}catch(e){}},
-             load(){try{return JSON.parse(localStorage.getItem('koipond_v2')||'null');}catch(e){return null;}}};
+// v3 save. The old koipond_v2 key is deliberately LEFT IN PLACE after migration
+// (rollback safety — a bad deploy must never eat a pond). Migration is lossless:
+// koi/plants/econ/unlocked map verbatim; new fields get safe defaults; lastSeen
+// stamps NOW so the first migrated load grants no retroactive idle windfall.
+const SAVE_KEY='koipond_v3', LEGACY_KEY='koipond_v2';
+function migrateV2(s){return {v:3,
+  econ:{serenity:s.econ?.serenity||6},
+  unlocked:(s.unlocked&&s.unlocked.length)?s.unlocked:['kohaku','asagi','ogon'],
+  koi:(s.koi||[]).map(k=>({variety:k.variety,age:k.age,x:k.x,y:k.y,seed:k.seed,parents:null})),
+  plants:(s.plants||[]).map(p=>({type:p.type,x:p.x,y:p.y,size:p.size,grow:p.grow,bloom:p.bloom,vr:'classic'})),
+  rocks:[], frog:null, departed:[], eco:{lastSeen:Date.now()}};}
+const Store={save(o){try{localStorage.setItem(SAVE_KEY,JSON.stringify(o));}catch(e){}},
+             load(){try{
+               const v3=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); if(v3) return v3;
+               const v2=JSON.parse(localStorage.getItem(LEGACY_KEY)||'null'); if(v2) return migrateV2(v2);
+               return null;
+             }catch(e){return null;}}};
 
 // ---------- koi varieties (show-accurate Nishikigoi) ----------
 // patches ride the body: a..b = fraction head->tail; top/bot = [inner,outer] reach across each flank
@@ -147,19 +201,47 @@ const V={
 const STARTERS=['kohaku','showa','asagi','ogon','sanke','benigoi','platinum','tancho'];
 
 // ---------- POND state (single source of truth) ----------
-const Pond={koi:[],plants:[],food:[],ripples:[],petals:[],sparkles:[],sun:{x:0,y:0},econ:{serenity:0},unlocked:['kohaku','asagi','ogon'],_t:0};
+const Pond={koi:[],plants:[],food:[],ripples:[],petals:[],sparkles:[],sun:{x:0,y:0},econ:{serenity:0},unlocked:['kohaku','asagi','ogon'],
+  rocks:[],frog:null,departed:[],eco:{lastSeen:0},_t:0};
 
-function makeKoi(variety,x,y,age,seed){
+// capacity ledger (BRIEF v1.1 Phase A, human-ratified 2026-07-02): generous, bounded
+// by worst-case frame budget + on-screen legibility. Departure (Phase B) is the release valve.
+const CAPS={koi:18,plants:36,rocks:12,school:20,fireflies:10};
+
+// blended growth (returning v0.1 work): koi grow slowly with TIME, faster when FED.
+// Size stops at adult (age 1); age keeps accruing quietly beyond it, so ELDER is
+// earned duration — derived from the one saved field, no new state. Never death.
+const AGE_MAX=1.6, GROW_DAY=.01, GROW_FED=.02, PASSIVE_SEC=GROW_DAY/86400;
+function stage(k){return k.age<.25?'fry':k.age<.6?'young':k.age<1.25?'adult':'elder';}
+function eldF(k){return clamp((k.age-1.25)/.2,0,1);}   // 0..1 ramp into eldership (fins flow in gradually)
+
+function makeKoi(variety,x,y,age,seed,parents){
   const v=V[variety]||V.kohaku, len=rand(96,150), sd=seed??(Math.random()*1e4|0);
   const k={variety, V:v, x:x??rand(W*.25,W*.75), y:y??rand(W?H*.25:200,H*.75||400), ang:rand(0,TAU),
     spd:rand(15,26)*(REDUCE?.5:1), len, wd:len*rand(.105,.125), depth:rand(0,1),
     phase:rand(0,TAU), finph:rand(0,TAU), wig:rand(.85,1.2), turn:0, trail:[],
-    age:age??rand(.35,1), hunger:rand(.2,.6), wellfed:0, wake:[], seed:sd};
+    age:age??rand(.35,1), hunger:rand(.2,.6), wellfed:0, wake:[], seed:sd, parents:parents??null};
   k.pattern=buildPattern(v,sd);                 // per-individual markings (no two koi alike)
   return k;
 }
-function makePad(x,y,size){return {type:'pad',x,y,size:size??rand(.2,.5),rot:rand(0,TAU),grow:size?1:rand(.2,.6),hue:rand(-8,8),bp:rand(0,TAU),amp:rand(2,3.6),dx:0,dy:0,vx:0,vy:0,rv:rand(-.04,.04)};}
-function makeLotus(x,y){return {type:'lotus',x,y,grow:0,bloom:0,rot:rand(0,TAU),bp:rand(0,TAU),amp:rand(1.6,2.8),dx:0,dy:0,vx:0,vy:0,rv:rand(-.03,.03)};}
+function makePad(x,y,size,vr){return {type:'pad',vr:vr||'classic',x,y,size:size??rand(.2,.5),rot:rand(0,TAU),grow:size?1:rand(.2,.6),bloom:0,hue:rand(-8,8),bp:rand(0,TAU),amp:rand(2,3.6),dx:0,dy:0,vx:0,vy:0,rv:rand(-.04,.04)};}
+function makeLotus(x,y){return {type:'lotus',vr:'classic',x,y,grow:0,bloom:0,rot:rand(0,TAU),bp:rand(0,TAU),amp:rand(1.6,2.8),dx:0,dy:0,vx:0,vy:0,rv:rand(-.03,.03)};}
+// dream-pond flora (BRIEF v1.1 Phase B). Cosmetic detail (blade counts, phases) is
+// re-rolled on load like pad hue; identity (type/vr/position/grow/bloom) persists.
+function makeReed(x,y){return {type:'reed',vr:'classic',x,y,grow:0,bloom:0,n:5+(Math.random()*4|0),heads:1+(Math.random()*2|0),bp:rand(0,TAU),rot:0,amp:1,dx:0,dy:0,vx:0,vy:0,rv:0};}
+function makeIris(x,y){return {type:'iris',vr:'classic',x,y,grow:0,bloom:0,n:3,bp:rand(0,TAU),rot:0,amp:1,dx:0,dy:0,vx:0,vy:0,rv:0};}
+function makeDuckweed(x,y){return {type:'duckweed',vr:'classic',x,y,grow:.6,bloom:0,n:5+(Math.random()*4|0),bp:rand(0,TAU),rot:rand(0,TAU),amp:rand(3,4.5),dx:0,dy:0,vx:0,vy:0,rv:rand(-.06,.06)};}
+function makeGrass(x,y){return {type:'grass',vr:'classic',x,y,grow:0,bloom:0,n:6+(Math.random()*5|0),bp:rand(0,TAU),rot:0,amp:1,dx:0,dy:0,vx:0,vy:0,rv:0};}
+const PLANT_MAKE={pad:makePad,lotus:makeLotus,reed:makeReed,iris:makeIris,duckweed:makeDuckweed,grass:makeGrass};
+const BELOW_TYPES={grass:1};                       // BELOW-plane flora renders under the koi
+// hardscape: heavy, mossing, persistent (decor AND habitat — Principle 3)
+function makeRock(form,x,y){return {form,x,y,size:rand(.75,1.25),rot:rand(0,TAU),grow:0};}
+function rockR(r){return (r.form==='boulder'?34:r.form==='slate'?30:r.form==='driftwood'?40:r.form==='lantern'?18:24)*r.size;}
+
+// dev lifecycle harness (?dev=1): drives the WHOLE player journey on demand.
+// Warps call the REAL idleReturn() path with the cap lifted — testing exercises
+// production code, not a parallel fake. Invisible without the URL flag.
+const DEV=typeof location!=='undefined'&&/[?&]dev=1/.test(location.search||'');
 
 function seedDefault(){
   Pond.koi=[]; Pond.plants=[]; Pond.econ.serenity=6;
@@ -169,19 +251,55 @@ function seedDefault(){
 function restore(s){
   Pond.econ.serenity=s.econ?.serenity||6;
   Pond.unlocked=s.unlocked&&s.unlocked.length?s.unlocked:['kohaku','asagi','ogon'];
-  Pond.koi=(s.koi||[]).map(k=>makeKoi(k.variety,k.x*W,k.y*H,k.age,k.seed));
-  Pond.plants=(s.plants||[]).map(p=> p.type==='lotus'? Object.assign(makeLotus(p.x*W,p.y*H),{grow:p.grow,bloom:p.bloom}) : Object.assign(makePad(p.x*W,p.y*H,p.size),{grow:p.grow}));
+  Pond.koi=(s.koi||[]).map(k=>makeKoi(k.variety,k.x*W,k.y*H,k.age,k.seed,k.parents||null));
+  Pond.plants=(s.plants||[]).map(p=>{const mk=PLANT_MAKE[p.type]||makePad;
+    const pl=p.type==='pad'?makePad(p.x*W,p.y*H,p.size,p.vr):mk(p.x*W,p.y*H);
+    return Object.assign(pl,{grow:p.grow??pl.grow,bloom:p.bloom||0,vr:p.vr||'classic'});});
+  Pond.rocks=(s.rocks||[]).map(r=>({form:r.form,x:r.x*W,y:r.y*H,size:r.size||1,rot:r.rot||0,grow:r.grow||0}));
+  Pond.frog=s.frog||null; Pond.departed=s.departed||[];
+  Pond.eco=s.eco||{lastSeen:Date.now()};
   if(!Pond.koi.length) seedDefault();
 }
 function persist(){
-  Store.save({econ:Pond.econ, unlocked:Pond.unlocked,
-    koi:Pond.koi.map(k=>({variety:k.variety,age:k.age,x:k.x/W,y:k.y/H,seed:k.seed})),
-    plants:Pond.plants.map(p=>({type:p.type,x:p.x/W,y:p.y/H,size:p.size,grow:p.grow,bloom:p.bloom}))});
+  Store.save({v:3, econ:Pond.econ, unlocked:Pond.unlocked,
+    koi:Pond.koi.map(k=>({variety:k.variety,age:k.age,x:k.x/W,y:k.y/H,seed:k.seed,parents:k.parents||null})),
+    plants:Pond.plants.map(p=>({type:p.type,x:p.x/W,y:p.y/H,size:p.size,grow:p.grow,bloom:p.bloom,vr:p.vr||'classic'})),
+    rocks:Pond.rocks.map(r=>({form:r.form,x:r.x/W,y:r.y/H,size:r.size,rot:r.rot,grow:r.grow})),
+    frog:Pond.frog, departed:Pond.departed,
+    eco:{lastSeen:Date.now()}});
+}
+
+// ---------- ecology (hidden — legible through life, never meters) ----------
+// Pure derivations from what exists. Phase C registers visitors against these;
+// the scores + the roll hook ship now so fauna plugs into a working system.
+const Eco={
+  shelter(){let s=0;for(const r of Pond.rocks)s+=1;
+    for(const p of Pond.plants)if((p.grow??0)>.75)s+=(p.type==='pad'?.5:.75);return s;},
+  bloom(){let b=0;for(const p of Pond.plants)if((p.bloom||0)>.5)b+=1;return b;},
+  life(){return thriving();},
+  calm(){return clamp((Pond._t-(Pond.lastStir||0))/120,0,1);},
+  visitors:[]                    // Phase C: [{key, when(eco)->bool, arrive()}]
+};
+function rollVisitors(){for(const v of Eco.visitors){try{if(v.when(Eco))v.arrive();}catch(e){}}}
+
+// ---------- idle return (away-progress is a gift, never an obligation) ----------
+function idleReturn(uncap){
+  const now=Date.now(), last=Pond.eco.lastSeen||now;
+  const hrs=clamp((now-last)/3.6e6,0,uncap?1e6:72);       // gift capped at 3 days' worth (dev warps lift the cap)
+  if(hrs<.05){Pond.eco.lastSeen=now;return;}
+  const dAge=(hrs/24)*GROW_DAY;                           // capped passive growth while away
+  for(const k of Pond.koi)k.age=Math.min(AGE_MAX,k.age+dAge*rand(.8,1.2));
+  for(const p of Pond.plants){p.grow=Math.min(1,(p.grow??0)+hrs*.01);
+    if((p.type==='lotus'||p.type==='iris')&&p.grow>.9)p.bloom=Math.min(1,(p.bloom||0)+hrs*.02);
+    if(p.type==='pad'&&p.vr!=='cluster'&&p.grow>.85)p.bloom=Math.min(1,(p.bloom||0)+hrs*.012);}  // water-lily on old pads
+  for(const r of Pond.rocks)r.grow=Math.min(1,r.grow+hrs*.008);                                  // moss creeps while away
+  Pond.econ.serenity+=Math.min(hrs*2,uncap?1e9:60);       // gentle trickle, capped (dev warps honest to elapsed)
+  Pond.eco.lastSeen=now; rollVisitors();                  // returning can mean finding a visitor already here
 }
 
 // ---------- geometry (shared by all skins) ----------
-function elen(k){return k.len*lerp(.52,1,k.age);}
-function ewd(k){return k.wd*lerp(.6,.95,k.age);}
+function elen(k){return k.len*lerp(.52,1,Math.min(1,k.age));}   // size stops at adult; age keeps counting toward elder
+function ewd(k){return k.wd*lerp(.6,.95,Math.min(1,k.age));}
 function spine(k,count){
   const L=elen(k), step=L/(count-1), tr=k.trail, pts=[];
   if(tr.length<2){for(let i=0;i<count;i++)pts.push({x:k.x-Math.cos(k.ang)*step*i,y:k.y-Math.sin(k.ang)*step*i});}
@@ -207,7 +325,7 @@ function bodyPath(c,k,sp){const wd=ewd(k),C=sp.length;c.beginPath();
   for(let i=0;i<C;i++){const w=wd*widthAt(sp[i].t),x=sp[i].x+sp[i].nx*w,y=sp[i].y+sp[i].ny*w;i?c.lineTo(x,y):c.moveTo(x,y);}
   for(let i=C-1;i>=0;i--){const w=wd*widthAt(sp[i].t);c.lineTo(sp[i].x-sp[i].nx*w,sp[i].y-sp[i].ny*w);}c.closePath();}
 function tailFin(c,k,sp){const e=sp[sp.length-1],p=sp[sp.length-2];let tx=e.x-p.x,ty=e.y-p.y;const l=Math.hypot(tx,ty)||1;tx/=l;ty/=l;
-  const nx=-ty,ny=tx,fl=elen(k)*.32,fw=ewd(k)*1.45,sw=Math.sin(k.phase+.5)*fw*.65;c.beginPath();c.moveTo(e.x,e.y);
+  const nx=-ty,ny=tx,fl=elen(k)*.32*(1+.7*eldF(k)),fw=ewd(k)*1.45*(1+.18*eldF(k)),sw=Math.sin(k.phase+.5)*fw*.65;   // elder: long flowing trailing fins (prestige, not decline)c.beginPath();c.moveTo(e.x,e.y);
   c.quadraticCurveTo(e.x+tx*fl*.6+nx*(fw+sw),e.y+ty*fl*.6+ny*(fw+sw),e.x+tx*fl+nx*sw,e.y+ty*fl+ny*sw);
   c.quadraticCurveTo(e.x+tx*fl*.7,e.y+ty*fl*.7,e.x+tx*fl-nx*sw,e.y+ty*fl-ny*sw);
   c.quadraticCurveTo(e.x+tx*fl*.6-nx*(fw-sw),e.y+ty*fl*.6-ny*(fw-sw),e.x,e.y);c.closePath();}
@@ -354,13 +472,114 @@ function floatPlant(p,dt){const t=Pond._t;
   p.rv=clamp(p.rv+Math.sin(t*.2+p.bp)*.03*dt,-.09,.09); p.rv*=Math.pow(.55,dt); p.rot+=p.rv*dt;
   p.rx=p.x+p.dx; p.ry=p.y+p.dy; p.rrot=p.rot;
 }
+// ---------- dream-pond drawing (Phase B) — one draw per entity, colored via ROLES() ----------
+// water-lily cup on a mature pad (distinct from lotus: flat, small, sits at the pad edge)
+function drawLily(c,p,R,ry){const b=p.bloom||0;if(b<=0)return;const RL=ROLES();
+  c.save();c.translate((p.rx??p.x)+R*.55,(p.ry??p.y)-ry*.4);
+  const r=(4+7*b);
+  for(let i=0;i<7;i++){const a=i/7*TAU+(p.bp||0);c.save();c.rotate(a);
+    const g=c.createLinearGradient(0,0,0,-r);g.addColorStop(0,RL.bloom.top);g.addColorStop(1,hexA(RL.bloom.bot,.9));
+    c.fillStyle=g;c.beginPath();c.moveTo(0,0);c.quadraticCurveTo(r*.4,-r*.55,0,-r);c.quadraticCurveTo(-r*.4,-r*.55,0,0);c.fill();c.restore();}
+  c.fillStyle=RL.bloom.center;c.beginPath();c.arc(0,0,r*.3,0,TAU);c.fill();c.restore();}
+// pad with variety: classic / copper-edged / small clustering species (+ lily when mature)
+function drawPadV(c,p,tint,opts){
+  if(p.vr==='cluster'){const s=(p.size??.35)*.55;
+    for(const o of [[-14,4,0],[12,-6,1.9],[2,12,3.7]])
+      drawPad(c,{x:(p.rx??p.x)+o[0],y:(p.ry??p.y)+o[1],size:s,grow:p.grow,rot:(p.rrot??p.rot)+o[2]},tint,opts);
+    return;}
+  drawPad(c,p,tint,opts);
+  if(p.vr==='copper'&&!(opts&&opts.metal)){                       // warm rim on the copper-edged variety
+    let R=18+(p.size??.4)*46*(p.grow??1);if(!isFinite(R)||R<2)R=18;
+    c.save();c.translate(p.rx??p.x,p.ry??p.y);c.rotate(p.rrot??p.rot);
+    c.strokeStyle='rgba(196,102,54,.55)';c.lineWidth=2.2;c.beginPath();c.ellipse(0,0,R-1.5,R*.72-1.5,0,0,TAU);c.stroke();c.restore();}
+  if(p.bloom>0){let R=18+(p.size??.4)*46*(p.grow??1);if(!isFinite(R))R=18;drawLily(c,p,R,R*.72);}}
+// reeds/cattails — the pond's first vertical element; gentle sway; perch-to-be
+function drawReed(c,p){const RL=ROLES(),g=p.grow??0,h=(26+52*g),sw=REDUCE?.3:1,t=Pond._t;
+  c.save();c.translate(p.rx??p.x,p.ry??p.y);
+  c.fillStyle='rgba(6,20,16,.2)';c.beginPath();c.ellipse(2,3,14,5,0,0,TAU);c.fill();   // waterline
+  for(let i=0;i<p.n;i++){const bx=(i-(p.n-1)/2)*4.5,ph=p.bp+i*1.3,lean=Math.sin(t*.5+ph)*4*sw+Math.sin(ph)*5;
+    const hh=h*(.7+.3*Math.sin(ph*2.1)),grad=c.createLinearGradient(0,0,0,-hh);
+    grad.addColorStop(0,RL.foliage[2]);grad.addColorStop(1,RL.foliage[0]);
+    c.strokeStyle=grad;c.lineWidth=2.1;c.beginPath();c.moveTo(bx,2);c.quadraticCurveTo(bx+lean*.4,-hh*.55,bx+lean,-hh);c.stroke();
+    if(g>.55&&i<p.heads){c.fillStyle=RL.wood[0];c.beginPath();c.ellipse(bx+lean,-hh+5,2.6,7,lean*.02,0,TAU);c.fill();}}
+  c.restore();}
+// water iris — emergent accent bloom (feeds the bloom score)
+function drawIris(c,p){const RL=ROLES(),g=p.grow??0,h=20+34*g,sw=REDUCE?.3:1,t=Pond._t;
+  c.save();c.translate(p.rx??p.x,p.ry??p.y);
+  c.fillStyle='rgba(6,20,16,.2)';c.beginPath();c.ellipse(1,2,10,4,0,0,TAU);c.fill();
+  for(let i=0;i<p.n;i++){const bx=(i-1)*4,lean=Math.sin(t*.45+p.bp+i)*3*sw;
+    const grad=c.createLinearGradient(0,0,0,-h);grad.addColorStop(0,RL.foliage[2]);grad.addColorStop(1,RL.foliage[1]);
+    c.strokeStyle=grad;c.lineWidth=2.4;c.beginPath();c.moveTo(bx,1);c.quadraticCurveTo(bx+lean,-h*.6,bx+lean*1.4,-h);c.stroke();}
+  if(p.bloom>0){const b=p.bloom,r=3+6*b,lean=Math.sin(t*.45+p.bp)*3*sw;c.translate(lean*1.4,-h);
+    for(let i=0;i<3;i++){const a=i/3*TAU+.5;c.save();c.rotate(a);
+      const pg=c.createLinearGradient(0,0,0,-r*1.4);pg.addColorStop(0,RL.bloom.center);pg.addColorStop(1,RL.bloom.bot);
+      c.fillStyle=pg;c.beginPath();c.moveTo(0,0);c.quadraticCurveTo(r*.55,-r*.8,0,-r*1.4);c.quadraticCurveTo(-r*.55,-r*.8,0,0);c.fill();c.restore();}
+    c.fillStyle=RL.bloom.top;c.beginPath();c.arc(0,0,r*.24,0,TAU);c.fill();}
+  c.restore();}
+// duckweed — drifting micro-pad clusters; koi nibble them (the pond feeds itself a little)
+function drawDuckweed(c,p){const RL=ROLES(),g=p.grow??.6;
+  c.save();c.translate(p.rx??p.x,p.ry??p.y);c.rotate(p.rrot??p.rot);
+  for(let i=0;i<p.n;i++){const a=i/p.n*TAU+p.bp,d=5+8*((i*2.3)%1),r=(1.6+2.6*g)*(.7+.5*((i*1.7)%1));
+    c.fillStyle=hexA(RL.foliage[0],.9);c.beginPath();c.ellipse(Math.cos(a)*d,Math.sin(a)*d*.8,r,r*.8,a,0,TAU);c.fill();}
+  c.restore();}
+// submerged grass — BELOW plane: darker, softer, parallax sway under the koi
+function drawGrass(c,p){const RL=ROLES(),g=p.grow??0,h=18+40*g,sw=REDUCE?.3:1,t=Pond._t;
+  c.save();c.globalAlpha=.55;c.translate(p.rx??p.x,p.ry??p.y);
+  for(let i=0;i<p.n;i++){const bx=(i-(p.n-1)/2)*5,ph=p.bp+i*.9,lean=Math.sin(t*.35+ph)*7*sw;
+    const hh=h*(.6+.4*Math.sin(ph*1.7)),grad=c.createLinearGradient(0,0,0,-hh);
+    grad.addColorStop(0,shade(RL.foliage[2],.6));grad.addColorStop(1,shade(RL.foliage[1],.75));
+    c.strokeStyle=grad;c.lineWidth=2.6;c.beginPath();c.moveTo(bx,3);c.quadraticCurveTo(bx+lean*.5,-hh*.5,bx+lean,-hh);c.stroke();}
+  c.globalAlpha=1;c.restore();}
+function drawPlant(c,p,pal,opts){switch(p.type){
+  case 'lotus':drawLotus(c,p,pal,opts);break;
+  case 'pad':drawPadV(c,p,pal,opts);break;
+  case 'reed':drawReed(c,p);break;
+  case 'iris':drawIris(c,p);break;
+  case 'duckweed':drawDuckweed(c,p);break;
+  case 'grass':drawGrass(c,p);break;}}
+// hardscape — heavy forms that moss over grow (metal: oxidizing ore, via roles)
+function drawRock(c,r){const RL=ROLES(),R=rockR(r);
+  c.save();c.translate(r.x,r.y);
+  c.fillStyle='rgba(4,14,11,.3)';c.beginPath();c.ellipse(2,4,R*1.05,R*.5,0,0,TAU);c.fill();  // waterline shadow
+  if(r.form==='lantern'){const s=r.size;                                                     // stone toro: base/post/lightbox/cap
+    c.fillStyle=RL.stone[1];c.fillRect(-9*s,-2*s,18*s,6*s);
+    c.fillStyle=RL.stone[1];c.fillRect(-4*s,-16*s,8*s,14*s);
+    c.fillStyle=RL.stone[0];c.fillRect(-8*s,-26*s,16*s,10*s);
+    c.fillStyle='rgba(8,10,8,.7)';c.fillRect(-4.5*s,-24*s,9*s,6*s);                          // dark lightbox (glows at dusk, Phase C)
+    c.fillStyle=RL.stone[2];c.beginPath();c.moveTo(-11*s,-26*s);c.lineTo(0,-33*s);c.lineTo(11*s,-26*s);c.closePath();c.fill();
+  }else if(r.form==='driftwood'){c.rotate(r.rot);
+    const g=c.createLinearGradient(-R,0,R,0);g.addColorStop(0,RL.wood[2]);g.addColorStop(.5,RL.wood[0]);g.addColorStop(1,RL.wood[1]);
+    c.fillStyle=g;c.beginPath();c.ellipse(0,0,R,R*.22,0,0,TAU);c.fill();
+    c.fillStyle=RL.wood[1];c.beginPath();c.ellipse(-R*.65,-R*.1,R*.22,R*.1,.5,0,TAU);c.fill();
+    c.strokeStyle=hexA(RL.wood[2],.6);c.lineWidth=1;for(let i=-1;i<2;i++){c.beginPath();c.moveTo(-R*.8,i*2.5);c.quadraticCurveTo(0,i*2.5+2,R*.8,i*2.5);c.stroke();}
+  }else{c.rotate(r.rot);const fl=r.form==='slate'?.45:r.form==='boulder'?.8:.7;              // organic blob from seeded radii
+    const g=c.createRadialGradient(-R*.3,-R*.3,2,0,0,R);g.addColorStop(0,RL.stone[0]);g.addColorStop(.65,RL.stone[1]);g.addColorStop(1,RL.stone[2]);
+    c.fillStyle=g;c.beginPath();
+    for(let i=0;i<=10;i++){const a=i/10*TAU,rr=R*(.82+.18*Math.sin(a*3+r.rot*7));i?c.lineTo(Math.cos(a)*rr,Math.sin(a)*rr*fl):c.moveTo(Math.cos(a)*rr,Math.sin(a)*rr*fl);}
+    c.closePath();c.fill();
+    c.strokeStyle='rgba(255,255,255,.1)';c.lineWidth=1.2;c.stroke();}
+  if(r.grow>0.05){c.globalAlpha=.5*r.grow;c.fillStyle=RL.moss;                               // moss creeps with age
+    for(let i=0;i<4;i++){const a=r.rot*3+i*1.7,d=R*.55;
+      c.beginPath();c.ellipse(Math.cos(a)*d,Math.sin(a)*d*.5-R*.15,R*.3*r.grow+2,R*.18*r.grow+1.4,a,0,TAU);c.fill();}
+    c.globalAlpha=1;}
+  c.restore();}
+
 // =================================================================
 // SKIN REGISTRY
 // =================================================================
 const SKINS={};
+// entity/skin contract v2: an entity drawn once against ROLES() reads correctly in
+// every skin (bespoke handlers still win). rain renders the Natural pond into its
+// buffer, so its entities inherit Natural's roles by construction.
+function ROLES(){const S=SKINS[skin];return (S&&S.roles)||SKINS.natural.roles;}
 
 // ---- NATURAL (the canonical, reference-accurate core) ----
 SKINS.natural={
+  // canonical palette roles — the reference every skin re-voices
+  roles:{foliage:['#4a7a44','#2d5630','#1f3f25'],foliageRim:'#96c88c',
+         stone:['#8d867a','#645e52','#3c382f'],moss:'#4a6b3f',
+         wood:['#6e4c30','#4a3220','#2e2114'],
+         bloom:{top:'#f6dfe8',bot:'#e98fb0',center:'#f3d27a'},glow:'#f0cf86'},
   water(c,t){const g=c.createRadialGradient(W*.5,H*.42,Math.min(W,H)*.1,W*.5,H*.5,Math.max(W,H)*.8);
     g.addColorStop(0,'#3c7d68');g.addColorStop(.55,'#235448');g.addColorStop(1,'#0f2a23');
     c.fillStyle=g;c.fillRect(0,0,W,H);
@@ -414,7 +633,7 @@ SKINS.natural={
     // eyes + barbels
     const hd2=sp[1],w2=ewd(k)*widthAt(hd2.t);c.fillStyle='rgba(20,16,12,.85)';
     for(const s of[1,-1]){c.beginPath();c.arc(hd2.x+hd2.nx*w2*.55*s,hd2.y+hd2.ny*w2*.55*s,1.6+ewd(k)*.06,0,TAU);c.fill();}},
-  plant(c,p){p.type==='lotus'?drawLotus(c,p):drawPad(c,p,null);},
+  plant(c,p){drawPlant(c,p,null);},
   overlay(c,t){
     // --- Pass 3: glassy reflection & depth ---
     c.globalCompositeOperation='screen';
@@ -462,6 +681,11 @@ function chromeRibbon(c,yc,thick,t,seed,a){const step=Math.max(16,W/90|0);
   g.addColorStop(0,'transparent');g.addColorStop(.5,`rgba(210,226,255,${a})`);g.addColorStop(1,'transparent');
   c.fillStyle=g;c.fill();}
 SKINS.metal={
+  // roles: everything is a metal — foliage patinas, stone oxidizes as ore, wood is old bronze
+  roles:{foliage:['#c9b06a','#7d8a6a','#3f4a3a'],foliageRim:'#ffe6a6',
+         stone:['#9a8a68','#5f5442','#2e2a20'],moss:'#5d7261',
+         wood:['#8a6a3c','#5c4628','#342818'],
+         bloom:{top:'#ffe9b0',bot:'#d8a24a',center:'#ffd86a'},glow:'#ffd88a'},
   rip:{crest:[214,232,255,.36],trough:[5,4,3,.15],cw:1.9},    // mercury beading: bright COOL specular crest, deep dark trough
   // --- mercury substrate: warm bronze mids, genuinely deep darks, COOL blown speculars (high dynamic range) ---
   water(c,t){const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#241a10');g.addColorStop(.5,'#0e0905');g.addColorStop(1,'#050302');
@@ -520,7 +744,8 @@ SKINS.metal={
     const tint=[mixHex('#f3d886','#9aa99a',g),mixHex('#c79a44','#5d7261',g),mixHex('#7a5a20','#2f3d35',g)];
     const rim=mixHex('#ffe6a6','#9fb4ad',g);   // brass sheen young -> cool muted patina mature
     if(p.type==='lotus') drawLotus(c,p,{pad:tint,petalTop:'#ffe9b0',petalBot:'#d8a24a',center:'#ffd86a'},{metal:1,rim});
-    else drawPad(c,p,tint,{metal:1,rim});},
+    else if(p.type==='pad') drawPadV(c,p,tint,{metal:1,rim});
+    else drawPlant(c,p);},                     // reeds/iris/duckweed/grass read metal via roles — contract v2 at work
   overlay(c,t){c.globalCompositeOperation='screen';                    // a cool dusk sky reflected on the mirror (cool highlights)
     const shx=W*(.5-.3*Math.sin(Pond._t*.04)),shy=H*.3,sh=c.createRadialGradient(shx,shy,0,shx,shy,Math.max(W,H)*.6);
     sh.addColorStop(0,`rgba(198,214,255,${.07+.025*Math.sin(t*.3)})`);sh.addColorStop(1,'transparent');
@@ -531,6 +756,11 @@ SKINS.metal={
 
 // ---- SUMI INK ----
 SKINS.ink={
+  // roles: ink washes — near-black masses, pale rims, one warm accent
+  roles:{foliage:['#3c3c42','#26262b','#17171a'],foliageRim:'#9a958a',
+         stone:['#44444a','#2c2c31','#1a1a1e'],moss:'#3f4440',
+         wood:['#3a3630','#262420','#161512'],
+         bloom:{top:'#efe9da',bot:'#9a958a',center:'#d8d2c4'},glow:'#d8d2c4'},
   water(c,t){c.fillStyle='#0a0a0c';c.fillRect(0,0,W,H);caustics(c,W,H,t*.5,'rgba(40,40,48,.5)','screen');
     drawWakes(c);},
   koi(c,k,sp,dim){const col=k.V.metal?'#d8d2c4':k.V.accent;c.save();c.globalCompositeOperation='screen';c.lineJoin='round';
@@ -541,7 +771,10 @@ SKINS.ink={
     c.fillStyle=cg;c.fill();
     tailFin(c,k,sp);c.fillStyle=hexA(col,.3*dim);c.fill();c.fillStyle=hexA(col,.3*dim);pecFins(c,k,sp);
     c.globalCompositeOperation='source-over';c.strokeStyle='rgba(8,8,10,.5)';c.lineWidth=1;c.beginPath();sp.forEach((s,i)=>i?c.lineTo(s.x,s.y):c.moveTo(s.x,s.y));c.stroke();c.restore();},
-  plant(c,p){c.save();c.globalCompositeOperation='screen';if(p.type==='lotus')drawLotus(c,p,{pad:['#39393e','#26262b','#17171a'],petalTop:'#efe9da',petalBot:'#9a958a',center:'#d8d2c4'});else drawPad(c,p,['#39393e','#26262b','#17171a']);c.restore();},
+  plant(c,p){c.save();c.globalCompositeOperation='screen';
+    if(p.type==='lotus')drawLotus(c,p,{pad:['#39393e','#26262b','#17171a'],petalTop:'#efe9da',petalBot:'#9a958a',center:'#d8d2c4'});
+    else if(p.type==='pad')drawPadV(c,p,['#39393e','#26262b','#17171a']);
+    else drawPlant(c,p);c.restore();},
   overlay(c,t){const g=c.createRadialGradient(W/2,H/2,Math.min(W,H)*.3,W/2,H/2,Math.max(W,H)*.72);g.addColorStop(0,'transparent');g.addColorStop(1,'rgba(0,0,0,.6)');c.fillStyle=g;c.fillRect(0,0,W,H);}
 };
 
@@ -553,8 +786,10 @@ SKINS.rain={
   full:true, // draws everything itself
   render(c,t){const w=pond.width,h=pond.height;pondCtx.save();pondCtx.clearRect(0,0,w,h);
     pondCtx.scale(PS,PS);SKINS.natural.water(pondCtx,t);
+    for(const p of Pond.plants)if(BELOW_TYPES[p.type])SKINS.natural.plant(pondCtx,p);
+    for(const r of Pond.rocks)drawRock(pondCtx,r);
     for(const k of Pond.koi){const sp=spine(k,18);SKINS.natural.koi(pondCtx,k,sp,lerp(.62,1,1-k.depth));}
-    for(const p of Pond.plants)SKINS.natural.plant(pondCtx,p);
+    for(const p of Pond.plants)if(!BELOW_TYPES[p.type])SKINS.natural.plant(pondCtx,p);
     for(const f of Pond.food){if(f.r<=0)continue;pondCtx.fillStyle='#c39a5e';pondCtx.beginPath();pondCtx.ellipse(f.x,f.y,f.r,f.r*.84,0,0,TAU);pondCtx.fill();}
     pondCtx.restore();
     c.imageSmoothingEnabled=true;c.filter='blur(2px)';c.drawImage(pond,0,0,W,H);c.filter='none';
@@ -585,7 +820,16 @@ function drawFX(c){
     c.fillStyle='rgba(18,12,6,.28)';c.beginPath();c.ellipse(f.x+.8,f.y+1.1,f.r,f.r*.84,0,0,TAU);c.fill();
     c.fillStyle=`hsl(${33+(f.hue||0)},44%,57%)`;c.beginPath();c.ellipse(f.x,f.y,f.r,f.r*.84,0,0,TAU);c.fill();
     c.fillStyle='rgba(255,244,222,.55)';c.beginPath();c.arc(f.x-f.r*.3,f.y-f.r*.32,f.r*.34,0,TAU);c.fill();}
-  if(drag){const p=drag.plant,R=(p.type==='lotus'?48:24+p.size*46*p.grow);
+  // ripple rings break into foam at rock rims (cheap arc highlight, not wave physics)
+  for(const r of Pond.ripples){const p2=r.age/r.life;if(p2>=1)continue;
+    for(const rk of Pond.rocks){const d=Math.hypot(rk.x-r.x,rk.y-r.y),rr=rockR(rk);
+      if(Math.abs(r.r-d)<7&&d>rr*.5){const a=Math.atan2(r.y-rk.y,r.x-rk.x);
+        c.globalCompositeOperation='screen';c.strokeStyle=`rgba(235,245,240,${.3*(1-p2)})`;c.lineWidth=2;
+        c.beginPath();c.arc(rk.x,rk.y,rr*.9,a-.55,a+.55);c.stroke();c.globalCompositeOperation='source-over';}}}
+  if(sel&&!sel.departing){const pu=.35+.15*Math.sin(Pond._t*2.4);                   // quiet ring under the selected koi
+    c.strokeStyle=`rgba(240,207,134,${pu})`;c.lineWidth=1.4;
+    c.beginPath();c.ellipse(sel.x,sel.y,elen(sel)*.62,elen(sel)*.4,sel.ang,0,TAU);c.stroke();}
+  if(drag){const p=drag.plant||drag.rock,R=drag.rock?rockR(p)+6:(p.type==='lotus'?48:24+(p.size??.3)*46*(p.grow??1));
     c.strokeStyle='rgba(244,238,224,.4)';c.lineWidth=1.5;c.beginPath();c.arc(p.rx??p.x,p.ry??p.y,R,0,TAU);c.stroke();}
 }
 
@@ -593,15 +837,32 @@ function drawFX(c){
 // SIMULATION (skin-agnostic)
 // =================================================================
 function updateKoi(k,dt){
+  if(k.departing){                                                   // "let it swim on": gather way toward the edge and go
+    const a=Math.atan2(k.exit.y-k.y,k.exit.x-k.x);let da=((a-k.ang+Math.PI*3)%TAU)-Math.PI;
+    k.ang+=clamp(da,-2,2)*dt*1.4;k.x+=Math.cos(k.ang)*k.spd*1.7*dt;k.y+=Math.sin(k.ang)*k.spd*1.7*dt;
+    k.trail.unshift({x:k.x,y:k.y});const mx=Math.ceil(elen(k)*1.25/4)+4;if(k.trail.length>mx)k.trail.length=mx;
+    const tlx=k.x-Math.cos(k.ang)*elen(k)*.82, tly=k.y-Math.sin(k.ang)*elen(k)*.82, lw=k.wake[0];
+    if(!lw||((tlx-lw.x)**2+(tly-lw.y)**2)>30)k.wake.unshift({x:tlx,y:tly,age:0});
+    for(const w of k.wake)w.age+=dt;while(k.wake.length&&k.wake[k.wake.length-1].age>1.5)k.wake.pop();
+    k.phase+=dt*7*k.wig;k.finph+=dt*6;return;}
   k.turn+=(Math.sin(Pond._t*.4+k.phase)*.6+rand(-.4,.4))*dt;k.turn=clamp(k.turn,-1.2,1.2);let desired=k.turn;
   let bf=null,bd=1e9;for(const f of Pond.food){const d=(f.x-k.x)**2+(f.y-k.y)**2;if(d<bd){bd=d;bf=f;}}
   if(bf&&bd<280*280){const a=Math.atan2(bf.y-k.y,bf.x-k.x);let da=((a-k.ang+Math.PI*3)%TAU)-Math.PI;desired+=clamp(da,-2,2)*1.6;}
   for(const r of Pond.ripples)if(r.s>1&&r.age<.5){const dx=k.x-r.x,dy=k.y-r.y,d=Math.hypot(dx,dy);if(d<150){const a=Math.atan2(dy,dx);let da=((a-k.ang+Math.PI*3)%TAU)-Math.PI;desired+=da*(1-d/150)*1.3;}}
+  for(const r of Pond.rocks){const dx=k.x-r.x,dy=k.y-r.y,d=Math.hypot(dx,dy),rr=rockR(r)+34;   // koi steer around stone
+    if(d<rr){const a=Math.atan2(dy,dx);let da=((a-k.ang+Math.PI*3)%TAU)-Math.PI;desired+=da*(1-d/rr)*1.6;}}
+  for(const p of Pond.plants){
+    if(p.type==='reed'||p.type==='iris'){const dx=k.x-p.x,dy=k.y-p.y,d=Math.hypot(dx,dy);     // ...and emergent stems
+      if(d<46){const a=Math.atan2(dy,dx);let da=((a-k.ang+Math.PI*3)%TAU)-Math.PI;desired+=da*(1-d/46)*1.2;}}
+    else if(p.type==='duckweed'){const d2=(p.x-k.x)**2+(p.y-k.y)**2;                          // ambient nibble: the pond feeds itself a little
+      if(d2<28*28){k.wellfed=Math.max(k.wellfed,1.5);k.age=Math.min(AGE_MAX,k.age+dt*.002);p.grow=Math.max(.35,p.grow-dt*.05);}}}
   const m=90,toC=Math.atan2(H/2-k.y,W/2-k.x);
   if(k.x<m||k.x>W-m||k.y<m||k.y>H-m){let da=((toC-k.ang+Math.PI*3)%TAU)-Math.PI;desired+=da*1.2;}
   k.ang+=clamp(desired,-2.4,2.4)*dt*.9;
-  const eat=bf&&bd<160*160?1.5:1;k.x+=Math.cos(k.ang)*k.spd*eat*dt;k.y+=Math.sin(k.ang)*k.spd*eat*dt;
-  if(bf&&bd<13*13){bf.r-=dt*7;k.hunger=Math.max(0,k.hunger-dt*.5);k.wellfed=4;k.age=Math.min(1,k.age+dt*.02);}
+  const eat=bf&&bd<160*160?1.5:1, eld=1-.28*eldF(k);              // elders drift slower, statelier
+  k.x+=Math.cos(k.ang)*k.spd*eat*eld*dt;k.y+=Math.sin(k.ang)*k.spd*eat*eld*dt;
+  if(bf&&bd<13*13){bf.r-=dt*7;k.hunger=Math.max(0,k.hunger-dt*.5);k.wellfed=4;k.age=Math.min(AGE_MAX,k.age+dt*GROW_FED);}
+  k.age=Math.min(AGE_MAX,k.age+dt*PASSIVE_SEC);                    // blended growth: time counts too (idle sim covers away time)
   k.hunger=Math.min(1,k.hunger+dt*.012);k.wellfed=Math.max(0,k.wellfed-dt);
   k.trail.unshift({x:k.x,y:k.y});const mx=Math.ceil(elen(k)*1.25/4)+4;if(k.trail.length>mx)k.trail.length=mx;
   // wake: drop a disturbance point behind the tail when it has moved enough
@@ -617,20 +878,28 @@ function thriving(){let f=0;for(const k of Pond.koi)f+=k.wellfed>0?1:.3;f/=Math.
 function feed(x,y){const n=6+(Math.random()*4|0);
   for(let i=0;i<n;i++){const a=Math.random()*TAU,d=Math.random()*24;
     Pond.food.push({x:x+Math.cos(a)*d,y:y+Math.sin(a)*d,r:rand(2.2,3.2),life:rand(12,16),hue:rand(-12,12)});}
-  Pond.ripples.push({x,y,r:3,max:120,age:0,life:2,s:1.4});}
+  Pond.ripples.push({x,y,r:3,max:120,age:0,life:2,s:1.4});Pond.lastStir=Pond._t;}
 
 function step(dt){Pond._t+=dt;
-  if(drag){const p=drag.plant,r=Math.min(1,dt*3.5),ox=p.x,oy=p.y;   // slow watery glide
+  if(drag){const p=drag.plant||drag.rock,heavy=!!drag.rock,r=Math.min(1,dt*(heavy?.9:3.5)),ox=p.x,oy=p.y;   // stone drags HEAVY; flora glides
     p.x+=(drag.tx-p.x)*r;p.y+=(drag.ty-p.y)*r;
-    if(Math.hypot(p.x-ox,p.y-oy)>1.3&&Math.random()<dt*10)Pond.ripples.push({x:ox,y:oy,r:3,max:52,age:0,life:1.1,s:1});}
+    if(Math.hypot(p.x-ox,p.y-oy)>(heavy?.8:1.3)&&Math.random()<dt*10)Pond.ripples.push({x:ox,y:oy,r:3,max:heavy?74:52,age:0,life:1.1,s:heavy?1.15:1});}
   for(const k of Pond.koi)updateKoi(k,dt);
+  for(let i=Pond.koi.length-1;i>=0;i--){const k=Pond.koi[i];                        // a departing koi reaches open water
+    if(k.departing&&(k.x<-70||k.x>W+70||k.y<-70||k.y>H+70)){
+      Pond.departed.push({variety:k.variety,seed:k.seed,age:k.age,departed:Date.now()});
+      Pond.ripples.push({x:clamp(k.x,20,W-20),y:clamp(k.y,20,H-20),r:3,max:110,age:0,life:2.2,s:1.3});  // one farewell ripple
+      Pond.koi.splice(i,1);persist();}}
   for(const r of Pond.ripples){r.age+=dt;r.r=lerp(r.r,r.max,1-Math.pow(.001,dt));}
   for(let i=Pond.ripples.length-1;i>=0;i--)if(Pond.ripples[i].age>Pond.ripples[i].life)Pond.ripples.splice(i,1);
   if(Pond.ripples.length>40) Pond.ripples.splice(0,Pond.ripples.length-40);
   for(const f of Pond.food)f.life-=dt;for(let i=Pond.food.length-1;i>=0;i--)if(Pond.food[i].life<=0||Pond.food[i].r<=0)Pond.food.splice(i,1);
   const th=thriving();
-  for(const p of Pond.plants){p.grow=Math.min(1,p.grow+dt*.02*(.4+th));if(p.type==='lotus'&&p.grow>.9)p.bloom=Math.min(1,p.bloom+dt*.05*(.4+th));
+  for(const p of Pond.plants){p.grow=Math.min(1,p.grow+dt*.02*(.4+th));
+    if((p.type==='lotus'||p.type==='iris')&&p.grow>.9)p.bloom=Math.min(1,p.bloom+dt*.05*(.4+th));
+    if(p.type==='pad'&&p.vr!=='cluster'&&p.grow>.85)p.bloom=Math.min(1,(p.bloom||0)+dt*.012*(.4+th));   // old pads open a water-lily
     floatPlant(p,dt);}
+  for(const r of Pond.rocks)r.grow=Math.min(1,r.grow+dt*.0015*(.4+th));             // moss creeps — things that persist wear their time
   // petals drift from blooming lotuses
   if(Math.random()<dt*.5){const lo=Pond.plants.find(p=>p.type==='lotus'&&p.bloom>.5);if(lo&&Pond.petals.length<40)Pond.petals.push({x:lo.x,y:lo.y,vx:rand(-6,6),vy:rand(4,12),r:rand(0,TAU),vr:rand(-1,1),life:rand(6,12)});}
   for(const pt of Pond.petals){pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.r+=pt.vr*dt;pt.life-=dt;}
@@ -659,9 +928,12 @@ function render(t){
   try{
     if(S.full){S.render(ctx,t);}
     else{S.water(ctx,t);
+      const PL=S.plant||SKINS.natural.plant;
+      for(const p of Pond.plants)if(BELOW_TYPES[p.type])PL(ctx,p);   // BELOW plane (submerged grass)
+      for(const r of Pond.rocks)drawRock(ctx,r);                     // hardscape sits in the water, under the fish
       const ks=Pond.koi.slice().sort((a,b)=>b.depth-a.depth);
       for(const k of ks){const sp=spine(k,18);S.koi(ctx,k,sp,lerp(.6,1,1-k.depth));}
-      for(const p of Pond.plants)(S.plant||SKINS.natural.plant)(ctx,p);
+      for(const p of Pond.plants)if(!BELOW_TYPES[p.type])PL(ctx,p);  // ON plane (floating + emergent flora)
       drawFX(ctx);(S.overlay||(()=>{}))(ctx,t);drawSparkles(ctx);}
   }catch(e){if(!render._warned){console.warn('skin render error:',e);render._warned=1;}}
   ctx.restore();
@@ -672,19 +944,30 @@ function render(t){
 // =================================================================
 // INPUT + CHROME
 // =================================================================
-const P={x:-999,y:-999,px:0,py:0};let lastMove=0, drag=null;
+const P={x:-999,y:-999,px:0,py:0};let lastMove=0, drag=null, sel=null, placing=null;
 function plantAt(x,y){for(let i=Pond.plants.length-1;i>=0;i--){const p=Pond.plants[i];
-  const R=(p.type==='lotus'?46:18+p.size*46*p.grow)+10;if((x-p.x)**2+(y-p.y)**2<R*R)return p;}return null;}
+  const R=(p.type==='lotus'?46:p.type==='pad'?18+p.size*46*p.grow:p.type==='duckweed'?18:p.type==='grass'?26:30)+10;
+  if((x-p.x)**2+(y-p.y)**2<R*R)return p;}return null;}
+function rockAt(x,y){for(let i=Pond.rocks.length-1;i>=0;i--){const r=Pond.rocks[i];
+  const R=rockR(r)+8;if((x-r.x)**2+(y-r.y)**2<R*R)return r;}return null;}
+function koiAt(x,y){let best=null,bd=1e9;for(const k of Pond.koi){if(k.departing)continue;
+  const d=(x-k.x)**2+(y-k.y)**2,r=Math.max(20,elen(k)*.45);if(d<r*r&&d<bd){bd=d;best=k;}}return best;}
 function move(x,y){P.px=P.x;P.py=P.y;P.x=x;P.y=y;
   if(drag){drag.tx=clamp(x,40,W-40);drag.ty=clamp(y,40,H-40);cv.style.cursor='grabbing';showUI();return;}
   const now=performance.now();
   if(now-lastMove>34){const dx=x-P.px,dy=y-P.py;if(dx*dx+dy*dy>9)Pond.ripples.push({x,y,r:2,max:90,age:0,life:1.5,s:1});lastMove=now;}
-  cv.style.cursor=plantAt(x,y)?'grab':'crosshair';showUI();}
+  cv.style.cursor=placing?'copy':(plantAt(x,y)||rockAt(x,y))?'grab':'crosshair';showUI();}
 cv.addEventListener('pointermove',e=>move(e.clientX,e.clientY));
-cv.addEventListener('pointerdown',e=>{const hit=plantAt(e.clientX,e.clientY);
+cv.addEventListener('pointerdown',e=>{const x=e.clientX,y=e.clientY;
+  if(placing){placeAt(x,y);return;}                                          // composition belongs to the player
+  const kh=koiAt(x,y);
+  if(kh){showCard(kh);showUI();return;}                                      // click a koi -> its card; click water -> feed
+  const rh=rockAt(x,y);
+  if(rh){drag={rock:rh,tx:clamp(x,40,W-40),ty:clamp(y,40,H-40)};cv.style.cursor='grabbing';showUI();return;}
+  const hit=plantAt(x,y);
   if(hit){const i=Pond.plants.indexOf(hit);if(i>=0){Pond.plants.splice(i,1);Pond.plants.push(hit);}  // lift to top
-    drag={plant:hit,tx:clamp(e.clientX,40,W-40),ty:clamp(e.clientY,40,H-40)};cv.style.cursor='grabbing';showUI();}
-  else feed(e.clientX,e.clientY);});
+    drag={plant:hit,tx:clamp(x,40,W-40),ty:clamp(y,40,H-40)};cv.style.cursor='grabbing';showUI();}
+  else{hideCard();feed(x,y);}});
 addEventListener('pointerup',()=>{if(drag){persist();drag=null;cv.style.cursor='crosshair';}});
 cv.addEventListener('pointerleave',()=>{P.x=-999;P.y=-999;});
 const ser=document.getElementById('serN');
@@ -694,16 +977,76 @@ let uiTimer=null;function showUI(){[skinsBar,tendBar].forEach(e=>e.classList.rem
 showUI();setTimeout(()=>hint.style.opacity='0',5500);
 document.querySelectorAll('.pill').forEach(p=>p.addEventListener('click',()=>{const s=p.dataset.skin;if(s===skin)return;
   veil.style.opacity='1';setTimeout(()=>{skin=s;document.querySelectorAll('.pill').forEach(q=>q.classList.toggle('on',q.dataset.skin===s));veil.style.opacity='0';},220);}));
-// shop
-const cKoi=document.getElementById('cKoi'),cLotus=document.getElementById('cLotus'),bKoi=document.getElementById('buyKoi'),bLotus=document.getElementById('buyLotus');
-function koiCost(){return 5+Pond.koi.length*4;}function lotusCost(){return 8+Pond.plants.filter(p=>p.type==='lotus').length*6;}
-function syncShop(){const s=Math.floor(Pond.econ.serenity);ser.textContent=s;cKoi.textContent=koiCost();cLotus.textContent=lotusCost();
-  bKoi.disabled=s<koiCost();bLotus.disabled=s<lotusCost();codexTick();}
-bKoi.addEventListener('click',()=>{if(Pond.econ.serenity<koiCost())return;Pond.econ.serenity-=koiCost();
+// ---- tend tray (release / plant / place) — the player's palette; everything is decor AND habitat ----
+const cKoi=document.getElementById('cKoi'),bKoi=document.getElementById('buyKoi');
+const openPlant=document.getElementById('openPlant'),openPlace=document.getElementById('openPlace'),trayEl=document.getElementById('tray');
+function koiCost(){return 5+Pond.koi.length*4;}
+const CATALOG={                                            // placeholder prices, gentle curve — real numbers in Phase D rebalance
+ plant:[{t:'pad',vr:'classic',label:'pad',cost:6},{t:'pad',vr:'copper',label:'copper pad',cost:9},{t:'pad',vr:'cluster',label:'pad cluster',cost:10},
+        {t:'lotus',label:'lotus',cost:8},{t:'reed',label:'reeds',cost:10},{t:'iris',label:'iris',cost:12},
+        {t:'duckweed',label:'duckweed',cost:5},{t:'grass',label:'water grass',cost:8}],
+ place:[{t:'stone',label:'river stone',cost:15},{t:'boulder',label:'boulder',cost:22},{t:'slate',label:'slate',cost:15},
+        {t:'driftwood',label:'driftwood',cost:20},{t:'lantern',label:'stone lantern',cost:30}]};
+let trayMode=null;
+function buildTray(){trayEl.innerHTML='';if(!trayMode)return;
+  CATALOG[trayMode].forEach((it,i)=>{const b=document.createElement('button');b.className='chip';
+    b.innerHTML=`${it.label} <span class="c">${it.cost}</span>`;b.dataset.i=i;
+    b.addEventListener('click',()=>armChip(it,b));trayEl.appendChild(b);});refreshTray();}
+function refreshTray(){const s=Pond.econ.serenity;
+  trayEl.querySelectorAll('.chip').forEach(b=>{const it=CATALOG[trayMode][+b.dataset.i];
+    const capped=trayMode==='plant'?Pond.plants.length>=CAPS.plants:Pond.rocks.length>=CAPS.rocks;
+    b.disabled=s<it.cost||capped;});}
+function armChip(it,b){if(placing&&placing.it===it){placing=null;trayEl.querySelectorAll('.chip').forEach(q=>q.classList.remove('arm'));return;}
+  placing={kind:trayMode,it};trayEl.querySelectorAll('.chip').forEach(q=>q.classList.remove('arm'));b.classList.add('arm');
+  hint.textContent='tap the water to place it';hint.style.opacity='1';}
+function placeAt(x,y){const it=placing.it,kind=placing.kind;placing=null;
+  trayEl.querySelectorAll('.chip').forEach(q=>q.classList.remove('arm'));hint.textContent='drag to stir · click to feed · tend & grow';
+  const capped=kind==='plant'?Pond.plants.length>=CAPS.plants:Pond.rocks.length>=CAPS.rocks;
+  if(Pond.econ.serenity<it.cost||capped)return;
+  Pond.econ.serenity-=it.cost;x=clamp(x,50,W-50);y=clamp(y,50,H-50);
+  if(kind==='plant')Pond.plants.push(it.t==='pad'?makePad(x,y,undefined,it.vr):PLANT_MAKE[it.t](x,y));
+  else Pond.rocks.push(makeRock(it.t,x,y));
+  Pond.ripples.push({x,y,r:3,max:kind==='place'?100:60,age:0,life:1.8,s:kind==='place'?1.5:1});persist();showUI();}
+function toggleTray(mode){if(trayMode===mode){trayMode=null;placing=null;trayEl.classList.add('hide');}
+  else{trayMode=mode;placing=null;trayEl.classList.remove('hide');buildTray();}
+  openPlant.style.opacity=trayMode==='plant'?1:'';openPlace.style.opacity=trayMode==='place'?1:'';showUI();}
+openPlant.addEventListener('click',()=>toggleTray('plant'));
+openPlace.addEventListener('click',()=>toggleTray('place'));
+function syncShop(){const s=Math.floor(Pond.econ.serenity);ser.textContent=s;cKoi.textContent=koiCost();
+  bKoi.disabled=s<koiCost()||Pond.koi.length>=CAPS.koi;            // ledger: quiet cap, no error state
+  if(trayMode&&!trayEl.classList.contains('hide'))refreshTray();codexTick();}
+bKoi.addEventListener('click',()=>{if(Pond.econ.serenity<koiCost()||Pond.koi.length>=CAPS.koi)return;Pond.econ.serenity-=koiCost();
   const pool=(Pond.unlocked&&Pond.unlocked.length)?Pond.unlocked:STARTERS;const v=pool[(Math.random()*pool.length)|0];const k=makeKoi(v,rand(W*.3,W*.7),rand(H*.3,H*.7),.3);Pond.koi.push(k);
   Pond.ripples.push({x:k.x,y:k.y,r:3,max:140,age:0,life:2.4,s:1.6});persist();showUI();});
-bLotus.addEventListener('click',()=>{if(Pond.econ.serenity<lotusCost())return;Pond.econ.serenity-=lotusCost();
-  Pond.plants.push(makeLotus(rand(W*.25,W*.75),rand(H*.3,H*.72)));persist();showUI();});
+
+// ---- koi card + graceful departure ("let it swim on" — curation, not commerce; no refund) ----
+const kcard=document.getElementById('koicard'),kcName=document.getElementById('kcName'),kcJp=document.getElementById('kcJp'),
+      kcStage=document.getElementById('kcStage'),kcLin=document.getElementById('kcLin'),
+      kcSwim=document.getElementById('kcSwim'),kcX=document.getElementById('kcX');
+function showCard(k){sel=k;kcSwim.classList.remove('confirm');kcSwim.textContent='let it swim on';
+  const e=KOIDEX.find(d=>d.id===k.variety)||{name:k.variety,jp:''};
+  kcName.textContent=e.name;kcJp.textContent=e.jp;
+  kcStage.textContent=stage(k)+(stage(k)==='elder'?' · long-finned':'');
+  kcLin.textContent=k.parents?'pond-born · carries two lineages':'released by hand';
+  kcard.classList.remove('hide');}
+function hideCard(){sel=null;kcard.classList.add('hide');}
+kcX.addEventListener('click',hideCard);
+kcSwim.addEventListener('click',()=>{if(!sel)return;
+  if(!kcSwim.classList.contains('confirm')){kcSwim.classList.add('confirm');kcSwim.textContent="it won't return — let it swim on?";return;}
+  const k=sel;hideCard();
+  const ex=[[-90,k.y],[W+90,k.y],[k.x,-90],[k.x,H+90]]
+    .sort((a,b)=>((a[0]-k.x)**2+(a[1]-k.y)**2)-((b[0]-k.x)**2+(b[1]-k.y)**2))[0];
+  k.departing=1;k.exit={x:ex[0],y:ex[1]};});                       // the Almanac will remember it (step() records on exit)
+
+// ---- dev lifecycle harness (?dev=1) — warps run the REAL idleReturn path, cap lifted ----
+function devWarp(days){Pond.eco.lastSeen=Date.now()-days*864e5;idleReturn(true);persist();}
+if(DEV){const dtr=document.getElementById('devtray');dtr.style.display='flex';
+  const acts=[['+1d',()=>devWarp(1)],['+7d',()=>devWarp(7)],['+30d',()=>devWarp(30)],
+    ['+200❀',()=>{Pond.econ.serenity+=200;}],
+    ['mature flora',()=>{for(const p of Pond.plants){p.grow=1;if(p.type==='lotus'||p.type==='iris'||p.type==='pad')p.bloom=1;}for(const r of Pond.rocks)r.grow=1;persist();}],
+    ['age koi +.3',()=>{for(const k of Pond.koi)k.age=Math.min(AGE_MAX,k.age+.3);persist();}]];
+  for(const [l,fn] of acts){const b=document.createElement('button');b.className='chip';b.textContent=l;
+    b.addEventListener('click',()=>{fn();showUI();});dtr.appendChild(b);}}
 
 // ---- Koi Codex (first node of the pond-management nav; doubles as a QA view) ----
 const KOIDEX=[
@@ -750,7 +1093,9 @@ function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;retu
   saveT+=dt;if(saveT>5){saveT=0;persist();}}
 addEventListener('beforeunload',persist);
 
-resize();const saved=Store.load();if(saved&&saved.koi&&saved.koi.length)restore(saved);else seedDefault();
+resize();const saved=Store.load();
+if(saved&&saved.koi&&saved.koi.length){restore(saved);idleReturn();}   // away-progress applied on return (capped gift)
+else{seedDefault();Pond.eco.lastSeen=Date.now();}
 requestAnimationFrame(tick);
 </script>
 <!-- analytics: record an open ("times played") via the shared studio hook.
