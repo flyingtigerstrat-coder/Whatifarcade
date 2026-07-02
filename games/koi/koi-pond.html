@@ -1,14 +1,23 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v2.2 (per-patch hi tone) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.0 (living pond, phase A) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
-  RENDER CONTRACT — every skin implements:
+  RENDER CONTRACT v2 — every skin implements:
      water(ctx, t)              full-bleed water/background + light
      koi(ctx, k, sp, dim)       one koi, given its precomputed spine `sp`
      plant(ctx, p)              one plant (pad / lotus)         [optional -> falls back to Natural]
      fx(ctx)                    ripples + food                 [optional -> falls back to generic]
      overlay(ctx, t)           foreground (vignette/fog/petals)
+     roles                      palette-role tokens (foliage/foliageRim/stone/moss/wood/bloom/glow).
+                                An entity drawn ONCE against ROLES() reads correctly in every skin;
+                                a bespoke per-skin handler still wins when present. Standing rule:
+                                no entity ships unless it reads correctly in all four skins.
+  PLANES (living pond): every entity declares BELOW / ON / ABOVE; planes render
+  in order (below -> on -> above) to give the pond literal depth.
+  PERSISTENCE: save key koipond_v3 (lossless v2 upgrader; the old v2 key is left
+  in place for rollback safety — never eat a pond). Derived life (school,
+  dragonfly, fireflies) is never saved; it re-derives from ecology on load.
   The engine computes koi geometry once and calls the active skin. Skins are
   drop-in: register in SKINS and it appears. Natural is the canonical core;
   art skins are faithful performances of it.
@@ -114,8 +123,23 @@ function mixHex(a,b,t){const A=a.replace('#',''),B=b.replace('#',''),h=n=>('0'+(
            +h(lerp(parseInt(A.substr(4,2),16),parseInt(B.substr(4,2),16),t));}
 
 // ---------- persistence (pond you keep) ----------
-const Store={save(o){try{localStorage.setItem('koipond_v2',JSON.stringify(o));}catch(e){}},
-             load(){try{return JSON.parse(localStorage.getItem('koipond_v2')||'null');}catch(e){return null;}}};
+// v3 save. The old koipond_v2 key is deliberately LEFT IN PLACE after migration
+// (rollback safety — a bad deploy must never eat a pond). Migration is lossless:
+// koi/plants/econ/unlocked map verbatim; new fields get safe defaults; lastSeen
+// stamps NOW so the first migrated load grants no retroactive idle windfall.
+const SAVE_KEY='koipond_v3', LEGACY_KEY='koipond_v2';
+function migrateV2(s){return {v:3,
+  econ:{serenity:s.econ?.serenity||6},
+  unlocked:(s.unlocked&&s.unlocked.length)?s.unlocked:['kohaku','asagi','ogon'],
+  koi:(s.koi||[]).map(k=>({variety:k.variety,age:k.age,x:k.x,y:k.y,seed:k.seed,parents:null})),
+  plants:(s.plants||[]).map(p=>({type:p.type,x:p.x,y:p.y,size:p.size,grow:p.grow,bloom:p.bloom,vr:'classic'})),
+  rocks:[], frog:null, departed:[], eco:{lastSeen:Date.now()}};}
+const Store={save(o){try{localStorage.setItem(SAVE_KEY,JSON.stringify(o));}catch(e){}},
+             load(){try{
+               const v3=JSON.parse(localStorage.getItem(SAVE_KEY)||'null'); if(v3) return v3;
+               const v2=JSON.parse(localStorage.getItem(LEGACY_KEY)||'null'); if(v2) return migrateV2(v2);
+               return null;
+             }catch(e){return null;}}};
 
 // ---------- koi varieties (show-accurate Nishikigoi) ----------
 // patches ride the body: a..b = fraction head->tail; top/bot = [inner,outer] reach across each flank
@@ -147,14 +171,26 @@ const V={
 const STARTERS=['kohaku','showa','asagi','ogon','sanke','benigoi','platinum','tancho'];
 
 // ---------- POND state (single source of truth) ----------
-const Pond={koi:[],plants:[],food:[],ripples:[],petals:[],sparkles:[],sun:{x:0,y:0},econ:{serenity:0},unlocked:['kohaku','asagi','ogon'],_t:0};
+const Pond={koi:[],plants:[],food:[],ripples:[],petals:[],sparkles:[],sun:{x:0,y:0},econ:{serenity:0},unlocked:['kohaku','asagi','ogon'],
+  rocks:[],frog:null,departed:[],eco:{lastSeen:0},_t:0};
 
-function makeKoi(variety,x,y,age,seed){
+// capacity ledger (BRIEF v1.1 Phase A, human-ratified 2026-07-02): generous, bounded
+// by worst-case frame budget + on-screen legibility. Departure (Phase B) is the release valve.
+const CAPS={koi:18,plants:36,rocks:12,school:20,fireflies:10};
+
+// blended growth (returning v0.1 work): koi grow slowly with TIME, faster when FED.
+// Size stops at adult (age 1); age keeps accruing quietly beyond it, so ELDER is
+// earned duration — derived from the one saved field, no new state. Never death.
+const AGE_MAX=1.6, GROW_DAY=.01, GROW_FED=.02, PASSIVE_SEC=GROW_DAY/86400;
+function stage(k){return k.age<.25?'fry':k.age<.6?'young':k.age<1.25?'adult':'elder';}
+function eldF(k){return clamp((k.age-1.25)/.2,0,1);}   // 0..1 ramp into eldership (fins flow in gradually)
+
+function makeKoi(variety,x,y,age,seed,parents){
   const v=V[variety]||V.kohaku, len=rand(96,150), sd=seed??(Math.random()*1e4|0);
   const k={variety, V:v, x:x??rand(W*.25,W*.75), y:y??rand(W?H*.25:200,H*.75||400), ang:rand(0,TAU),
     spd:rand(15,26)*(REDUCE?.5:1), len, wd:len*rand(.105,.125), depth:rand(0,1),
     phase:rand(0,TAU), finph:rand(0,TAU), wig:rand(.85,1.2), turn:0, trail:[],
-    age:age??rand(.35,1), hunger:rand(.2,.6), wellfed:0, wake:[], seed:sd};
+    age:age??rand(.35,1), hunger:rand(.2,.6), wellfed:0, wake:[], seed:sd, parents:parents??null};
   k.pattern=buildPattern(v,sd);                 // per-individual markings (no two koi alike)
   return k;
 }
@@ -169,19 +205,49 @@ function seedDefault(){
 function restore(s){
   Pond.econ.serenity=s.econ?.serenity||6;
   Pond.unlocked=s.unlocked&&s.unlocked.length?s.unlocked:['kohaku','asagi','ogon'];
-  Pond.koi=(s.koi||[]).map(k=>makeKoi(k.variety,k.x*W,k.y*H,k.age,k.seed));
-  Pond.plants=(s.plants||[]).map(p=> p.type==='lotus'? Object.assign(makeLotus(p.x*W,p.y*H),{grow:p.grow,bloom:p.bloom}) : Object.assign(makePad(p.x*W,p.y*H,p.size),{grow:p.grow}));
+  Pond.koi=(s.koi||[]).map(k=>makeKoi(k.variety,k.x*W,k.y*H,k.age,k.seed,k.parents||null));
+  Pond.plants=(s.plants||[]).map(p=> p.type==='lotus'? Object.assign(makeLotus(p.x*W,p.y*H),{grow:p.grow,bloom:p.bloom,vr:p.vr||'classic'}) : Object.assign(makePad(p.x*W,p.y*H,p.size),{grow:p.grow,vr:p.vr||'classic'}));
+  Pond.rocks=s.rocks||[]; Pond.frog=s.frog||null; Pond.departed=s.departed||[];
+  Pond.eco=s.eco||{lastSeen:Date.now()};
   if(!Pond.koi.length) seedDefault();
 }
 function persist(){
-  Store.save({econ:Pond.econ, unlocked:Pond.unlocked,
-    koi:Pond.koi.map(k=>({variety:k.variety,age:k.age,x:k.x/W,y:k.y/H,seed:k.seed})),
-    plants:Pond.plants.map(p=>({type:p.type,x:p.x/W,y:p.y/H,size:p.size,grow:p.grow,bloom:p.bloom}))});
+  Store.save({v:3, econ:Pond.econ, unlocked:Pond.unlocked,
+    koi:Pond.koi.map(k=>({variety:k.variety,age:k.age,x:k.x/W,y:k.y/H,seed:k.seed,parents:k.parents||null})),
+    plants:Pond.plants.map(p=>({type:p.type,x:p.x/W,y:p.y/H,size:p.size,grow:p.grow,bloom:p.bloom,vr:p.vr||'classic'})),
+    rocks:Pond.rocks, frog:Pond.frog, departed:Pond.departed,
+    eco:{lastSeen:Date.now()}});
+}
+
+// ---------- ecology (hidden — legible through life, never meters) ----------
+// Pure derivations from what exists. Phase C registers visitors against these;
+// the scores + the roll hook ship now so fauna plugs into a working system.
+const Eco={
+  shelter(){let s=0;for(const r of Pond.rocks)s+=1;
+    for(const p of Pond.plants)if((p.grow??0)>.75)s+=(p.type==='pad'?.5:.75);return s;},
+  bloom(){let b=0;for(const p of Pond.plants)if((p.bloom||0)>.5)b+=1;return b;},
+  life(){return thriving();},
+  calm(){return clamp((Pond._t-(Pond.lastStir||0))/120,0,1);},
+  visitors:[]                    // Phase C: [{key, when(eco)->bool, arrive()}]
+};
+function rollVisitors(){for(const v of Eco.visitors){try{if(v.when(Eco))v.arrive();}catch(e){}}}
+
+// ---------- idle return (away-progress is a gift, never an obligation) ----------
+function idleReturn(){
+  const now=Date.now(), last=Pond.eco.lastSeen||now;
+  const hrs=clamp((now-last)/3.6e6,0,72);                 // gift capped at 3 days' worth
+  if(hrs<.05){Pond.eco.lastSeen=now;return;}
+  const dAge=(hrs/24)*GROW_DAY;                           // capped passive growth while away
+  for(const k of Pond.koi)k.age=Math.min(AGE_MAX,k.age+dAge*rand(.8,1.2));
+  for(const p of Pond.plants){p.grow=Math.min(1,(p.grow??0)+hrs*.01);
+    if(p.type==='lotus'&&p.grow>.9)p.bloom=Math.min(1,(p.bloom||0)+hrs*.02);}
+  Pond.econ.serenity+=Math.min(hrs*2,60);                 // gentle trickle, capped
+  Pond.eco.lastSeen=now; rollVisitors();                  // returning can mean finding a visitor already here
 }
 
 // ---------- geometry (shared by all skins) ----------
-function elen(k){return k.len*lerp(.52,1,k.age);}
-function ewd(k){return k.wd*lerp(.6,.95,k.age);}
+function elen(k){return k.len*lerp(.52,1,Math.min(1,k.age));}   // size stops at adult; age keeps counting toward elder
+function ewd(k){return k.wd*lerp(.6,.95,Math.min(1,k.age));}
 function spine(k,count){
   const L=elen(k), step=L/(count-1), tr=k.trail, pts=[];
   if(tr.length<2){for(let i=0;i<count;i++)pts.push({x:k.x-Math.cos(k.ang)*step*i,y:k.y-Math.sin(k.ang)*step*i});}
@@ -207,7 +273,7 @@ function bodyPath(c,k,sp){const wd=ewd(k),C=sp.length;c.beginPath();
   for(let i=0;i<C;i++){const w=wd*widthAt(sp[i].t),x=sp[i].x+sp[i].nx*w,y=sp[i].y+sp[i].ny*w;i?c.lineTo(x,y):c.moveTo(x,y);}
   for(let i=C-1;i>=0;i--){const w=wd*widthAt(sp[i].t);c.lineTo(sp[i].x-sp[i].nx*w,sp[i].y-sp[i].ny*w);}c.closePath();}
 function tailFin(c,k,sp){const e=sp[sp.length-1],p=sp[sp.length-2];let tx=e.x-p.x,ty=e.y-p.y;const l=Math.hypot(tx,ty)||1;tx/=l;ty/=l;
-  const nx=-ty,ny=tx,fl=elen(k)*.32,fw=ewd(k)*1.45,sw=Math.sin(k.phase+.5)*fw*.65;c.beginPath();c.moveTo(e.x,e.y);
+  const nx=-ty,ny=tx,fl=elen(k)*.32*(1+.7*eldF(k)),fw=ewd(k)*1.45*(1+.18*eldF(k)),sw=Math.sin(k.phase+.5)*fw*.65;   // elder: long flowing trailing fins (prestige, not decline)c.beginPath();c.moveTo(e.x,e.y);
   c.quadraticCurveTo(e.x+tx*fl*.6+nx*(fw+sw),e.y+ty*fl*.6+ny*(fw+sw),e.x+tx*fl+nx*sw,e.y+ty*fl+ny*sw);
   c.quadraticCurveTo(e.x+tx*fl*.7,e.y+ty*fl*.7,e.x+tx*fl-nx*sw,e.y+ty*fl-ny*sw);
   c.quadraticCurveTo(e.x+tx*fl*.6-nx*(fw-sw),e.y+ty*fl*.6-ny*(fw-sw),e.x,e.y);c.closePath();}
@@ -358,9 +424,18 @@ function floatPlant(p,dt){const t=Pond._t;
 // SKIN REGISTRY
 // =================================================================
 const SKINS={};
+// entity/skin contract v2: an entity drawn once against ROLES() reads correctly in
+// every skin (bespoke handlers still win). rain renders the Natural pond into its
+// buffer, so its entities inherit Natural's roles by construction.
+function ROLES(){const S=SKINS[skin];return (S&&S.roles)||SKINS.natural.roles;}
 
 // ---- NATURAL (the canonical, reference-accurate core) ----
 SKINS.natural={
+  // canonical palette roles — the reference every skin re-voices
+  roles:{foliage:['#4a7a44','#2d5630','#1f3f25'],foliageRim:'#96c88c',
+         stone:['#8d867a','#645e52','#3c382f'],moss:'#4a6b3f',
+         wood:['#6e4c30','#4a3220','#2e2114'],
+         bloom:{top:'#f6dfe8',bot:'#e98fb0',center:'#f3d27a'},glow:'#f0cf86'},
   water(c,t){const g=c.createRadialGradient(W*.5,H*.42,Math.min(W,H)*.1,W*.5,H*.5,Math.max(W,H)*.8);
     g.addColorStop(0,'#3c7d68');g.addColorStop(.55,'#235448');g.addColorStop(1,'#0f2a23');
     c.fillStyle=g;c.fillRect(0,0,W,H);
@@ -462,6 +537,11 @@ function chromeRibbon(c,yc,thick,t,seed,a){const step=Math.max(16,W/90|0);
   g.addColorStop(0,'transparent');g.addColorStop(.5,`rgba(210,226,255,${a})`);g.addColorStop(1,'transparent');
   c.fillStyle=g;c.fill();}
 SKINS.metal={
+  // roles: everything is a metal — foliage patinas, stone oxidizes as ore, wood is old bronze
+  roles:{foliage:['#c9b06a','#7d8a6a','#3f4a3a'],foliageRim:'#ffe6a6',
+         stone:['#9a8a68','#5f5442','#2e2a20'],moss:'#5d7261',
+         wood:['#8a6a3c','#5c4628','#342818'],
+         bloom:{top:'#ffe9b0',bot:'#d8a24a',center:'#ffd86a'},glow:'#ffd88a'},
   rip:{crest:[214,232,255,.36],trough:[5,4,3,.15],cw:1.9},    // mercury beading: bright COOL specular crest, deep dark trough
   // --- mercury substrate: warm bronze mids, genuinely deep darks, COOL blown speculars (high dynamic range) ---
   water(c,t){const g=c.createLinearGradient(0,0,0,H);g.addColorStop(0,'#241a10');g.addColorStop(.5,'#0e0905');g.addColorStop(1,'#050302');
@@ -531,6 +611,11 @@ SKINS.metal={
 
 // ---- SUMI INK ----
 SKINS.ink={
+  // roles: ink washes — near-black masses, pale rims, one warm accent
+  roles:{foliage:['#3c3c42','#26262b','#17171a'],foliageRim:'#9a958a',
+         stone:['#44444a','#2c2c31','#1a1a1e'],moss:'#3f4440',
+         wood:['#3a3630','#262420','#161512'],
+         bloom:{top:'#efe9da',bot:'#9a958a',center:'#d8d2c4'},glow:'#d8d2c4'},
   water(c,t){c.fillStyle='#0a0a0c';c.fillRect(0,0,W,H);caustics(c,W,H,t*.5,'rgba(40,40,48,.5)','screen');
     drawWakes(c);},
   koi(c,k,sp,dim){const col=k.V.metal?'#d8d2c4':k.V.accent;c.save();c.globalCompositeOperation='screen';c.lineJoin='round';
@@ -600,8 +685,10 @@ function updateKoi(k,dt){
   const m=90,toC=Math.atan2(H/2-k.y,W/2-k.x);
   if(k.x<m||k.x>W-m||k.y<m||k.y>H-m){let da=((toC-k.ang+Math.PI*3)%TAU)-Math.PI;desired+=da*1.2;}
   k.ang+=clamp(desired,-2.4,2.4)*dt*.9;
-  const eat=bf&&bd<160*160?1.5:1;k.x+=Math.cos(k.ang)*k.spd*eat*dt;k.y+=Math.sin(k.ang)*k.spd*eat*dt;
-  if(bf&&bd<13*13){bf.r-=dt*7;k.hunger=Math.max(0,k.hunger-dt*.5);k.wellfed=4;k.age=Math.min(1,k.age+dt*.02);}
+  const eat=bf&&bd<160*160?1.5:1, eld=1-.28*eldF(k);              // elders drift slower, statelier
+  k.x+=Math.cos(k.ang)*k.spd*eat*eld*dt;k.y+=Math.sin(k.ang)*k.spd*eat*eld*dt;
+  if(bf&&bd<13*13){bf.r-=dt*7;k.hunger=Math.max(0,k.hunger-dt*.5);k.wellfed=4;k.age=Math.min(AGE_MAX,k.age+dt*GROW_FED);}
+  k.age=Math.min(AGE_MAX,k.age+dt*PASSIVE_SEC);                    // blended growth: time counts too (idle sim covers away time)
   k.hunger=Math.min(1,k.hunger+dt*.012);k.wellfed=Math.max(0,k.wellfed-dt);
   k.trail.unshift({x:k.x,y:k.y});const mx=Math.ceil(elen(k)*1.25/4)+4;if(k.trail.length>mx)k.trail.length=mx;
   // wake: drop a disturbance point behind the tail when it has moved enough
@@ -617,7 +704,7 @@ function thriving(){let f=0;for(const k of Pond.koi)f+=k.wellfed>0?1:.3;f/=Math.
 function feed(x,y){const n=6+(Math.random()*4|0);
   for(let i=0;i<n;i++){const a=Math.random()*TAU,d=Math.random()*24;
     Pond.food.push({x:x+Math.cos(a)*d,y:y+Math.sin(a)*d,r:rand(2.2,3.2),life:rand(12,16),hue:rand(-12,12)});}
-  Pond.ripples.push({x,y,r:3,max:120,age:0,life:2,s:1.4});}
+  Pond.ripples.push({x,y,r:3,max:120,age:0,life:2,s:1.4});Pond.lastStir=Pond._t;}
 
 function step(dt){Pond._t+=dt;
   if(drag){const p=drag.plant,r=Math.min(1,dt*3.5),ox=p.x,oy=p.y;   // slow watery glide
@@ -698,11 +785,12 @@ document.querySelectorAll('.pill').forEach(p=>p.addEventListener('click',()=>{co
 const cKoi=document.getElementById('cKoi'),cLotus=document.getElementById('cLotus'),bKoi=document.getElementById('buyKoi'),bLotus=document.getElementById('buyLotus');
 function koiCost(){return 5+Pond.koi.length*4;}function lotusCost(){return 8+Pond.plants.filter(p=>p.type==='lotus').length*6;}
 function syncShop(){const s=Math.floor(Pond.econ.serenity);ser.textContent=s;cKoi.textContent=koiCost();cLotus.textContent=lotusCost();
-  bKoi.disabled=s<koiCost();bLotus.disabled=s<lotusCost();codexTick();}
-bKoi.addEventListener('click',()=>{if(Pond.econ.serenity<koiCost())return;Pond.econ.serenity-=koiCost();
+  bKoi.disabled=s<koiCost()||Pond.koi.length>=CAPS.koi;            // ledger: quiet cap, no error state
+  bLotus.disabled=s<lotusCost()||Pond.plants.length>=CAPS.plants;codexTick();}
+bKoi.addEventListener('click',()=>{if(Pond.econ.serenity<koiCost()||Pond.koi.length>=CAPS.koi)return;Pond.econ.serenity-=koiCost();
   const pool=(Pond.unlocked&&Pond.unlocked.length)?Pond.unlocked:STARTERS;const v=pool[(Math.random()*pool.length)|0];const k=makeKoi(v,rand(W*.3,W*.7),rand(H*.3,H*.7),.3);Pond.koi.push(k);
   Pond.ripples.push({x:k.x,y:k.y,r:3,max:140,age:0,life:2.4,s:1.6});persist();showUI();});
-bLotus.addEventListener('click',()=>{if(Pond.econ.serenity<lotusCost())return;Pond.econ.serenity-=lotusCost();
+bLotus.addEventListener('click',()=>{if(Pond.econ.serenity<lotusCost()||Pond.plants.length>=CAPS.plants)return;Pond.econ.serenity-=lotusCost();
   Pond.plants.push(makeLotus(rand(W*.25,W*.75),rand(H*.3,H*.72)));persist();showUI();});
 
 // ---- Koi Codex (first node of the pond-management nav; doubles as a QA view) ----
@@ -750,7 +838,9 @@ function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;retu
   saveT+=dt;if(saveT>5){saveT=0;persist();}}
 addEventListener('beforeunload',persist);
 
-resize();const saved=Store.load();if(saved&&saved.koi&&saved.koi.length)restore(saved);else seedDefault();
+resize();const saved=Store.load();
+if(saved&&saved.koi&&saved.koi.length){restore(saved);idleReturn();}   // away-progress applied on return (capped gift)
+else{seedDefault();Pond.eco.lastSeen=Date.now();}
 requestAnimationFrame(tick);
 </script>
 <!-- analytics: record an open ("times played") via the shared studio hook.

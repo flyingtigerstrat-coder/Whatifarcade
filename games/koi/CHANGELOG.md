@@ -1,6 +1,23 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-02 — LIVING POND Phase A: foundations (BRIEF v1.1)
+DECIDED: v0.x metal-pilot era closed (v0.6 flowing chrome PASSED). BRIEF v1.1 (THE LIVING POND ecosystem sprint) promoted as canonical; Phase A plan + capacity ledger proposed to the human and ratified (2026-07-02); built. Engine bumped to **koi v3.0 (living pond, phase A)**.
+
+CHANGED (foundations — visible change is deliberately modest: koi grow while away, old fish wear elder fins; the rest is substrate):
+- **Entity/skin contract v2:** every skin now carries `roles` palette tokens (foliage/foliageRim/stone/moss/wood/bloom/glow); `ROLES()` resolves active-skin roles with Natural fallback (rain inherits Natural by construction). New entities draw once against roles and read correctly in all four skins; bespoke handlers still win. Standing rule adopted: no entity ships unless correct in all four skins.
+- **Save v3 + lossless migration:** new key `koipond_v3` (v flag, koi `parents` lineage, `rocks`, `frog`, `departed` Almanac memory, plant `vr` variety field, `eco.lastSeen`). v2 upgrader maps koi/plants/econ/unlocked verbatim; **the old `koipond_v2` key is left in place** (rollback safety); first migration stamps lastSeen=now (no retroactive windfall). Derived life is never saved.
+- **Blended growth + life stages:** passive time growth (GROW_DAY=.01/day, live + idle) + faster fed growth (.02/s while eating — feeding stays the lever). Size stops at adult; age accrues to AGE_MAX 1.6 → stages fry/young/adult/**elder** derived from the one saved field. Elder = prestige: trailing fins flow out ~1.7× (smooth ramp), drift slows ~28%; never death.
+- **Idle return sim:** on load, capped gift for elapsed time (≤3 days' worth: growth, plant grow/bloom, serenity trickle ≤60), then visitor rolls. 30-day absence = same gift as 3 (never an exploit).
+- **Ecology scaffold (hidden):** `Eco.shelter/bloom/life/calm` as pure derivations + `rollVisitors()` hook; visitor list empty until Phase C plugs fauna into a working system.
+- **Capacity ledger enforced quietly:** CAPS {koi 18, plants 36, rocks 12, school 20, fireflies 10}; tend buttons disable at cap, no error state. Departure (Phase B) is the release valve.
+
+TRIED / VERIFIED (23/23, gate held): a **real v2 save captured from the actual pre-Phase-A engine** migrates losslessly (seeds/varieties/ages/positions/econ/unlocked verbatim; v2 key byte-identical after); 48h idle → capped gains; 30-day → 3-day cap; elder fin ramp + all four skins + codex render with zero warnings; node parse-check clean.
+
+OPEN: ledger *feel* awaits the human's eyes on a full pond; per-skin day-cycle behavior (ink's eternal dusk?) proposed in Phase C; growth-rate tuning (§10 micro-loop) once elders exist in the wild.
+
+## 2026-06-23 — metal skin: flowing chrome (liquid-metal motion) — human-directed, "v0.6"
+
 ## 2026-06-23 — metal skin: flowing chrome (liquid-metal motion) — human-directed, "v0.6"
 DECIDED (human, live — not a Drive brief yet; **flag to the director to ratify as BRIEF_koi v0.6**): make the liquid-metal skin actually read *liquid* — flowing, reflective motion (mercury / liquid chrome), per the human's reference to liquid-metal animation effects. Chose the **"flowing chrome"** intensity (over full molten-mercury/T-1000), escalate only if it doesn't land. Built on top of v0.5's grade; metal-skin-only, all in `games/koi/`.
 
