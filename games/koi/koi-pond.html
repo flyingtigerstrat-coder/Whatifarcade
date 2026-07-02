@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v3.2.4 (living pond, B.2.4: trail commit fix — full-length koi, verified by data) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.3 (living pond, phase C: the three planes come alive) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
@@ -202,7 +202,7 @@ const STARTERS=['kohaku','showa','asagi','ogon','sanke','benigoi','platinum','ta
 
 // ---------- POND state (single source of truth) ----------
 const Pond={koi:[],plants:[],food:[],ripples:[],petals:[],sparkles:[],sun:{x:0,y:0},econ:{serenity:0},unlocked:['kohaku','asagi','ogon'],
-  rocks:[],frog:null,departed:[],eco:{lastSeen:0},_t:0};
+  rocks:[],frog:null,departed:[],seen:{},eco:{lastSeen:0},_t:0};   // seen{} = first-sighting timestamps (the Almanac remembers)
 
 // capacity ledger (BRIEF v1.1 Phase A, human-ratified 2026-07-02): generous, bounded
 // by worst-case frame budget + on-screen legibility. Departure (Phase B) is the release valve.
@@ -260,7 +260,7 @@ function restore(s){
     const pl=p.type==='pad'?makePad(p.x*W,p.y*H,p.size,p.vr):mk(p.x*W,p.y*H);
     return Object.assign(pl,{grow:p.grow??pl.grow,bloom:p.bloom||0,vr:p.vr||'classic'});});
   Pond.rocks=(s.rocks||[]).map(r=>({form:r.form,x:r.x*W,y:r.y*H,size:r.size||1,rot:r.rot||0,grow:r.grow||0}));
-  Pond.frog=s.frog||null; Pond.departed=s.departed||[];
+  Pond.frog=s.frog||null; Pond.departed=s.departed||[]; Pond.seen=s.seen||{};
   Pond.eco=s.eco||{lastSeen:Date.now()};
   if(!Pond.koi.length) seedDefault();
 }
@@ -269,7 +269,7 @@ function persist(){
     koi:Pond.koi.map(k=>({variety:k.variety,age:k.age,x:k.x/W,y:k.y/H,seed:k.seed,parents:k.parents||null})),
     plants:Pond.plants.map(p=>({type:p.type,x:p.x/W,y:p.y/H,size:p.size,grow:p.grow,bloom:p.bloom,vr:p.vr||'classic'})),
     rocks:Pond.rocks.map(r=>({form:r.form,x:r.x/W,y:r.y/H,size:r.size,rot:r.rot,grow:r.grow})),
-    frog:Pond.frog, departed:Pond.departed,
+    frog:Pond.frog, departed:Pond.departed, seen:Pond.seen,
     eco:{lastSeen:Date.now()}});
 }
 
@@ -300,6 +300,139 @@ function idleReturn(uncap){
   Pond.econ.serenity+=Math.min(hrs*2,uncap?1e9:60);       // gentle trickle, capped (dev warps honest to elapsed)
   Pond.eco.lastSeen=now; rollVisitors();                  // returning can mean finding a visitor already here
 }
+
+// =================================================================
+// PHASE C — THE THREE PLANES COME ALIVE (fauna + the day)
+// Visitors are EARNED, never bought (Principle 2): they derive from the hidden
+// ecology and are never saved — they re-derive on load. The one exception is the
+// frog's RESIDENCY (the pond's mayor persists; his position derives). Hard law:
+// no predation, ever — attraction and coexistence, not a food chain.
+// =================================================================
+const Fauna={school:[],frog:null,frogRt:null,dragonfly:null,fireflies:[],_roll:0,_m:{}};
+const VISIT={shelter:6,frogPads:3,bloom:3};   // quick-unlock thresholds (human rider: first visitors within the first good session or two)
+function maturePads(){let n=0;for(const p of Pond.plants)if(p.type==='pad'&&(p.grow??0)>.8)n++;return n;}
+function firstSeen(key,gift){if(!Pond.seen[key]){Pond.seen[key]=Date.now();Pond.econ.serenity+=gift;persist();}}
+function momentT(key,gift,cool){const now=Pond._t;if((Fauna._m[key]||-1e9)+cool>now)return;Fauna._m[key]=now;Pond.econ.serenity+=gift;}   // presence quietly rewarded — zero UI
+
+// ---- the school (BELOW): one boids flock of minnows; darts from koi — prey grammar, zero predation ----
+function spawnSchool(){const n=Math.min(15+(Math.random()*6|0),CAPS.school);Fauna.school=[];
+  const cx=rand(W*.3,W*.7),cy=rand(H*.3,H*.7);
+  for(let i=0;i<n;i++)Fauna.school.push({x:cx+rand(-40,40),y:cy+rand(-40,40),vx:rand(-20,20),vy:rand(-20,20),ph:rand(0,TAU)});
+  firstSeen('school',3);}
+function updateSchool(dt){
+  const sh=Eco.shelter(), active=sh>=VISIT.shelter||(Pond.seen.school&&sh>=VISIT.shelter-2);  // earned trust lingers (hysteresis)
+  if(!active){Fauna.school.length=0;return;}
+  if(!Fauna.school.length){if(Math.random()<dt*.2)spawnSchool();return;}     // arrives on its own once earned
+  const S=Fauna.school,vlim=REDUCE?26:46,coh=REDUCE?1.5:1;                    // reduced-motion: tighter, slower
+  for(const fsh of S){let ax=0,ay=0,cx=0,cy=0,n=0,sx=0,sy=0;
+    for(const o of S){if(o===fsh)continue;const dx=o.x-fsh.x,dy=o.y-fsh.y,d2=dx*dx+dy*dy;
+      if(d2<8100){cx+=o.x;cy+=o.y;ax+=o.vx;ay+=o.vy;n++;if(d2<196){sx-=dx;sy-=dy;}}}
+    if(n){fsh.vx+=((cx/n-fsh.x)*.9*coh+(ax/n-fsh.vx)*.7)*dt;fsh.vy+=((cy/n-fsh.y)*.9*coh+(ay/n-fsh.vy)*.7)*dt;}
+    fsh.vx+=sx*3*dt;fsh.vy+=sy*3*dt;
+    for(const k of Pond.koi){const dx=fsh.x-k.x,dy=fsh.y-k.y,d2=dx*dx+dy*dy;  // dart away — never eaten
+      if(d2<12100){const d=Math.sqrt(d2)||1;fsh.vx+=dx/d*180*dt;fsh.vy+=dy/d*180*dt;}}
+    const m=90;if(fsh.x<m)fsh.vx+=60*dt;if(fsh.x>W-m)fsh.vx-=60*dt;if(fsh.y<m)fsh.vy+=60*dt;if(fsh.y>H-m)fsh.vy-=60*dt;
+    const v=Math.hypot(fsh.vx,fsh.vy)||1,vmax=vlim*(1+.4*Math.sin(Pond._t*3+fsh.ph));
+    if(v>vmax){fsh.vx*=vmax/v;fsh.vy*=vmax/v;}
+    fsh.x+=fsh.vx*dt;fsh.y+=fsh.vy*dt;}
+  if(Math.random()<dt*.02)momentT('flash',3,45);}                             // the school flashes a sunbeam
+function drawSchool(c){if(!Fauna.school.length)return;
+  const col=skin==='metal'?'rgba(150,160,175,.5)':skin==='ink'?'rgba(190,186,172,.35)':'rgba(168,178,150,.55)';
+  c.save();c.fillStyle=col;
+  for(const f of Fauna.school){const a=Math.atan2(f.vy,f.vx),fl=Math.sin(Pond._t*8+f.ph)*.8,ca=Math.cos(a),sa=Math.sin(a);
+    c.beginPath();c.ellipse(f.x,f.y,4.5,1.7,a,0,TAU);c.fill();
+    c.beginPath();c.moveTo(f.x-ca*4.5,f.y-sa*4.5);
+    c.lineTo(f.x-ca*8-sa*fl*2,f.y-sa*8+ca*fl*2);c.lineTo(f.x-ca*8+sa*fl*2,f.y-sa*8-ca*fl*2);c.closePath();c.fill();
+    if(Math.random()<.003){c.globalAlpha=.5;c.drawImage(softSprite,f.x-5,f.y-5,10,10);c.globalAlpha=1;c.fillStyle=col;}}
+  c.restore();}
+
+// ---- the frog (ON): a RESIDENT — sits on a pad, throat-bob; occasionally plops and glides below ----
+function updateFrog(dt){
+  if(!Pond.frog){Fauna.frogRt=null;return;}
+  const F=Fauna.frogRt||(Fauna.frogRt={mode:'sit',t:0,pad:null,x:0,y:0,from:null,to:null,next:20+Math.random()*40,dur:0});
+  const pads=Pond.plants.filter(p=>p.type==='pad'&&(p.grow??0)>.8);
+  if(!pads.length){F.pad=null;return;}                                        // pond rearranged — the mayor waits unseen
+  if(!F.pad||!pads.includes(F.pad)){F.pad=pads[(Math.random()*pads.length)|0];F.mode='sit';}
+  F.t+=dt;
+  if(F.mode==='sit'){F.x=(F.pad.rx??F.pad.x);F.y=(F.pad.ry??F.pad.y)-4;
+    if(!REDUCE&&F.t>F.next&&pads.length>1){                                   // plop! (reduced-motion: he just sits)
+      F.mode='swim';F.t=0;F.next=20+Math.random()*40;F.from={x:F.x,y:F.y};
+      let dest=F.pad;while(dest===F.pad)dest=pads[(Math.random()*pads.length)|0];F.pad=dest;
+      F.to={x:dest.rx??dest.x,y:dest.ry??dest.y};F.dur=2+Math.random()*2;
+      Pond.ripples.push({x:F.x,y:F.y,r:3,max:70,age:0,life:1.6,s:1.2});momentT('plop',2,30);}}
+  else{const u=Math.min(1,F.t/F.dur);
+    F.x=lerp(F.from.x,F.to.x,u)+Math.sin(u*Math.PI*2)*8;F.y=lerp(F.from.y,F.to.y,u);
+    if(u>=1){F.mode='sit';F.t=0;Pond.ripples.push({x:F.x,y:F.y,r:2,max:50,age:0,life:1.2,s:1});}}}
+function drawFrogBelow(c){const F=Fauna.frogRt;if(!F||F.mode!=='swim')return; // submerged silhouette gliding between pads
+  c.fillStyle='rgba(10,25,18,.30)';const a=Math.atan2(F.to.y-F.from.y,F.to.x-F.from.x);
+  c.beginPath();c.ellipse(F.x,F.y,9,5,a,0,TAU);c.fill();}
+function drawFrog(c){const F=Fauna.frogRt;if(!F||!F.pad||F.mode!=='sit')return;
+  const RL=ROLES(),bob=1+.06*Math.sin(Pond._t*2.2);
+  c.save();c.translate(F.x,F.y);
+  c.fillStyle=shade(RL.moss,.9);c.beginPath();c.ellipse(0,0,7,5.2*bob,0,0,TAU);c.fill();
+  c.fillStyle=shade(RL.moss,1.15);c.beginPath();c.ellipse(0,1.6,4.6,3*bob,0,0,TAU);c.fill();   // throat bob
+  for(const sd of[-1,1]){c.fillStyle=shade(RL.moss,.72);c.beginPath();c.arc(3.4*sd,-3.6,1.9,0,TAU);c.fill();
+    c.fillStyle='rgba(15,12,8,.9)';c.beginPath();c.arc(3.4*sd,-3.6,.9,0,TAU);c.fill();}
+  c.restore();}
+
+// ---- the dragonfly (ABOVE): visits in bright hours when bloom is high; casts a LIVE shadow ----
+function updateDragonfly(dt){const D=Fauna.dragonfly;if(!D)return;
+  D.t+=dt;D.life-=dt;
+  if(D.life<=0){Fauna.dragonfly=null;return;}
+  const perches=Pond.plants.filter(p=>p.type==='reed').concat(Pond.rocks.filter(r=>r.form==='driftwood'));
+  if(REDUCE&&perches.length){const p=perches[0];D.x=p.x;D.y=p.y-(p.type==='reed'?46:10);D.mode='perch';return;}
+  if(D.mode==='perch'){if(D.t>4){D.mode='fly';D.t=0;D.tx=null;}return;}
+  if(D.tx==null||D.t>1.2){D.t=0;D.landing=0;D.tx=rand(W*.15,W*.85);D.ty=rand(H*.15,H*.6);
+    if(perches.length&&Math.random()<.18){const p=perches[(Math.random()*perches.length)|0];
+      D.tx=p.x;D.ty=p.y-(p.type==='reed'?46:10);D.landing=1;}}
+  const r=Math.min(1,dt*3.2);D.x+=(D.tx-D.x)*r;D.y+=(D.ty-D.y)*r;
+  if(D.landing&&Math.hypot(D.tx-D.x,D.ty-D.y)<4){D.mode='perch';D.t=0;momentT('dfly',2,25);}
+  if(!D.landing&&Math.random()<dt*.12){                                       // wingtip dip — a REAL ring in the ripple system
+    Pond.ripples.push({x:D.x,y:D.y+12,r:2,max:46,age:0,life:1.2,s:1});
+    Pond.sparkles.push({x:D.x,y:D.y+12,age:0,life:.5,mag:.8});momentT('dip',2,20);}}
+function drawDragonfly(c){const D=Fauna.dragonfly;if(!D)return;
+  c.save();
+  c.fillStyle='rgba(8,18,14,.16)';c.beginPath();c.ellipse(D.x+7,D.y+16,8,3,0,0,TAU);c.fill();  // its shadow on the water
+  c.translate(D.x,D.y);c.rotate(Math.atan2((D.ty??D.y)-D.y,(D.tx??D.x+1)-D.x));
+  const w=Math.sin(Pond._t*40)*(D.mode==='perch'?.12:1);
+  c.strokeStyle='rgba(70,110,120,.9)';c.lineWidth=1.8;c.beginPath();c.moveTo(-7,0);c.lineTo(6,0);c.stroke();
+  c.fillStyle='rgba(60,90,100,.95)';c.beginPath();c.arc(6.5,0,1.7,0,TAU);c.fill();
+  c.fillStyle=`rgba(190,220,225,${.32+.2*Math.abs(w)})`;
+  for(const sd of[-1,1]){c.beginPath();c.ellipse(-1,sd*(3+2.5*Math.abs(w)),7,2.2,sd*.5*w,0,TAU);c.fill();
+    c.beginPath();c.ellipse(2,sd*(2.6+2*Math.abs(w)),5.5,1.8,sd*.4*w,0,TAU);c.fill();}
+  c.restore();}
+
+// ---- fireflies at dusk (human-approved — the studio's games waving at each other) ----
+function updateFireflies(dt){const m=dayMix(),duskish=(m.dusk+m.night)>.4;
+  const grown=Pond.plants.filter(p=>(p.grow??0)>.8).length>=5;
+  const want=(duskish&&grown&&Eco.calm()>.3)?Math.min(10,CAPS.fireflies):0;
+  const F=Fauna.fireflies;
+  if(!want){F.length=0;return;}
+  while(F.length<want){const anchors=Pond.plants.filter(p=>p.type==='reed').concat(Pond.rocks.filter(r=>r.form==='lantern'));
+    const a=anchors.length?anchors[(Math.random()*anchors.length)|0]:{x:rand(W*.2,W*.8),y:rand(H*.3,H*.7)};
+    F.push({x:a.x+rand(-60,60),y:a.y+rand(-55,5),ph:rand(0,TAU),sp:rand(.3,.8)});
+    if(F.length===1)firstSeen('firefly',2);}
+  const sw=REDUCE?.4:1;                                                        // reduced-motion: they drift slower
+  for(const fl of F){fl.x+=Math.sin(Pond._t*fl.sp+fl.ph)*12*sw*dt;fl.y+=Math.cos(Pond._t*fl.sp*.8+fl.ph)*9*sw*dt;
+    fl.x=clamp(fl.x,30,W-30);fl.y=clamp(fl.y,36,H-40);}}
+function drawFireflies(c){const F=Fauna.fireflies;if(!F.length)return;
+  c.save();c.globalCompositeOperation='screen';
+  for(const f of F){const tw=.5+.5*Math.sin(Pond._t*2.2+f.ph*3);if(tw<.25)continue;
+    c.globalAlpha=.8*tw;c.fillStyle='rgba(255,232,150,1)';c.beginPath();c.arc(f.x,f.y,1.6,0,TAU);c.fill();
+    c.globalAlpha=.5*tw;c.drawImage(softSprite,f.x-7,f.y-7,14,14);
+    c.globalAlpha=.14*tw;c.drawImage(softSprite,f.x-5,f.y+9,10,10);}          // faint reflection on the water
+  c.globalAlpha=1;c.restore();}
+
+// ---- arrivals: the pond earns its visitors (rolled every ~5s live; also on idle return) ----
+function rollFauna(dt){Fauna._roll+=dt;if(Fauna._roll<5)return;Fauna._roll=0;
+  if(!Pond.frog&&maturePads()>=VISIT.frogPads&&Eco.calm()>.3&&Math.random()<.25){
+    Pond.frog={resident:true,since:Date.now()};firstSeen('frog',5);persist();}
+  const m=dayMix(),bright=(m.dusk+m.night+m.dawn)<.35;
+  if(!Fauna.dragonfly&&bright&&Eco.bloom()>=VISIT.bloom&&Math.random()<.2){
+    Fauna.dragonfly={x:-30,y:rand(H*.2,H*.5),tx:null,ty:null,t:9,life:25+Math.random()*35,mode:'fly',landing:0};
+    firstSeen('dragonfly',3);}}
+Eco.visitors.push({key:'frog',when:()=>!Pond.frog&&maturePads()>=VISIT.frogPads,   // returning can mean finding the mayor moved in
+  arrive:()=>{Pond.frog={resident:true,since:Date.now()};if(!Pond.seen.frog)Pond.seen.frog=Date.now();}});
 
 // ---------- geometry (shared by all skins) ----------
 function elen(k){return k.len*lerp(.52,1,Math.min(1,k.age));}   // size stops at adult; age keeps counting toward elder
@@ -863,9 +996,11 @@ SKINS.rain={
   render(c,t){const w=pond.width,h=pond.height;pondCtx.save();pondCtx.clearRect(0,0,w,h);
     pondCtx.scale(PS,PS);SKINS.natural.water(pondCtx,t);
     for(const p of Pond.plants)if(BELOW_TYPES[p.type])SKINS.natural.plant(pondCtx,p);
+    drawSchool(pondCtx);drawFrogBelow(pondCtx);
     for(const r of Pond.rocks)drawRock(pondCtx,r);
     for(const k of Pond.koi){const sp=spine(k,18);SKINS.natural.koi(pondCtx,k,sp,lerp(.62,1,1-k.depth));}
     for(const p of Pond.plants)if(!BELOW_TYPES[p.type])SKINS.natural.plant(pondCtx,p);
+    drawFrog(pondCtx);drawDragonfly(pondCtx);drawFireflies(pondCtx);
     for(const f of Pond.food){if(f.r<=0)continue;pondCtx.fillStyle='#c39a5e';pondCtx.beginPath();pondCtx.ellipse(f.x,f.y,f.r,f.r*.84,0,0,TAU);pondCtx.fill();}
     pondCtx.restore();
     c.imageSmoothingEnabled=true;c.filter='blur(2px)';c.drawImage(pond,0,0,W,H);c.filter='none';
@@ -1003,6 +1138,8 @@ function step(dt){Pond._t+=dt;
   for(const s of Pond.sparkles) s.age+=dt;
   for(let i=Pond.sparkles.length-1;i>=0;i--) if(Pond.sparkles[i].age>Pond.sparkles[i].life) Pond.sparkles.splice(i,1);
   if(Pond.sparkles.length>80) Pond.sparkles.splice(0,Pond.sparkles.length-80);
+  // the three planes come alive (Phase C)
+  rollFauna(dt);updateSchool(dt);updateFrog(dt);updateDragonfly(dt);updateFireflies(dt);
 }
 
 // =================================================================
@@ -1016,21 +1153,35 @@ let skin='natural';
 let wbuf=null,wctx=null,WS=.5;
 function buildWaterBuf(){wbuf=document.createElement('canvas');
   wbuf.width=Math.max(2,W*WS|0);wbuf.height=Math.max(2,H*WS|0);wctx=wbuf.getContext('2d',{alpha:false});}
-// ---- day cycle (QA PREVIEW of Phase C — codex-forced, session-only, never persisted) ----
-// 'auto' = plain day until Phase C wires the real local-clock drift. Ink keeps its
-// eternal dusk (per-skin ruling). Cheap: two full-frame fills, no ctx.filter.
-const DayQA={force:null};   // null(auto->day) | 'dawn' | 'day' | 'dusk' | 'night'
-function dayTint(c){const ph=DayQA.force||'day';if(ph==='day'||skin==='ink')return;
-  if(ph==='dusk'){c.globalCompositeOperation='multiply';c.fillStyle='rgba(255,178,102,.5)';c.fillRect(0,0,W,H);
+// ---- day cycle (Phase C, LIVE): a slow, real-time ambient drift on the local clock ----
+// warm day -> amber dusk -> cool-dark night -> pale dawn, with long unhurried ~1.5h
+// blends — felt, not watched. Per-skin ruling: natural + rain follow the full cycle
+// (rain inherits through its buffer); metal takes the same grade (the mirror reflects
+// the sky it is under — director tunes speculars later); INK KEEPS ITS ETERNAL DUSK.
+// QA: the codex card forces a phase (session-only); ?hour=N overrides the clock (dev).
+const DayQA={force:null};   // null(auto = real clock) | 'dawn' | 'day' | 'dusk' | 'night'
+const DEVHOUR=(()=>{try{const m=(location.search||'').match(/[?&]hour=([\d.]+)/);return m?+m[1]:null;}catch(e){return null;}})();
+function dayMix(){let h;
+  if(DayQA.force)h={dawn:5.5,day:12,dusk:19,night:23.5}[DayQA.force];
+  else if(DEVHOUR!=null)h=DEVHOUR;
+  else{const d=new Date();h=d.getHours()+d.getMinutes()/60;}
+  const ramp=(x,a,b)=>clamp((x-a)/(b-a),0,1);
+  const dusk=ramp(h,17,19)*(1-ramp(h,20,21.5));
+  const night=(h>=20?ramp(h,20,21.5):(h<6?1-ramp(h,4.5,6):0));
+  const dawn=(h>=4.5&&h<8.5)?ramp(h,4.5,6)*(1-ramp(h,7,8.5)):0;
+  return {dusk,night:Math.max(0,night-dawn*.6),dawn};}
+function dayTint(c){if(skin==='ink')return;const m=dayMix();          // ink: an eternal dusk of its own
+  if(m.dusk>.02){c.globalCompositeOperation='multiply';c.fillStyle=`rgba(255,178,102,${.5*m.dusk})`;c.fillRect(0,0,W,H);
     c.globalCompositeOperation='screen';const g=c.createRadialGradient(W*.3,H*.25,0,W*.3,H*.25,Math.max(W,H)*.7);
-    g.addColorStop(0,'rgba(255,160,80,.13)');g.addColorStop(1,'transparent');c.fillStyle=g;c.fillRect(0,0,W,H);}
-  else if(ph==='night'){c.globalCompositeOperation='multiply';c.fillStyle='rgba(104,120,164,.66)';c.fillRect(0,0,W,H);}
-  else if(ph==='dawn'){c.globalCompositeOperation='multiply';c.fillStyle='rgba(224,212,224,.5)';c.fillRect(0,0,W,H);
-    c.globalCompositeOperation='screen';c.fillStyle='rgba(255,214,214,.07)';c.fillRect(0,0,W,H);}
-  if(ph==='dusk'||ph==='night'){c.globalCompositeOperation='screen';       // the lantern earns its place at dusk
-    for(const r of Pond.rocks)if(r.form==='lantern'){const s=r.size*1.25,gx=r.x,gy=r.y-17*s;
-      const gl=c.createRadialGradient(gx,gy,0,gx,gy,26*s);gl.addColorStop(0,'rgba(255,206,120,.5)');gl.addColorStop(1,'transparent');
-      c.fillStyle=gl;c.beginPath();c.arc(gx,gy,26*s,0,TAU);c.fill();}}
+    g.addColorStop(0,`rgba(255,160,80,${.13*m.dusk})`);g.addColorStop(1,'transparent');c.fillStyle=g;c.fillRect(0,0,W,H);}
+  if(m.night>.02){c.globalCompositeOperation='multiply';c.fillStyle=`rgba(104,120,164,${.66*m.night})`;c.fillRect(0,0,W,H);}
+  if(m.dawn>.02){c.globalCompositeOperation='multiply';c.fillStyle=`rgba(224,212,224,${.5*m.dawn})`;c.fillRect(0,0,W,H);
+    c.globalCompositeOperation='screen';c.fillStyle=`rgba(255,214,214,${.07*m.dawn})`;c.fillRect(0,0,W,H);}
+  const glow=m.dusk+m.night;
+  if(glow>.25){c.globalCompositeOperation='screen';                   // the lantern earns its place at dusk
+    for(const r of Pond.rocks)if(r.form==='lantern'){const sz=r.size*1.25,gx=r.x,gy=r.y-17*sz;
+      const gl=c.createRadialGradient(gx,gy,0,gx,gy,26*sz);gl.addColorStop(0,`rgba(255,206,120,${.5*Math.min(1,glow)})`);gl.addColorStop(1,'transparent');
+      c.fillStyle=gl;c.beginPath();c.arc(gx,gy,26*sz,0,TAU);c.fill();}}
   c.globalCompositeOperation='source-over';}
 function render(t){
   _bakeBudget=2;                                           // sprite re-bakes allowed this frame (smoothness > freshness)
@@ -1044,11 +1195,14 @@ function render(t){
       ctx.imageSmoothingEnabled=true;ctx.drawImage(wbuf,0,0,W,H);  // upscale — glow doesn't mind
       const PL=S.plant||SKINS.natural.plant;
       for(const p of Pond.plants)if(BELOW_TYPES[p.type])PL(ctx,p);   // BELOW plane (submerged grass)
+      drawSchool(ctx);drawFrogBelow(ctx);                            // BELOW life: the school, the frog's glide
       for(const r of Pond.rocks)drawRock(ctx,r);                     // hardscape sits in the water, under the fish
       const ks=Pond.koi.slice().sort((a,b)=>b.depth-a.depth);
       for(const k of ks){const sp=spine(k,18);S.koi(ctx,k,sp,lerp(.6,1,1-k.depth));}
       for(const p of Pond.plants)if(!BELOW_TYPES[p.type])PL(ctx,p);  // ON plane (floating + emergent flora)
-      drawFX(ctx);(S.overlay||(()=>{}))(ctx,t);drawSparkles(ctx);dayTint(ctx);}
+      drawFrog(ctx);                                                 // the mayor sits ON his pad
+      drawFX(ctx);(S.overlay||(()=>{}))(ctx,t);drawSparkles(ctx);
+      drawDragonfly(ctx);drawFireflies(ctx);dayTint(ctx);}           // ABOVE plane, then the day's grade
   }catch(e){if(!render._warned){console.warn('skin render error:',e);render._warned=1;}}
   ctx.restore();
   // belt & suspenders: leave state clean for the next frame no matter what a skin did
@@ -1164,7 +1318,7 @@ kcSwim.addEventListener('click',()=>{if(!sel)return;
 function devWarp(days){Pond.eco.lastSeen=Date.now()-days*864e5;idleReturn(true);persist();}
 let devFps=null;
 if(DEV){const dtr=document.getElementById('devtray');dtr.style.display='flex';
-  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.2.4 · … fps';dtr.appendChild(devFps);
+  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.3 · … fps';dtr.appendChild(devFps);
   const acts=[['+1d',()=>devWarp(1)],['+7d',()=>devWarp(7)],['+30d',()=>devWarp(30)],
     ['+200❀',()=>{Pond.econ.serenity+=200;}],
     ['mature flora',()=>{for(const p of Pond.plants){p.grow=1;if(p.type==='lotus'||p.type==='iris'||p.type==='pad')p.bloom=1;}for(const r of Pond.rocks)r.grow=1;persist();}],
@@ -1240,7 +1394,7 @@ function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;retu
   if(_adT>=5){const f=_adN/_adT;_adN=0;_adT=0;
     if(f<22&&_shed<2){_shed++;DPR_CAP=_shed===1?1.5:1;WS=_shed===1?.45:.4;resize();
       try{localStorage.setItem('koipond_q',String(_shed));}catch(e){}}}
-  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.2.4 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
+  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.3 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
   saveT+=dt;if(saveT>5){saveT=0;persist();}}
 addEventListener('beforeunload',persist);
 
