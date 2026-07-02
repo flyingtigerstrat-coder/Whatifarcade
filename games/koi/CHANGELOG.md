@@ -1,6 +1,20 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-02 — C.2: seeded per-instance variety (§10 micro-loop, human's live read)
+DECIDED (human): driftwood needs 2–3 variants; other flora gets slight within-subclass variety; rocks get variety too. Engine v3.3.1 → **v3.3.2**.
+
+CHANGED (everything derives from a SAVED per-instance seed `sd` — the same koi principle, extended to the whole pond: your specific driftwood is yours across reloads):
+- **Driftwood: three forms** keyed off the seed — a log with a broken branch stub · a slim bowed log with paired knots · a **forked snag** with two weathered prongs; trunk width, bow, stub placement/angle, and knot count/positions all seeded.
+- **Rocks individualized:** pebble gets seeded elongation, outline wobble, tone shift, and band placement; boulder's facet silhouette is jittered per instance with varied crack paths (second crack only sometimes); slate stacks **2 or 3 plates**, each nudged and slightly turned like a real pile; overall rock size range widened (.75–1.25).
+- **Flora within-subclass variety:** reeds vary blade count (5–8), spacing, and tone; iris varies stalk count, **petal count (5–6)**, bloom size, and tone; grass varies blade count and spread; pads/lotus/duckweed carry a per-instance tone shift (lotus colony pads and cluster-colony pads each offset slightly, so no two neighbors clone).
+- **Save v3 additive fields:** plants and rocks now persist `sd`; factories accept an optional seed and derive all cosmetics via the seeded PRNG. Old saves seed once on first load, then are stable forever — nothing is lost, nothing re-rolls.
+
+TRIED / VERIFIED: new C.2 gate suite (14/14 — identity stable across double reload; 12 driftwood hit all 3 variants; old copper-pad save upgrades losslessly; all four skins render seeded variety with zero warnings); A/B/C suites re-run green (62/62); real-Chromium lineup screenshot (3 seeds of every rock form + varied reeds/irises/pads/grass) captured and shared; `sd` confirmed byte-stable across reload in the live browser.
+
+OPEN: pad tone variation is deliberately subtle (±14% brightness) — director's eye on whether it should push further; pebbles read close at small sizes (worn stones are worn stones).
+
+
 ## 2026-07-02 — C.1: hardscape/flora differentiation + graceful turns (§10 micro-loop, human's live read)
 DECIDED (human, four items from the live Phase C build): plants too similar; koi still curl into a ball; driftwood the weakest visual; rocks under-differentiated. Engine v3.3 → **v3.3.1**.
 
