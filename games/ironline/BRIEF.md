@@ -1,7 +1,7 @@
 # BRIEF — IRONLINE
 version: v1.2
 date: 2026-07-02
-status: building
+status: built — awaiting human QA (all seven waves landed; no deploy until the human calls it)
 changed-since-last: PHASE A VERIFIED SHIPPED (supersedes v1.1 same day; v1.1 was cut before the director saw sessions 4–9 land). The Railhead is LIVE on whatifarcade.com as a full settlement — restage passed, arrival/departure choreography live as the reusable S.stop machine (world truly comes to rest), begin-at-origin live, the Dispatcher speaks, depots halt the world, pod docs + tooling promoted into the repo, depth ladder + building grammar + "The stop" canon in DESIGN.md, localStorage save shim fixed live persistence, NOODLE ratified on the platform (his gold is his alone). Wave 0 is therefore SLIMMED to the true remaining foundations (save schema v2 + migration, harness kept green). Waves 1–6 stand, now explicitly built ON the shipped foundations (The stop, the settlement/building grammar, the banner's layout gating). Builder-parked items routed to their waves. This brief is the sprint contract the builder's own session-9 OPEN line asked for: "the parked threads, in order: node-graph map first."
 ---
 
