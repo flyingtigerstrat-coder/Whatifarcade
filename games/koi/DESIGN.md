@@ -16,6 +16,13 @@ One self-contained file — `koi-pond.html` (engine version in the header commen
 - **Ecology (hidden):** `Eco.shelter/bloom/life/calm` — pure derivations from what exists; visitors (Phase C) register `{when(eco), arrive()}` against them. Numbers stay hidden; legible through life, never meters.
 - **Capacity ledger (human-ratified):** `CAPS = {koi:18, plants:36, rocks:12, school:20, fireflies:10}`; tend buttons disable quietly at cap. Departure (Phase B) is the release valve.
 
+## The dream pond (Phase B)
+- **Flora:** pad varieties via saved `vr` (classic / copper / cluster); mature pads open **water-lily blooms** (feed `Eco.bloom`); **reeds**, **iris**, **duckweed** (koi nibble it — ambient self-feeding trickle; floor .35, regrows), **submerged grass** (BELOW plane, drawn under koi). Every new type is one draw function against `ROLES()` — skin-correct everywhere by construction.
+- **Hardscape (`rocks[]`, persisted normalized):** stone/boulder/slate (seeded organic blobs), driftwood, stone lantern. Moss creeps with `grow` (live + idle); koi steer around; ripples foam at rims (arc highlight). Rocks drag heavy (rate .9 vs 3.5, bigger displacement ripples).
+- **Tend tray:** `CATALOG` drives plant/place chips; **arm chip → tap water to place** (`placing`/`placeAt`); caps + serenity checked at arm and at place; prices are placeholders until the Phase D rebalance.
+- **Koi card:** click koi = select (click water = feed). Card shows variety/stage/lineage; **"let it swim on"** = two-step confirm → `departing` steering to the nearest edge → recorded in `departed[]` (variety, seed, age, date) → farewell ripple. No refund, no return.
+- **Dev lifecycle harness (`?dev=1`):** warps set `eco.lastSeen` back and call the **real** `idleReturn(uncap)` — production code path, cap lifted. Buttons: +1d/+7d/+30d, +200❀, mature flora, age koi. For rapid whole-lifecycle review during refinement.
+
 ## Water — three layered passes
 1. **Pass 1:** drifting layered caustics + a breathing surface shimmer + a wandering sunbeam + koi wake-trails.
 2. **Pass 2:** propagating refractive ripple trains (a bright crest + a bent trough) with sun-glint sparkles on the crests.
