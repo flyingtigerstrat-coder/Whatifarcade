@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-07-02 · session 11 (cont.) — Wave 6 · THE POLISH: the world earns its details
+DECIDED: The Cinder Seam full art lands — glowing cone crowns, ridge glow-veins, slag heaps alight, ember chimneys, collapsed gantries, pulsing fissures, and THE CRUCIBLE (a cracked foundry tower, fire standing in its ribs) as its landmark; EMBER GALE joins as a sixth weather the Seam alone can roll. Gun-port PARITY debt paid: hull ports grow bare-port -> casemate -> twin with the car's tier, kick with recoil, drop spent casings; booms inherit the round's dt color. Engine rank reads in silhouette (cab brow / plow horns / war pennant). Fortress-skin smoke finally respects THE STOP (old session-8 debt). One new prop per old region (pipeline arch / collapsed footbridge / skull dome); region-tinted atmosphere; passing raiders wear the local clan's warpaint.
+TRIED: THE RAILHEAD render stayed byte-IDENTICAL through the entire six-wave sprint — the origin scene was never collateral.
+PARKED (for the human): physical station art at non-origin stops (vis-choreography + per-personality settlement recipes — worth its own pass), cargo/coach art beyond wave-2 shapes, more enemy sprites.
+CHANGED: SEAM biome rebuilt; W_GALE + 6-slot wx; port loop rebuilt; drawOverlays REGTINT; engine tier block; harness 76 -> 77.
+OPEN: BRIEF v1.2 wave list is BUILT end-to-end. Human phone QA owed on: map tab, depot market/board, boarding fight, inspect taps, Terminus pacing. No deploy until the human calls it.
+FEELING: Seven waves ago this was a treadmill with a train on it. Tonight it is a realm — regions with names, gates with faces, an economy with weather, and a puppy at the center of it all.
+
 ## 2026-07-02 · session 11 (cont.) — Wave 5 · THE BENCH: eight new hands, and a puppy you can pet
 DECIDED: Eight heroes join. Four in the pools (Signalwoman, Cartwright / Spotter, The Uncoupled); four NAMED story heroes found on the line, once and only once: THE STOWAWAY (a special passenger who throws back the hood instead of stepping down), THE LANTERNKEEPER (steps off the Ghost Hauler), THE GATEWRIGHT (freed from the first pretender's wreck), THE SURVEYOR (waiting at the Seam's entry). TAP-TO-INSPECT rides the crate-tap path: tap any car on calm rail for its card (amber outline pulse); tap NOODLE at the origin platform for a faster tail and a line — no stats, obviously. HERO'S FAVOR: ~35% of stations, one hero offers a discounted rank-up on the board. Elite laurel: MAXRANK crew wear a plain amber mark above the head.
 TRIED: Story-hero uniqueness enforced at grant (bench + placed slots both checked) — the harness proves never-twice.

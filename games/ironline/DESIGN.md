@@ -109,6 +109,16 @@ The rail ocean is **4 regions** (`REGIONS`): Rust Flats → Dead City → Bone R
 
 ---
 
+## The Polish — band by band (Wave 6)
+
+**The Cinder Seam got its full pass**: cinder cones with glowing crowns, ridge glow-veins, slag heaps alight at the seams, ember chimney stacks, collapsed gantries, pulsing ground fissures — and **THE CRUCIBLE**, a cracked foundry tower with fire still standing in its ribs, as its band-3 landmark. **EMBER GALE** is a sixth weather rolled by the Seam alone (horizontal ember streaks, hot tint). Each old region gained a mid-band prop (Rust: pipeline arch · City: collapsed footbridge · Reef: half-buried skull dome). **Region-tinted atmosphere** (`REGTINT`) lays a whisper of each country's color over the grade — the Flats are the baseline.
+
+**Hardware parity**: hull gun-ports now grow with the car's tier (bare port → armored casemate → twin mount), kick with **recoil**, and drop **spent casings**; impact booms inherit the round's damage-type color. The engine's rank reads in silhouette (armored cab brow → plow horns → war pennant), not just its ramp. The **Fortress-skin smoke** finally respects THE STOP (no plume at rest — old debt paid). Passing raider trains wear the **local clan's warpaint**.
+
+**Parked from the wave-6 list, for the human's direction:** physical station art at non-origin stops (extending the vis-stop choreography + a per-personality settlement recipe — a real chunk, worth its own pass), cargo/passenger car art beyond the wave-2 shapes, and further enemy-sprite variety.
+
+---
+
 ## Save schema — versioned, migrated stepwise
 
 `save()` stamps `v: SAVE_V`; `load()` runs `migrate(d)` **first**, so load logic only ever reads the current schema. `migrate()` is a **chain of stepwise upgrades** — one step per wave that grows state (v1→v2 normalized the live-shipped unversioned shape; v2→v3 will add map state and place veterans on the node graph). **Policy: a rig is sacred** — unknown/higher versions pass through untouched and load reads known fields defensively; only a genuinely unparseable blob falls back to a fresh boot. Extend save/load/reset (and the harness) together every time state grows.

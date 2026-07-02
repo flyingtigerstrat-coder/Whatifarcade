@@ -1029,8 +1029,10 @@ px(EX-1+drv[0],rodY-1,2,3,'#9a8a74');px(EX-1+drv[drv.length-1],rodY-1,2,3,'#9a8a
 drv.forEach(wx=>{const cx=EX-1+wx;
 px(Math.round(cx+Math.cos(a)*3-0.5),Math.round(wy+Math.sin(a)*3-0.5),2,2,'#e0c89a');
 px(Math.round(cx-Math.cos(a)*2.4),Math.round(wy-Math.sin(a)*2.4),1,1,'#8a7a64')});
-// --- smoke plume from the stack ---
+// --- smoke plume from the stack (she breathes only when she rolls — the stop is real for skins too) ---
 const skx=EX-1+54,sky=eb-37;S.stackX=skx;
+const atRest=S.stop&&(S.stop.ph=='docked'||(S.stop.ph=='arriving'&&S.stop.t/S.stop.T>0.7));
+if(atRest)return;
 for(let i=0;i<10;i++){const age=((S.T*1.1+i*0.36)%3.6);
 const pyy=sky-age*6.5,pxx=skx+Math.sin(age*1.05+i*1.3)*age*1.5,sz=2+age*0.8,al=Math.max(0,0.6-age*0.13);
 if(al>0.03)px(Math.round(pxx-sz/2),Math.round(pyy-sz/2),Math.ceil(sz),Math.ceil(sz),'rgba('+(age<1.1?'48,44,40':'96,90,84')+','+al.toFixed(2)+')')}
@@ -1122,10 +1124,13 @@ const plX=sbX,plBot=eb-1;
 for(let r=0;r<17;r++){const hh=18-r;if(hh<2)continue;const xx=plX+r;
 px(xx,plBot-hh,1,hh,r<2?em[0]:(r%2?em[2]:em[1]));px(xx,plBot-hh,1,1,em[4])}
 px(plX,plBot,17,2,'#1c140d');px(plX,plBot-18,2,1,'#9a8a74');
-// --- engine tiers ---
-if(et>=1)px(boX,boT+Math.floor(boH/2),boW,1,'#e0a33a');
-if(et>=2){px(boX+18,boT-4,4,3,em[2]);px(boX+18,boT-5,4,1,em[4]);px(cabX+1,cabT+2,1,2,'#ffd23e')}
-if(et>=3){px(boX,boT,boW,1,'#e0a33a');if(Math.floor(S.T*4)%2==0){px(cabX+3,eb-7,9,2,'#ff7a2a');px(cabX+4,eb-6,7,1,'#ffd23e')}px(sbX+2,boT+8,2,2,'#cdf0ff')}
+// --- engine tiers (color bands + SILHOUETTE growth: the rank reads across the yard) ---
+if(et>=1){px(boX,boT+Math.floor(boH/2),boW,1,'#e0a33a');
+ px(cabX-1,cabT-2,12,2,em[1]);px(cabX-1,cabT-3,12,1,em[3])}                                     // armored brow over the cab
+if(et>=2){px(boX+18,boT-4,4,3,em[2]);px(boX+18,boT-5,4,1,em[4]);px(cabX+1,cabT+2,1,2,'#ffd23e');
+ px(plX+2,plBot-22,2,4,em[1]);px(plX+6,plBot-24,2,6,em[1]);px(plX+2,plBot-23,2,1,em[3]);px(plX+6,plBot-25,2,1,em[3])} // plow horns
+if(et>=3){px(boX,boT,boW,1,'#e0a33a');if(Math.floor(S.T*4)%2==0){px(cabX+3,eb-7,9,2,'#ff7a2a');px(cabX+4,eb-6,7,1,'#ffd23e')}px(sbX+2,boT+8,2,2,'#cdf0ff');
+ px(cabX+2,cabT-8,2,6,'#241a12');px(cabX+1,cabT-9,4,2,'#8a3a28');px(cabX+1,cabT-9,4,1,'#c2452f')} // the war pennant over the cab
 }
 // =================== CARS ===================
 let cx=EX;
@@ -1286,17 +1291,21 @@ const rkx=cx+Math.floor(carW/2)-7,rky=DECK+14;
 px(rkx-1,rky-1,16,1,'#3a2f22');px(rkx-1,rky+5,16,1,'#3a2f22');px(rkx-1,rky-1,1,7,'#5a4632');px(rkx+15,rky-1,1,7,'#5a4632');
 for(let r=0;r<2;r++)for(let sc=0;sc<3;sc++){const sx=rkx+1+sc*5,sy=rky+r*3;px(sx,sy,4,2,'#b89a4a');px(sx,sy,4,1,'#d8c078');px(sx+4,sy,1,2,'#e0a33a')}
 // ---- HULL GUN PORTS (broadside casemate guns — ship-of-the-line detail) ----
-const port=s.port||'auto',PW=PORTW[port];
+const port=s.port||'auto',PW=PORTW[port],pvt=vtier(s.lvl);
 if(typeof st.pt!='number')st.pt=-9;
-const pflash=S.T-st.pt<0.08,gy=DECK+4;
+const psince=S.T-st.pt,pflash=psince<0.08,prec=Math.round(Math.max(0,1-psince/0.1)*2),gy=DECK+4;
 [cx+3,cx+carW-12].forEach((gx,pi)=>{
+// the mount grows with the car: bare port -> armored casemate -> twin mount (gun-port parity with the turret's tiers)
 px(gx-1,gy-2,9,2,'#5a4632');px(gx-1,gy-2,9,1,'#7a6248');
+if(pvt>=1){px(gx-2,gy-3,11,2,mat(s.lvl)[1]);px(gx-2,gy-3,11,1,mat(s.lvl)[3]);px(gx-2,gy-1,1,8,mat(s.lvl)[1]);px(gx+8,gy-1,1,8,mat(s.lvl)[1])} // casemate armor frame
 box(gx,gy,7,7,'#1c1812');px(gx+1,gy+1,5,5,'#0e0a06');
 px(gx,gy,1,7,'#3a2f22');px(gx+6,gy,1,7,'#3a2f22');
-if(port=='auto'){px(gx+5,gy+2,5,2,'#22262a');px(gx+9,gy+2,1,2,'#3a4045')}
-else if(port=='flak'){px(gx+5,gy+1,4,4,'#33383d');px(gx+8,gy+2,2,3,'#22262a')}
-else{px(gx+5,gy+2,4,3,'#3a2f2a');px(gx+8,gy+3,1,1,'#22262a');if(Math.floor(S.T*6+pi*3)%2==0)px(gx+9,gy+3,1,1,'#ff7a2a')}
+const bx0=gx+5-prec;                                                             // recoil kicks the barrel into the port
+if(port=='auto'){px(bx0,gy+2,5,2,'#22262a');px(bx0+4,gy+2,1,2,'#3a4045');if(pvt>=2){px(bx0,gy,5,1,'#22262a');px(bx0+4,gy,1,1,'#3a4045')}}
+else if(port=='flak'){px(bx0,gy+1,4,4,'#33383d');px(bx0+3,gy+2,2,3,'#22262a');if(pvt>=2)px(bx0,gy-1,4,2,'#33383d')}
+else{px(bx0,gy+2,4,3,'#3a2f2a');px(bx0+3,gy+3,1,1,'#22262a');if(pvt>=2)px(bx0,gy,4,2,'#3a2f2a');if(Math.floor(S.T*6+pi*3)%2==0)px(gx+9,gy+3,1,1,'#ff7a2a')}
 if(pflash){px(gx+8,gy+1,3,4,PW.c);px(gx+10,gy+2,2,2,'#fff4c2')}
+if(psince<0.35&&port!='flame'){px(gx+4,gy+8+Math.round(psince*34),1,2,'#d8c078')} // a spent casing drops from the port
 });
 const pcd=port=='auto'?0.3:port=='flak'?0.8:0.18;
 const pen=(S.raiders.length&&S.flash>0)||!!ft;
@@ -1740,8 +1749,8 @@ for(let c=0;c<2;c++){const bx=x+c*16;
  panel(bx,y-12,15,12,M);                                                  // shaded hull (lit top / shadow base / AO / side shadows)
  px(bx+4,y-9,1,8,M[1]);px(bx+10,y-9,1,8,M[1]);                            // plate seams
  streak(bx+6,y-8,5,bx+c*3);                                               // rust drip
- if(raider){for(let s=0;s<3;s++){px(bx+2+s*5,y-15,2,3,M[1]);px(bx+2+s*5,y-15,1,1,RAIDRED[2])} // red-tipped spikes
-  px(bx+1,y-3,13,1,RAIDRED[1]);}                                          // warpaint stripe
+ if(raider){const cc=CLANS[S.nav?S.nav.reg:0].c;for(let s=0;s<3;s++){px(bx+2+s*5,y-15,2,3,M[1]);px(bx+2+s*5,y-15,1,1,RAIDRED[2])} // red-tipped spikes
+  px(bx+1,y-3,13,1,cc);}                                                  // warpaint stripe in the local clan's color
  else if(ghost){px(bx+1,y-16,13,4,M[2]);px(bx+1,y-16,13,1,M[3]);                                // frost-pale load, no living cargo
   if(Math.floor(S.T*3+c)%2==0)px(bx+6,y-18,2,2,'rgba(190,232,255,0.5)')}                       // cold shimmer
  else{px(bx+1,y-16,13,4,'#9a7a4a');px(bx+1,y-16,13,1,'#bd9a68');px(bx+1,y-13,13,1,M[1]);       // canvas tarp (lit ridge)
@@ -1822,28 +1831,44 @@ function deadTree2(x,y,c){deadTree(x,y,14+Math.floor(hash(x)*8),c)}
 const RUST={name:'THE RUST FLATS',ground:['#c98f4a','#bb813f','#a56d33'],haze:'#e4aa60',
 far(x,p){ctx.fillStyle='rgba(150,112,82,0.5)';if(p<0.5){tri(x-30,109,x+2,74,x+34,109)}else{tri(x-20,109,x+6,86,x+30,109);tri(x+10,109,x+30,82,x+52,109)}},
 range(x,p){ridgeLine(x-14,110,132,7,5,0.055,1.2,'rgba(150,120,92,0.42)',true);ridgeLine(x,110,116,18,12,0.085,3.4,'rgba(112,84,60,0.62)',true)},
-mid(x,p){const c='rgba(70,50,36,0.86)';if(p<0.35)wreckCar(x,109,c);else if(p<0.7)deadTree2(x,109,c);else if(p<0.88){drum(x,109,c);drum(x+5,109,c)}else deadSign(x,109,c)},
+mid(x,p){const c='rgba(70,50,36,0.86)';if(p<0.35)wreckCar(x,109,c);else if(p<0.65)deadTree2(x,109,c);else if(p<0.82){drum(x,109,c);drum(x+5,109,c)}else if(p<0.92)deadSign(x,109,c);else{pxa(x,92,2,17,c);pxa(x+12,92,2,17,c);pxa(x-2,90,18,3,c);pxa(x+2,93,10,1,'rgba(120,90,60,0.5)');pxa(x+6,96,2,13,'rgba(70,50,36,0.5)')}},
 deb(x,p){if(p<0.4){ctx.fillStyle='rgba(34,26,18,0.9)';blob(x,158,16,9);ctx.fillStyle='rgba(120,86,54,0.4)';blob(x+5,160,7,4)}else if(p<0.7){pxa(x,165,4,3,'#9c6630');pxa(x+3,167,3,2,'#8a5a28')}else{pxa(x,163,6,1,'#cabfa6');pxa(x+2,162,1,2,'#cabfa6')}},
 land(x){ctx.fillStyle='rgba(60,44,32,0.85)';pxa(x,72,2,37,'rgba(60,44,32,0.85)');pxa(x+14,72,2,37,'rgba(60,44,32,0.85)');pxa(x-3,66,22,7,'rgba(70,52,38,0.9)');pxa(x-3,66,22,1,'rgba(120,90,60,0.6)');pxa(x+5,109,2,-0,'#000')}};
 const CITY={name:'THE DEAD CITY',ground:['#9a8460','#86714f','#6c5a40'],haze:'#d8c08e',
 far(x,p){ctx.fillStyle='rgba(120,104,84,0.5)';if(p<0.6){tower(x,109,12,30+Math.floor(hash(x)*16),'rgba(120,104,84,0.5)');tower(x+13,109,9,22,'rgba(120,104,84,0.5)')}else{tower(x,109,8,40,'rgba(120,104,84,0.5)');pxa(x+1,109-44,6,4,'rgba(120,104,84,0.5)')}},
 range(x,p){const c='rgba(108,98,84,0.5)',bx=Math.floor(x);for(let i=0;i<13;i++){const tx=x+i*8,th=10+Math.floor(hash(i*13+bx)*30),tw=3+Math.floor(hash(i*7+bx)*4);pxa(tx,110-th,tw,th,c);if(hash(i*5+bx)>0.55)pxa(tx+1,110-th-4,1,4,c)}},
-mid(x,p){const c='rgba(54,48,40,0.9)';if(p<0.45){tower(x,109,18,26+Math.floor(hash(x)*14),c)}else if(p<0.75){pxa(x,100,30,4,c);pxa(x+3,104,3,5,c);pxa(x+24,104,3,5,c)}else{pxa(x,90,2,19,c);pxa(x-6,88,16,8,c);pxa(x-4,90,12,4,'rgba(110,90,60,0.4)')}},
+mid(x,p){const c='rgba(54,48,40,0.9)';if(p<0.4){tower(x,109,18,26+Math.floor(hash(x)*14),c)}else if(p<0.68){pxa(x,100,30,4,c);pxa(x+3,104,3,5,c);pxa(x+24,104,3,5,c)}else if(p<0.86){pxa(x,90,2,19,c);pxa(x-6,88,16,8,c);pxa(x-4,90,12,4,'rgba(110,90,60,0.4)')}else{pxa(x,95,3,14,c);pxa(x+20,98,3,11,c);ctx.save();ctx.translate(x+2,95);ctx.rotate(0.32);pxa(0,0,20,3,c);pxa(2,1,16,1,'rgba(110,90,60,0.35)');ctx.restore()}},
 deb(x,p){if(p<0.45){ctx.fillStyle='rgba(46,40,32,0.9)';blob(x,160,18,8)}else if(p<0.72){pxa(x,164,7,4,'#7a6c50');pxa(x+2,162,3,2,'#8a7c60')}else{ctx.strokeStyle='rgba(40,34,28,0.8)';ctx.beginPath();ctx.moveTo(x,168);ctx.lineTo(x+4,162);ctx.lineTo(x+8,167);ctx.stroke()}},
 land(x){const c='rgba(48,42,34,0.9)';ctx.save();ctx.translate(x,109);ctx.rotate(0.12);tower(0,0,22,56,c);ctx.restore();pxa(x+20,58,3,3,'rgba(200,80,40,0.5)')}};
 const REEF={name:'THE BONE REEF',ground:['#d8c6a8','#c6b291','#ac9576'],haze:'#ecdcc0',
 far(x,p){ctx.fillStyle='rgba(176,160,138,0.5)';if(p<0.5){ribArc(x,109,18+Math.floor(hash(x)*10),'rgba(186,172,150,0.5)')}else{bonePillar(x,109,30,'rgba(186,172,150,0.5)');bonePillar(x+8,109,20,'rgba(186,172,150,0.5)')}},
 range(x,p){ridgeLine(x,110,124,8,4,0.05,2,'rgba(178,164,142,0.45)',false);const c='rgba(192,180,158,0.4)';ribArc(x+30,110,28,c);ribArc(x+70,110,22,c)},
-mid(x,p){const c='rgba(150,140,120,0.85)',bn='rgba(206,196,172,0.9)';if(p<0.4){for(let v=0;v<4;v++)vertebra(x+v*6,109-v*2,bn)}else if(p<0.72){bonePillar(x,109,24,bn);ribArc(x+6,109,12,bn)}else{pxa(x,98,30,11,c);pxa(x+4,94,18,5,c);pxa(x,109,30,1,'rgba(40,34,28,0.5)')}},
+mid(x,p){const c='rgba(150,140,120,0.85)',bn='rgba(206,196,172,0.9)';if(p<0.36){for(let v=0;v<4;v++)vertebra(x+v*6,109-v*2,bn)}else if(p<0.62){bonePillar(x,109,24,bn);ribArc(x+6,109,12,bn)}else if(p<0.84){pxa(x,98,30,11,c);pxa(x+4,94,18,5,c);pxa(x,109,30,1,'rgba(40,34,28,0.5)')}else{ctx.fillStyle=bn;blob(x,109,22,16);pxa(x+4,101,4,4,'rgba(40,34,28,0.7)');pxa(x+13,101,4,4,'rgba(40,34,28,0.7)');pxa(x+8,107,6,2,'rgba(40,34,28,0.5)')}},
 deb(x,p){if(p<0.45){ctx.fillStyle='rgba(210,200,178,0.9)';blob(x,162,9,5);pxa(x+3,160,2,2,'rgba(40,34,28,0.4)')}else if(p<0.72){pxa(x,165,5,2,'#cabfa6');pxa(x+1,163,1,2,'#cabfa6');pxa(x+4,164,1,2,'#cabfa6')}else{pxa(x,166,6,2,'#b89f86')}},
 land(x){const c='rgba(216,206,184,0.95)';ribArc(x,109,40,c);ribArc(x,109,33,c);ribArc(x,109,26,c);pxa(x-3,109-40,6,8,c);pxa(x-2,109-44,2,2,'rgba(40,34,28,0.6)');pxa(x+1,109-44,2,2,'rgba(40,34,28,0.6)')}};
-/* THE CINDER SEAM — wave-1 placeholder art (char ground, ember haze, seam-glow fissures); wave 6 gives it the full pass */
+/* THE CINDER SEAM — full art (wave 6): char country under an ember sky; the ground itself never cooled */
 const SEAM={name:'THE CINDER SEAM',ground:['#4a3a32','#3c2e28','#2c211d'],haze:'#8a5038',
-far(x,p){ctx.fillStyle='rgba(70,44,38,0.55)';if(p<0.5){tri(x-26,109,x+4,70,x+36,109);pxa(x+2,72,3,2,'rgba(232,110,50,0.5)')}else{tri(x-18,109,x+8,84,x+34,109);tri(x+14,109,x+34,78,x+56,109)}},
-range(x,p){ridgeLine(x-10,110,128,9,7,0.06,2.1,'rgba(84,52,42,0.5)',true);ridgeLine(x,110,112,20,13,0.09,4.2,'rgba(56,36,30,0.66)',true)},
-mid(x,p){const c='rgba(40,26,22,0.9)';if(p<0.4){pxa(x,96,4,13,c);pxa(x-3,96,10,3,c);pxa(x+1,92,2,4,'rgba(232,110,50,0.6)')}else if(p<0.7){wreckCar(x,109,c)}else{pxa(x,100,14,9,c);pxa(x+3,97,8,3,c);pxa(x+5,101,4,2,'rgba(232,110,50,0.45)')}},
-deb(x,p){if(p<0.45){ctx.fillStyle='rgba(20,14,12,0.9)';blob(x,160,14,7);pxa(x+4,158,2,1,'rgba(240,130,60,0.55)')}else if(p<0.72){pxa(x,164,5,3,'#3a2a22');pxa(x+2,163,2,1,'rgba(232,110,50,0.5)')}else{pxa(x,166,7,1,'rgba(220,120,60,0.35)')}},
-land(x){const c='rgba(30,20,16,0.92)';pxa(x,64,3,45,c);pxa(x+10,72,3,37,c);pxa(x-2,60,17,6,c);pxa(x-2,60,17,1,'rgba(240,140,60,0.5)');pxa(x+4,66,7,2,'rgba(232,110,50,0.65)')}};
+far(x,p){ctx.fillStyle='rgba(70,44,38,0.55)'; // cinder cones, crowns still glowing
+ if(p<0.5){tri(x-30,109,x+2,68,x+34,109);pxa(x-1,70,6,2,'rgba(240,120,50,0.55)');pxa(x+1,68,2,2,'rgba(255,170,90,0.6)')}
+ else{tri(x-18,109,x+8,84,x+34,109);tri(x+14,109,x+34,76,x+56,109);pxa(x+32,78,4,1,'rgba(240,120,50,0.45)')}},
+range(x,p){ridgeLine(x-10,110,128,9,7,0.06,2.1,'rgba(84,52,42,0.5)',true);ridgeLine(x,110,112,20,13,0.09,4.2,'rgba(56,36,30,0.66)',true);
+ for(let v=0;v<4;v++){const vx=x+18+v*26,vy=104-Math.floor(hash(vx*3.1)*9);pxa(vx,vy,2,1,'rgba(232,110,50,'+(0.25+0.2*Math.sin(S.T*1.4+v)).toFixed(2)+')')}}, // glow veins in the ridge
+mid(x,p){const c='rgba(40,26,22,0.9)';
+ if(p<0.3){pxa(x,96,4,13,c);pxa(x-3,96,10,3,c);pxa(x+1,92,2,4,'rgba(232,110,50,0.6)');pxa(x+1,90,2,1,'rgba(255,190,110,0.4)')}      // ember chimney stack
+ else if(p<0.55){ctx.fillStyle=c;blob(x,109,26,14);pxa(x+6,100,3,2,'rgba(240,120,50,0.5)');pxa(x+14,103,2,1,'rgba(240,120,50,0.35)')} // slag heap, seams alight
+ else if(p<0.78){wreckCar(x,109,c);pxa(x+8,104,3,1,'rgba(232,110,50,0.4)')}                                                            // burnt-out hull
+ else{pxa(x,98,2,11,c);pxa(x+9,95,2,14,c);pxa(x-1,97,12,2,c);pxa(x+3,99,4,1,'rgba(232,110,50,0.5)')}},                                  // collapsed gantry frame
+deb(x,p){if(p<0.45){ctx.fillStyle='rgba(20,14,12,0.9)';blob(x,160,14,7);pxa(x+4,158,2,1,'rgba(240,130,60,0.55)')}
+ else if(p<0.72){pxa(x,164,5,3,'#3a2a22');pxa(x+2,163,2,1,'rgba(232,110,50,0.5)')}
+ else{pxa(x,166,7,1,'rgba(220,120,60,0.35)');pxa(x+2,165,2,1,'rgba(255,170,90,0.3)')}},
+land(x){ // THE CRUCIBLE — a cracked foundry tower, fire still standing in its ribs
+ const c='rgba(30,20,16,0.92)';
+ pxa(x,58,20,51,c);pxa(x-3,64,26,4,c);pxa(x-1,58,22,2,'rgba(50,32,26,0.9)');
+ for(let r=64;r<106;r+=7)pxa(x+2,r,16,1,'rgba(14,9,7,0.8)');
+ pxa(x+4,70,3,30,'rgba(232,110,50,'+(0.4+0.2*Math.sin(S.T*1.1)).toFixed(2)+')');   // the standing fire in the crack
+ pxa(x+12,80,2,20,'rgba(240,140,70,0.35)');
+ pxa(x+7,52,6,6,c);pxa(x+8,48,4,4,c);pxa(x+9,46,2,2,'rgba(255,170,90,0.6)');       // vent crown, breathing
+ if(Math.floor(S.T*2)%2==0)pxa(x+9,42,2,2,'rgba(240,120,50,0.3)')}};
 const BIOMES=[RUST,CITY,REEF,SEAM];
 const BIOME_LEN=1150;
 /* ---- weather: a mood layer that drifts independently of place, biased by biome ---- */
@@ -1852,12 +1877,13 @@ const W_DUST={label:'DUST STORM',tint:[201,150,82,0.20],sun:0.72,haze:1.5,vig:0.
 const W_ASH={label:'ASH FALL',tint:[78,70,66,0.24],sun:0.45,haze:1.25,vig:0.18,part:'ash'};
 const W_FOG={label:'CHOKING FOG',tint:[206,202,192,0.30],sun:0.5,haze:1.7,vig:0,part:'fog'};
 const W_BLOOD={label:'BLOOD SUN',tint:[122,28,30,0.26],sun:0.34,haze:1.1,vig:0.26,part:'ember'};
-const WEATHERS=[W_CLEAR,W_DUST,W_ASH,W_FOG,W_BLOOD];
-RUST.wx=[5,4,1,1,2];CITY.wx=[2,2,5,1,3];REEF.wx=[4,1,1,5,2];SEAM.wx=[2,2,4,0,5];
+const W_GALE={label:'EMBER GALE',tint:[178,62,30,0.22],sun:0.5,haze:1.35,vig:0.16,part:'gale'};
+const WEATHERS=[W_CLEAR,W_DUST,W_ASH,W_FOG,W_BLOOD,W_GALE];
+RUST.wx=[5,4,1,1,2];CITY.wx=[2,2,5,1,3];REEF.wx=[4,1,1,5,2];SEAM.wx=[2,1,3,0,4,4]; // the Seam alone rolls the EMBER GALE
 RUST.gtex=function(o){ctx.strokeStyle='rgba(150,110,60,0.16)';ctx.lineWidth=1;for(let i=0;i<6;i++){let x=((i*60)-o*0.5)%360;if(x<0)x+=360;const y=128+i*7;ctx.beginPath();ctx.moveTo(x,y);ctx.quadraticCurveTo(x+22,y-2,x+44,y+1);ctx.stroke()}};
 CITY.gtex=function(o){let x0=-(o*0.6)%40;for(let x=x0;x<320;x+=40)pxa(x,128,1,48,'rgba(40,36,30,0.22)');for(let i=0;i<5;i++){let x=((i*72)-o*0.6)%360;if(x<0)x+=360;pxa(x,150,9,2,'rgba(192,168,78,0.22)')}};
 REEF.gtex=function(o){ctx.strokeStyle='rgba(230,220,200,0.18)';ctx.lineWidth=1;for(let i=0;i<8;i++){let x=((i*46)-o*0.6)%360;if(x<0)x+=360;const y=132+(i%4)*11;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+12,y-4);ctx.lineTo(x+24,y+2);ctx.stroke()}};
-SEAM.gtex=function(o){ctx.strokeStyle='rgba(236,110,48,0.30)';ctx.lineWidth=1;for(let i=0;i<7;i++){let x=((i*52)-o*0.6)%360;if(x<0)x+=360;const y=130+(i%4)*11;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+8,y+3);ctx.lineTo(x+18,y+1);ctx.stroke();pxa(x+8,y+2,3,1,'rgba(255,170,90,0.4)')}};
+SEAM.gtex=function(o){ctx.strokeStyle='rgba(236,110,48,'+(0.24+0.12*Math.sin(S.T*1.7)).toFixed(2)+')';ctx.lineWidth=1;for(let i=0;i<7;i++){let x=((i*52)-o*0.6)%360;if(x<0)x+=360;const y=130+(i%4)*11;ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+8,y+3);ctx.lineTo(x+18,y+1);ctx.stroke();pxa(x+8,y+2,3,1,'rgba(255,170,90,0.4)')}};
 const WX_LEN=560;
 let wCur=W_CLEAR,wNext=W_CLEAR,wBlend=0;
 function weatherIdx(wr){const w=BIOMES[Math.max(0,curIdx)].wx;let tot=0;for(const x of w)tot+=x;const r=hash(wr*911+17);let acc=0;for(let i=0;i<w.length;i++){acc+=w[i]/tot;if(r<acc)return i}return w.length-1}
@@ -1867,6 +1893,7 @@ if(w.part=='dust'){for(let i=0;i<26;i++){const sp=170+(i%5)*44;let x=310-((S.T*s
 else if(w.part=='ash'){for(let i=0;i<34;i++){const x=((i*43)+Math.sin(S.T*0.7+i)*10)%320,y=(S.T*22+i*23)%192;pxa(x,y,1,1,'rgba(184,176,170,'+(0.5*amt)+')');if(i%4==0)pxa(x,y,2,1,'rgba(150,142,138,'+(0.4*amt)+')')}}
 else if(w.part=='fog'){for(let i=0;i<5;i++){let x=((i*80)-(S.T*12+i*30))%400;if(x<0)x+=400;const y=72+i*15;ctx.fillStyle='rgba(214,210,200,'+(0.10*amt)+')';blob(x-40,y,120,26)}}
 else if(w.part=='ember'){for(let i=0;i<14;i++){const x=((i*37)+Math.sin(S.T*1.3+i)*8)%320,y=172-((S.T*16+i*30)%152);pxa(x,y,1,1,'rgba(232,120,52,'+(0.55*amt)+')')}}
+else if(w.part=='gale'){for(let i=0;i<30;i++){const sp=210+(i%5)*50;let x=316-((S.T*sp+i*47)%352);if(x<0)x+=352;const y=30+((i*61)%140)+Math.sin(S.T*3+i)*3;pxa(x,y,5,1,'rgba(240,130,56,'+(0.4*amt).toFixed(2)+')');pxa(x+5,y,2,1,'rgba(255,190,110,'+(0.5*amt).toFixed(2)+')')}}
 }
 function applyWeather(){
 if(!wCur)return;
@@ -2208,7 +2235,9 @@ function drawRailheadBanner(){
  px(bx+2,by+2,1,1,'#8a6a3e');px(bx+w-3,by+2,1,1,'#8a6a3e');px(bx+2,by+9,1,1,'#8a6a3e');px(bx+w-3,by+9,1,1,'#8a6a3e'); // corner rivets
  rhText('THE RAILHEAD',Math.round(160-tw/2),by+4,'#7a3322');
 }
+const REGTINT=[null,'rgba(120,110,70,0.05)','rgba(210,200,175,0.05)','rgba(200,80,40,0.07)']; // rust flats = baseline · sallow city · pale reef · ember seam
 function drawOverlays(){
+{const rt=REGTINT[S.nav?S.nav.reg:0];if(rt){ctx.fillStyle=rt;ctx.fillRect(0,0,320,180)}}
 ctx.fillStyle='rgba(184,92,40,'+(0.06*dnLight)+')';ctx.fillRect(0,0,320,180);
 if(dnLight<0.95){ctx.fillStyle='rgba(12,16,40,'+((1-dnLight)*0.44)+')';ctx.fillRect(0,0,320,180)}
 const v=ctx.createRadialGradient(160,86,44,160,86,184);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(28,11,5,0.5)');
@@ -2237,7 +2266,7 @@ if(S.boss)drawBoss();
 if(S.crate&&S.mode=='run')drawCrate();
 drawTracers();
 S.booms.forEach(b=>{const r=Math.round(b.t*18);
-px(b.x-r/2,b.y-r/2,r,r,'#b8442a');
+px(b.x-r/2,b.y-r/2,r,r,b.c||'#b8442a');
 px(b.x-r/3,b.y-r/3,Math.max(2,Math.round(r*0.66)),Math.max(2,Math.round(r*0.66)),'#e07b2a');
 px(b.x-r/5,b.y-r/5,Math.max(2,Math.round(r*0.4)),Math.max(2,Math.round(r*0.4)),'#ffd23e');
 if(b.t<0.2)px(b.x-1,b.y-1,3,3,'#fff8e0')});
@@ -2314,7 +2343,7 @@ if(p.k=='cannon'&&((p.vx>=0&&p.x>=p.tx)||(p.vx<0&&p.x<=p.tx)))done=true;
 if(p.k=='rocket'&&Math.hypot(p.x-p.tx,p.y-p.ty)<16)done=true;
 if(p.k=='mortar'&&p.vy>0&&p.y>=p.ty)done=true;
 if(done){p.dead=true;
-const bs=p.k=='cannon'?0.14:0.26;S.booms.push({x:p.x,y:Math.min(p.y,158),t:bs});
+const bs=p.k=='cannon'?0.14:0.26;S.booms.push({x:p.x,y:Math.min(p.y,158),t:bs,c:p.fire?'#c25a1a':p.c?p.c:(p.k=='rocket'||p.k=='mortar')?'#8a3020':null}); // kinetic stays hot-amber; blast blooms redder; fire chars
 if(!p.bh){const r=nearRaider(p.x);if(r&&Math.abs(r.x+8-p.x)<24){r.dead=true;S.booms.push({x:r.x+8,y:156,t:0.1})}}
 }
 });
