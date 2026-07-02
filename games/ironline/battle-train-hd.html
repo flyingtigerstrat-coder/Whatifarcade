@@ -22,7 +22,7 @@ body{background:#15110d;color:#efe3cc;font-family:'VT323',monospace;display:flex
 .frame{flex:0 0 auto;border:3px solid #2a221b;border-left:0;border-right:0;background:#0e0b08;padding:3px 0}
 .cvwrap{position:relative;line-height:0}
 canvas{width:100%;display:block;image-rendering:pixelated;background:#d9a05e}
-#region{position:absolute;top:10px;left:0;right:0;text-align:center;font-family:'Press Start 2P',monospace;font-size:11px;color:#f4e3bc;letter-spacing:2px;text-shadow:1px 1px 0 #4a1e0e,0 0 6px rgba(0,0,0,0.6);opacity:0;transition:opacity 0.8s ease;pointer-events:none}
+#region{position:absolute;top:26px;left:0;right:0;text-align:center;font-family:'Press Start 2P',monospace;font-size:11px;color:#f4e3bc;letter-spacing:2px;text-shadow:1px 1px 0 #4a1e0e,0 0 6px rgba(0,0,0,0.6);opacity:0;transition:opacity 0.8s ease;pointer-events:none}
 #ticker{flex:0 0 auto;font-size:18px;line-height:1.2;color:#cdb894;padding:7px 12px;background:#1d1814;border-bottom:2px solid #3a2e22;min-height:34px;display:flex;align-items:center}
 #content{flex:1 1 auto;overflow-y:auto;min-height:0;padding:10px 12px;scrollbar-width:thin;scrollbar-color:#6b4a2e #1a1410;overflow-x:hidden}
 #content::-webkit-scrollbar{width:9px}
@@ -139,7 +139,7 @@ button{font-family:'VT323',monospace;cursor:pointer;border:none}
 #app.land #content{position:absolute;top:8px;left:50%;right:auto;transform:translateX(-50%);bottom:auto;width:auto;max-width:54%;z-index:6;max-height:none;overflow:visible;padding:3px 16px 4px;text-align:center;background:rgba(8,6,4,0.46);border:0;border-radius:0 0 6px 6px}
 #app.land #nextdepot{margin:0;font-size:17px;color:#cdb894}
 #app.land #travelstatus{font-size:14px;color:#9fd8d8;letter-spacing:1px}
-#app.land #ticker{position:absolute;top:62px;bottom:auto;left:50%;transform:translateX(-50%);z-index:5;max-width:58%;background:rgba(8,6,4,0.5);border:0;border-radius:4px;padding:3px 14px;min-height:0;justify-content:center;text-align:center;font-size:14px}
+#app.land #ticker{position:absolute;top:64px;bottom:auto;left:50%;transform:translateX(-50%);z-index:5;max-width:74%;background:rgba(8,6,4,0.78);border:0;border-radius:4px;padding:4px 16px;min-height:0;justify-content:center;text-align:center;font-size:17px}
 /* heavy views / depot: slide-up tray from the bottom (overrides the top header) */
 #app.land.vopen #content{top:auto;left:0;right:0;transform:none;bottom:48px;width:auto;max-width:none;max-height:62%;overflow-y:auto;background:rgba(12,9,6,0.96);border:0;border-top:3px solid #2a221b;border-radius:0;padding:12px 16px;text-align:left}
 #app.land.vopen #ticker{opacity:0}
@@ -1886,7 +1886,7 @@ px(b.x-r/3,b.y-r/3,Math.max(2,Math.round(r*0.66)),Math.max(2,Math.round(r*0.66))
 px(b.x-r/5,b.y-r/5,Math.max(2,Math.round(r*0.4)),Math.max(2,Math.round(r*0.4)),'#ffd23e');
 if(b.t<0.2)px(b.x-1,b.y-1,3,3,'#fff8e0')});
 drawOverlays();
-if(S.origin)drawRailheadBanner();
+if(S.origin&&(S.immersive||S.layout!='landscape'))drawRailheadBanner(); // canvas banner only where the DOM chrome isn't announcing the place (portrait / immersive); landscape's status pill carries it
 drawPanHint();
 if(S.mode=='run'){const bf=S.boss&&!S.boss.dead,eD=S.ptrain&&S.ptrain.elite&&!S.ptrain.dead&&S.ptrain.state!='out',bc=(bf||eD)?'#d23a2a':'#e0a33a',prog=bf?(1-Math.max(0,S.boss.hp)/S.boss.max):eD?(1-Math.max(0,S.ptrain.hp)/S.ptrain.max):(S.jt/S.dur);px(14,174,292,4,'#5a4632');px(14,174,Math.round(292*prog),4,bc);px(14,174,Math.round(292*prog),1,'#f2c560')}
 }
