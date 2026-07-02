@@ -1,6 +1,22 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-02 — B.2: performance & architecture review pass (human-flagged slowness)
+DECIDED (human): the pond ran slowly on the live build — full code/architecture review before Phase C. Profiled with an instrumented canvas stub (composed pond: 10 koi / 12 plants / 5 rocks) — the frame was paying retail every frame for art that barely changes. Engine v3.1.1 → **v3.2**.
+
+FOUND (measured, per frame): natural created **198 gradient objects/frame** (caustic blobs, lotus petals, pad bodies, sashi feathers), metal **213 gradients + 2,009 individual arc strokes** (scale shimmer), rain **265 gradients + 11 blur filters**, and natural ran a **`blur(3px)` filter per koi per frame** for shadows — at DPR 2 (4× pixels). Plus a real rendering BUG the review caught: an earlier edit swallowed `beginPath()` in `tailFin`, so tail fins were appended to the previous path (the koi shadow) and misfilled every frame in every skin.
+
+CHANGED (look-preserving; contrast/color values untouched):
+- **Static-art sprite cache (`ArtCache`):** pads, lotus, and ALL hardscape bake into small offscreen canvases keyed by skin + growth/bloom buckets; per-frame cost collapses to one drawImage each. Caustic blobs use one pre-tinted sprite per color. Rain-drop highlights baked once.
+- **Koi hot path:** body outline built ONCE per koi per frame as a reusable `Path2D` (shared by shadow/fill/clip/sheen/rim — was 4-5 rebuilds); per-koi `blur(3px)` shadow replaced with two offset fills; scale-shimmer + fukurin net arcs batched into 2 strokes per style (was ~90-180 strokes/koi); sashi feather de-gradiented into two stepped washes.
+- **Misc:** chromeRibbon gradients cached (position-fixed paints slid under a translate); reed/iris/grass hoist one blade-gradient per plant; `syncShop` only touches the DOM when a value changed (was 3+ writes/frame + codex queries); **DPR capped 2 → 1.5** (44% fewer pixels; soft water does not need retina fill-rate).
+- **BUG FIX:** `tailFin` missing `beginPath()` restored (fins no longer contaminate the prior path).
+
+MEASURED (same composed pond, before → after): natural gradients **198→24**, strokes **828→42**, filters **10→0**; metal gradients **213→30**, strokes **2,009→53**; rain gradients **265→21**, filters **11→1** (the skin's one structural buffer blur). Both gate suites re-run green (37/37).
+
+OPEN: if low-end devices still struggle after this, next levers (deliberately not pulled yet): half-res water buffer for natural (rain's pattern), koi pattern pre-render to body-space textures, adaptive quality (drop caustic layers under sustained frame misses).
+
+
 ## 2026-07-02 — B.1: QA time controls in the codex + chrome/lantern fixes (§10 micro-loop)
 DECIDED (human, live, from the deployed A+B build): surface the **time cycle in the Koi Codex as a QA tool for now**. Engine v3.1 → v3.1.1.
 
@@ -43,8 +59,6 @@ CHANGED (foundations — visible change is deliberately modest: koi grow while a
 TRIED / VERIFIED (23/23, gate held): a **real v2 save captured from the actual pre-Phase-A engine** migrates losslessly (seeds/varieties/ages/positions/econ/unlocked verbatim; v2 key byte-identical after); 48h idle → capped gains; 30-day → 3-day cap; elder fin ramp + all four skins + codex render with zero warnings; node parse-check clean.
 
 OPEN: ledger *feel* awaits the human's eyes on a full pond; per-skin day-cycle behavior (ink's eternal dusk?) proposed in Phase C; growth-rate tuning (§10 micro-loop) once elders exist in the wild.
-
-## 2026-06-23 — metal skin: flowing chrome (liquid-metal motion) — human-directed, "v0.6"
 
 ## 2026-06-23 — metal skin: flowing chrome (liquid-metal motion) — human-directed, "v0.6"
 DECIDED (human, live — not a Drive brief yet; **flag to the director to ratify as BRIEF_koi v0.6**): make the liquid-metal skin actually read *liquid* — flowing, reflective motion (mercury / liquid chrome), per the human's reference to liquid-metal animation effects. Chose the **"flowing chrome"** intensity (over full molten-mercury/T-1000), escalate only if it doesn't land. Built on top of v0.5's grade; metal-skin-only, all in `games/koi/`.
