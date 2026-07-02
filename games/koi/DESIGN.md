@@ -1,12 +1,27 @@
 # DESIGN.md — Koi Garden
-**Build state of the MVP as promoted into `games/koi/`. 2026-06-22.**
+**Build state as of LIVING POND Phase A (BRIEF v1.1). 2026-07-02.**
 
-> What's actually built and how it's put together. Distilled from `HANDOFF_koi` + `CHANGELOG_koi`. Keep current as behavior changes (repo-root `CLAUDE.md` §3.5).
+> What's actually built and how it's put together. Keep current as behavior changes (repo-root `CLAUDE.md` §3.5).
 
 ---
 
 ## Shape of the thing
-One self-contained file — `koi-pond.html` — canvas-2D, procedural, no external dependencies. Mobile/touch-first, static-host safe, built to sip GPU for hours. Persistence via `localStorage` under the key **`koipond_v2`**.
+One self-contained file — `koi-pond.html` (engine version in the header comment; bump every merge) — canvas-2D, procedural, no external dependencies. Mobile/touch-first, static-host safe, built to sip GPU for hours. Persistence via `localStorage` under **`koipond_v3`** (lossless v2 upgrader; **the old `koipond_v2` key is left in place** for rollback safety — never eat a pond). Derived life (school, dragonfly, fireflies) is never saved; it re-derives from ecology on load.
+
+## Living-pond foundations (Phase A)
+- **Entity/skin contract v2:** each skin carries `roles` palette tokens (foliage/foliageRim/stone/moss/wood/bloom/glow); `ROLES()` resolves with Natural fallback (rain inherits Natural by construction — it renders the Natural pond into its buffer). New entities draw once against roles; bespoke per-skin handlers win when present. **No entity ships unless it reads correctly in all four skins.**
+- **Planes:** every entity declares BELOW / ON / ABOVE; planes render in order (contract documented in the header; below/above populate in Phases B/C).
+- **Blended growth + stages:** passive time growth (`GROW_DAY=.01`/day, applied live and via idle sim) + fed growth (`GROW_FED=.02`/s while eating). Size stops at adult (age 1); age accrues to `AGE_MAX=1.6`; `stage(k)` derives fry/young/adult/elder; `eldF(k)` ramps elder fins (~1.7× trailing fin) and slows drift (~28%). Elder is prestige, never death.
+- **Idle return:** on load, a capped gift for time away (≤72h worth: growth, plant grow/bloom, serenity ≤60), then `rollVisitors()`. A month away grants the same as three days — a gift, never an exploit.
+- **Ecology (hidden):** `Eco.shelter/bloom/life/calm` — pure derivations from what exists; visitors (Phase C) register `{when(eco), arrive()}` against them. Numbers stay hidden; legible through life, never meters.
+- **Capacity ledger (human-ratified):** `CAPS = {koi:18, plants:36, rocks:12, school:20, fireflies:10}`; tend buttons disable quietly at cap. Departure (Phase B) is the release valve.
+
+## The dream pond (Phase B)
+- **Flora:** pad varieties via saved `vr` (classic / copper / cluster); mature pads open **water-lily blooms** (feed `Eco.bloom`); **reeds**, **iris**, **duckweed** (koi nibble it — ambient self-feeding trickle; floor .35, regrows), **submerged grass** (BELOW plane, drawn under koi). Every new type is one draw function against `ROLES()` — skin-correct everywhere by construction.
+- **Hardscape (`rocks[]`, persisted normalized):** stone/boulder/slate (seeded organic blobs), driftwood, stone lantern. Moss creeps with `grow` (live + idle); koi steer around; ripples foam at rims (arc highlight). Rocks drag heavy (rate .9 vs 3.5, bigger displacement ripples).
+- **Tend tray:** `CATALOG` drives plant/place chips; **arm chip → tap water to place** (`placing`/`placeAt`); caps + serenity checked at arm and at place; prices are placeholders until the Phase D rebalance.
+- **Koi card:** click koi = select (click water = feed). Card shows variety/stage/lineage; **"let it swim on"** = two-step confirm → `departing` steering to the nearest edge → recorded in `departed[]` (variety, seed, age, date) → farewell ripple. No refund, no return.
+- **Dev lifecycle harness (`?dev=1`):** warps set `eco.lastSeen` back and call the **real** `idleReturn(uncap)` — production code path, cap lifted. Buttons: +1d/+7d/+30d, +200❀, mature flora, age koi. For rapid whole-lifecycle review during refinement.
 
 ## Water — three layered passes
 1. **Pass 1:** drifting layered caustics + a breathing surface shimmer + a wandering sunbeam + koi wake-trails.
