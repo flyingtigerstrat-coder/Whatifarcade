@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v3.2 (living pond, B.2: performance pass — sprite caches, Path2D reuse, no per-koi blur) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.2.1 (living pond, B.2.1: per-entity sprite slots + bake budget — no re-bake hitches) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
@@ -595,29 +595,36 @@ function drawRockVec(c,r){const RL=ROLES(),R=rockR(r);
     c.globalAlpha=1;}
   c.restore();}
 
-// ---------- static-art sprite cache (perf) ----------
-// Gradient-heavy QUASI-STATIC art (pads, lotus, hardscape) bakes into small offscreen
-// canvases and re-bakes only when its LOOK changes (skin / growth / bloom buckets).
-// Per-frame cost collapses to one drawImage per entity — this is where most of the
-// per-frame gradient churn lived. Animated flora (reeds/iris/grass/duckweed) stays vector.
-const ArtCache={m:new Map(),SPR:1.5,
-  get(key,half,draw){let s=this.m.get(key);if(!s){const px=Math.ceil(half*2*this.SPR);
-    s=document.createElement('canvas');s.width=s.height=px;
-    const g=s.getContext('2d');g.scale(this.SPR,this.SPR);g.translate(half,half);draw(g);
-    if(this.m.size>240)this.m.clear();this.m.set(key,s);}
-    return s;}};
+// ---------- static-art sprites: per-entity slots + a bake budget (perf) ----------
+// Gradient-heavy QUASI-STATIC art (pads, lotus, hardscape) bakes into a small offscreen
+// canvas owned by the ENTITY, and re-bakes IN PLACE only when its look-key changes
+// (skin / growth / bloom buckets). No shared cache map -> no growth, no clear-storms,
+// no canvas/GPU-texture churn: each entity allocates one canvas for its lifetime.
+// A per-frame BAKE BUDGET smooths re-bakes: while a pond full of growing plants crosses
+// buckets, at most a couple re-bake per frame and the rest draw one-bucket-stale art —
+// invisible to the eye, and it kills the re-bake hitches that read as jank.
+const SPR=1.5;let _bakeBudget=2;
+function entitySprite(ent,key,half,draw){
+  if(ent._sprKey===key&&ent._spr)return ent._spr;
+  if(ent._spr&&_bakeBudget<=0)return ent._spr;             // stale-but-smooth; its turn comes next frames
+  const px=Math.ceil(half*2*SPR);let s=ent._spr;
+  if(!s||s.width!==px){s=document.createElement('canvas');s.width=s.height=px;ent._spr=s;}
+  const g=s.getContext('2d');g.setTransform(1,0,0,1,0,0);g.clearRect(0,0,px,px);
+  g.save();g.scale(SPR,SPR);g.translate(half,half);draw(g);g.restore();
+  ent._sprKey=key;_bakeBudget--;
+  return s;}
 const bkt=(v,q)=>Math.round((v||0)*q);
 // bake() draws the entity at the origin, rotation 0; the sprite rotates at draw time.
 function cachedPlant(c,p,keyExtra,bake){
   const half=p.type==='lotus'?76:70;
-  const key=`P|${skin}|${p.type}|${p.vr||''}|${bkt(p.grow,24)}|${bkt(p.bloom,24)}|${bkt(p.size??.4,24)}|${keyExtra||''}`;
-  const s=ArtCache.get(key,half,g=>bake(g,{...p,x:0,y:0,rx:0,ry:0,rot:0,rrot:0}));
+  const key=`${skin}|${p.vr||''}|${bkt(p.grow,24)}|${bkt(p.bloom,24)}|${keyExtra||''}`;
+  const s=entitySprite(p,key,half,g=>bake(g,{...p,x:0,y:0,rx:0,ry:0,rot:0,rrot:0}));
   c.save();c.translate(p.rx??p.x,p.ry??p.y);c.rotate(p.rrot??p.rot);
   c.drawImage(s,-half,-half,half*2,half*2);c.restore();}
 function drawRock(c,r){                                  // rocks are static except slow moss — ideal sprites
   const half=r.form==='driftwood'?58:r.form==='lantern'?62:52;
-  const key=`R|${skin}|${r.form}|${bkt(r.size,40)}|${bkt(r.grow,10)}|${bkt(r.rot,20)}`;
-  const s=ArtCache.get(key,half,g=>drawRockVec(g,{...r,x:0,y:0}));
+  const key=`${skin}|${bkt(r.grow,10)}`;
+  const s=entitySprite(r,key,half,g=>drawRockVec(g,{...r,x:0,y:0}));
   c.drawImage(s,r.x-half,r.y-half,half*2,half*2);}
 
 // =================================================================
@@ -1002,6 +1009,7 @@ function dayTint(c){const ph=DayQA.force||'day';if(ph==='day'||skin==='ink')retu
       c.fillStyle=gl;c.beginPath();c.arc(gx,gy,26*s,0,TAU);c.fill();}}
   c.globalCompositeOperation='source-over';}
 function render(t){
+  _bakeBudget=2;                                           // sprite re-bakes allowed this frame (smoothness > freshness)
   // hard-reset canvas state each frame so no blend/blur/alpha can leak between skins or frames
   ctx.filter='none';ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.shadowColor='transparent';
   const S=SKINS[skin];ctx.save();
@@ -1128,7 +1136,9 @@ kcSwim.addEventListener('click',()=>{if(!sel)return;
 
 // ---- dev lifecycle harness (?dev=1) — warps run the REAL idleReturn path, cap lifted ----
 function devWarp(days){Pond.eco.lastSeen=Date.now()-days*864e5;idleReturn(true);persist();}
+let devFps=null;
 if(DEV){const dtr=document.getElementById('devtray');dtr.style.display='flex';
+  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='… fps';dtr.appendChild(devFps);
   const acts=[['+1d',()=>devWarp(1)],['+7d',()=>devWarp(7)],['+30d',()=>devWarp(30)],
     ['+200❀',()=>{Pond.econ.serenity+=200;}],
     ['mature flora',()=>{for(const p of Pond.plants){p.grow=1;if(p.type==='lotus'||p.type==='iris'||p.type==='pad')p.bloom=1;}for(const r of Pond.rocks)r.grow=1;persist();}],
@@ -1187,12 +1197,13 @@ document.getElementById('codexX').addEventListener('click',()=>codexEl.classList
 // =================================================================
 // LOOP + BOOT
 // =================================================================
-let last=performance.now(),frame=1000/40,saveT=0;
+let last=performance.now(),frame=1000/40,saveT=0,_fpsN=0,_fpsT=0;
 function resize(){DPR=Math.min(devicePixelRatio||1,1.5);W=innerWidth;H=innerHeight;cv.width=W*DPR;cv.height=H*DPR;ctx.setTransform(DPR,0,0,DPR,0,0);buildBuffers();}   // 1.5 cap: soft water doesn't need retina fill-rate (44% fewer pixels than 2.0)
 addEventListener('resize',resize);
 function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;return;}if(now-last<frame)return;
   let dt=(now-last)/1000;last=now;if(dt>.1)dt=.1;
   step(dt);render(now/1000);syncShop();
+  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent=(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
   saveT+=dt;if(saveT>5){saveT=0;persist();}}
 addEventListener('beforeunload',persist);
 

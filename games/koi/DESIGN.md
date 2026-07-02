@@ -71,7 +71,7 @@ The rendering is **done** and rich. The open work is the **LOOP** — see `BRIEF
 
 ## Performance architecture (B.2)
 The featherlight budget is enforced by construction, not hope:
-- **`ArtCache`** — quasi-static art (pads, lotus, hardscape) bakes into offscreen sprites keyed by skin + bucketed grow/bloom; re-bakes only when the look changes. Caustic blobs and rain-drop highlights are pre-tinted sprites. Animated flora (reeds/iris/grass/duckweed) stays vector but hoists one gradient per plant.
+- **Per-entity sprite slots** — quasi-static art (pads, lotus, hardscape) bakes into ONE canvas owned by the entity for its lifetime, re-baked IN PLACE when its look-key (skin + bucketed grow/bloom) changes, under a **2-bakes-per-frame budget** (stale sprites draw until their turn — smoothness beats freshness). No shared cache map: no growth, no clear-storms, no canvas/GPU-texture churn. Caustic blobs and rain-drop highlights are pre-tinted sprites. Animated flora (reeds/iris/grass/duckweed) stays vector but hoists one gradient per plant.
 - **Koi hot path** — one `Path2D` per fish per frame reused for shadow/fill/clip/sheen/rim; shadows are offset fills (never `ctx.filter` blur); scale/net arcs batch into two strokes per style; sashi feathers are stepped washes, not per-patch gradients.
 - **DPR capped at 1.5**; DOM chrome updates diff-guarded (`syncShop` writes only on change).
 - Budget check: `perf-count` harness (scratch tooling) counts gradients/strokes/filters per frame on a composed pond — keep natural under ~30 gradients/frame; any new per-frame gradient in a hot loop should be a sprite or a cached paint instead.

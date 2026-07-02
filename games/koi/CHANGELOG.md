@@ -1,6 +1,23 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-02 — B.2.1: re-bake hitch fix (human: "even slower, almost unplayable" after B.2)
+DECIDED: the human reported the live pond WORSE after the B.2 merge. Assessed in a REAL headless Chromium (Playwright), not the counting stub. Engine v3.2 → **v3.2.1**.
+
+FOUND (measured in-browser):
+- B.2 is NOT slower in throughput — on identical seeded ponds the pre-B.2 deployed build ran natural at **1.4 fps** vs B.2's **10.5 fps** (software raster; the per-koi blur was catastrophic). JS is ~2.5% of frame time; the rest is native rasterization.
+- The real regression is **jank**: on a pond full of actively GROWING plants (the human's), B.2's `ArtCache` re-baked ~9 sprites/sec, each allocating a NEW canvas (a fresh GPU texture upload on real hardware), and at 240 entries the cache **cleared and re-baked the entire pond in one frame** — worst frame gaps of 117–167ms. Steady-slow before → hitchy-lurching after: reads as "almost unplayable."
+
+CHANGED:
+- **`ArtCache` map replaced with per-entity sprite slots:** each plant/rock owns ONE canvas for its lifetime and re-bakes IN PLACE when its look-key changes — no map growth, no clear-storms, no canvas/GPU-texture churn.
+- **Bake budget:** at most 2 sprite re-bakes per frame; everything else draws its one-bucket-stale sprite until its turn (invisible; kills hitch clustering).
+- **Dev fps readout:** `?dev=1` tray now shows live fps, so slowness reports come with a number.
+
+MEASURED: growing-pond worst frame gap down (167→133ms even under pure-software raster where the floor dominates); allocation churn eliminated by construction; steady fps ≥ B.2 on both pond types; both gate suites green (37/37).
+
+OPEN: the human should re-test the live pond with `?dev=1` and report the fps number on natural. If a GPU-rendered machine still reads slow at high fps, the next suspect is compositor stalls — next levers remain: half-res natural water buffer, adaptive quality shedding.
+
+
 ## 2026-07-02 — B.2: performance & architecture review pass (human-flagged slowness)
 DECIDED (human): the pond ran slowly on the live build — full code/architecture review before Phase C. Profiled with an instrumented canvas stub (composed pond: 10 koi / 12 plants / 5 rocks) — the frame was paying retail every frame for art that barely changes. Engine v3.1.1 → **v3.2**.
 
