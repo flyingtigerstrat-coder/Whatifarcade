@@ -332,6 +332,12 @@ const fuelC=()=>Math.max(3,Math.round((6+crewCount()*1.5)*crewBuffs().fuelMult))
 const rations=()=>Math.max(2,Math.round(crewCount()*1.4));                          // food crew eat per departure
 const NEWCAR=40;                                                                     // scrap to weld a new car
 const carFoodC=()=>10+crewCount()*6;                                                // food to weld a new car
+// standalone (the live site serves this file directly): back window.storage with localStorage so
+// saves persist — the handoff's pinned "swap window.storage -> localStorage when standalone" move.
+if(typeof window.storage==='undefined'&&typeof localStorage!=='undefined'){try{window.storage={
+ get:async k=>{const v=localStorage.getItem(k);return v==null?null:{value:v}},
+ set:async(k,v)=>{localStorage.setItem(k,v);return{ok:1}},
+ delete:async k=>{localStorage.removeItem(k);return{ok:1}}}}catch(e){}}
 let canSave=typeof window.storage!=='undefined';
 function setSaveMsg(t){document.getElementById('savemsg').textContent=t}
 let saveTimer=null;

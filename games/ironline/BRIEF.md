@@ -1,8 +1,8 @@
 # BRIEF — IRONLINE
 version: v0.4
-date: 2026-06-22
-status: building
-changed-since-last: First Railhead proof-frames came back. ART / FIT / PROCEDURAL = PASSED (no redraw; procedural earned it — bitmap question can rest). STAGING = FAILED. Added a COMPOSITION requirement: restage the scene into depth bands (station behind / train alone on its rail / platform in front); name-board off the rail; gantry retired in favor of beside-the-rail infrastructure. Build from the tower/mast frame, not the gantry frame.
+date: 2026-06-23
+status: shipped
+changed-since-last: PHASE A SHIPPED to whatifarcade.com — restage passed (depth bands, banner, swept yard), The Railhead grew into a settlement (building grammar + Noodle ratified on the platform), and the arrival/departure choreography is live (world comes to REST; begin-at-origin; the Dispatcher speaks; depots halt the world; save discipline extended, with a standalone localStorage shim so saves persist on the live site). Phase B (tutorial) still pinned; parked threads unchanged.
 ---
 vision:
 A rig you build and send across a living rail-ocean — cozy watch-it-roll crossed with a Mad-Max waste of rust, dusk, diesel and bone. The journey BEGINS at THE RAILHEAD, the last lit outpost before the open rail-ocean, kept by THE DISPATCHER — the quiet dusk moment before a long haul. We're giving a gorgeous engine a spine: a journey, not a treadmill. Feeling-first, warm, wry, lonely, beautiful.
