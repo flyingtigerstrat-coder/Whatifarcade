@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-07-02 · session 11 (cont.) — Wave 4 · THE LINEBREAKER: the line gets a story
+DECIDED: The gates have names now — SPOKE, FOREMAN FLAK, DEACON MARROW hold their regions' gates (taunts on brake-lock via the ⚔ region banner, clan pennants on the lead engine, death lines), and THE TERMINUS is held by THE LINEBREAKER aboard the re-dressed Fortress (the orphaned drawFortress() finally gets its job — it faces LEFT, into your headlamp). The final fight breathes in three phases: outrider bays at 66%, the man himself at 33% (faster guns, crawlers, burning hull). The kill sets linebroken (SAVE_V=6): the loop home opens off the Terminus gate (free-roam forever), pretenders squat re-fought gates at 0.75×, and station talk changes. RUMORS: ~35% of station arrivals drop a region-keyed story line, every set pointing obliquely at the Linebreaker.
+TRIED: Verified the Terminus face-off composition against the live game's standard boss framing (rendered both) — the near-lane overlap is the shipped language, not a bug.
+PARKED: Captain skins beyond the pennant (Wave 6 boss-duel dressing); post-win pretender variety.
+CHANGED: nodeEdges grows the loop edge; drawBoss splits final path to drawTerminus(); backdrop blends toward navT.to.reg (fixes the loop leg); exporter terminus subject (+--reg captain variant); harness 61 -> 69 assertions.
+OPEN: Human eyes on the Terminus fight pacing (a phase-2/3 balance read needs a real playthrough). Wave 5 next: +8 heroes, tap-to-inspect, Noodle tappable.
+FEELING: Every arcade game needs a face at the end of it. Ours idles at the last gate, and he knew we were coming.
+
 ## 2026-07-02 · session 11 (cont.) — Wave 3 · THE TEETH: combat learns to bite back
 DECIDED: Damage types go LIVE — enemies carry armor classes (light/armored/swarm) and gunVs() prices the matchup: blast blooms on plate (×1.5), kinetic sparks off it (×0.7), fire eats swarms (×1.6); the wave log narrates the matchup so the refit choice teaches itself. New enemies: CRAWLER (tracked hulk leading armored columns, clan-banded), MINELAYER (an unrepelled armored wave seeds the rail — next wave opens with mine damage), bike SWARMS, and the BOARDER WAGON (blockade legs, eff≥6): a boarding meter vs troops() — full meter cuts a hold open and steals scrap; repelling leans 75% toward a war hero. MARK TARGET tap verb (+30% focus, pulsing chevron). Troops become manpower: mine-clearing, send-a-party sweeps, OUTPOST wall duty, escort rifleman bonus. Factions: Dispatchers rep (contract pay +2%/★) + Caravaneers rep (market ±1%/★, friendlier traders); CLANS stay enemies-with-names, zero bookkeeping. THE GHOST HAULER: rare, pale, silent — leaves a relic if the holds have room. SAVE_V=5 (rep).
 TRIED: Crawler draft 1 was a black slab — dark-on-dark tracks; v2 lifts the hull ramp, rolls visible track links, and seats road wheels in the shroud.

@@ -11,11 +11,11 @@ global.document={getElementById:()=>anyElCache,querySelector:()=>anyElCache,quer
 global.Image=class{set src(v){}};
 global.requestAnimationFrame=()=>{};
 const script=fs.readFileSync(__dirname+'/battle-train-hd.html','utf8').match(/<script>([\s\S]*)<\/script>/)[1]
- +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave};';
+ +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus};';
 eval(script);
 (async()=>{
 await new Promise(r=>setTimeout(r,20)); // let the async boot IIFE settle
-const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave}=globalThis.__T;
+const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus}=globalThis.__T;
 let t=0,fails=0;const maxHullSafe=()=>60+S.engine*30;const step=n=>{for(let i=0;i<n;i++){t+=16;tick(t)}};
 const ok=(name,cond)=>{console.log((cond?'PASS':'FAIL')+'  '+name);if(!cond)fails++};
 
@@ -198,6 +198,34 @@ await save();S.rep={disp:0,carav:0,tr:0};
 await load();
 ok('v5 save: rep round-trips', S.rep.disp===3&&S.rep.carav===2&&S.rep.tr===9);
 
+// ===== THE LINEBREAKER (Wave 4) =====
+// 29 · the gates have names; the line starts unbroken and the Terminus is a wall
+ok('captains: four names, the last is THE LINEBREAKER', CAPTAINS.length===4&&CAPTAINS[3].nm==='THE LINEBREAKER');
+S.linebroken=false;
+ok('terminus: unbroken line ends at the last gate', nodeEdges(3,REGIONS[3].cols-1,0).length===0);
+// 30 · the final fight breathes in phases
+S.mode='run';S.jt=0;S.dur=9999;S.waves=[];S.wi=0;S.raiders=[];S.ptrain=null;S.crate=null;S.hull=maxHullSafe();S.scrap=500;
+S.slots=[{type:'gun',wpn:'cannon',port:'auto',lvl:1}];
+S.boss={hp:60,max:100,x:190,tx:190,hitT:99,dead:false,set:true,cars:[{type:'engine'},{type:'gun',wpn:'cannon'},{type:'fuel'}],tier:3,guns:3,cap:3,final:true,pret:false,phase:1};
+step(8);
+ok('terminus: phase 2 opens the outrider bays', S.boss&&S.boss.phase===2&&S.raiders.length>0);
+S.boss.hp=20;step(8);
+ok('terminus: phase 3 mans the guns himself', S.boss&&S.boss.phase===3);
+// 31 · the kill breaks the line open — the loop home appears, pretenders inherit
+S.nav={seed:7,reg:3,col:5,row:0};S.navT={to:{reg:3,col:6,row:0},regChange:false};S.pax=[];S.contracts=[];
+S.boss.hp=100;S.boss.max=100;bossKill();
+ok('linebreak: the win is recorded and the loop opens', S.linebroken===true&&nodeEdges(3,REGIONS[3].cols-1,0).length===1&&nodeEdges(3,REGIONS[3].cols-1,0)[0].reg===0);
+ok('linebreak: the rig arrived AT the Terminus', S.nav.reg===3&&S.nav.col===6);
+S.mode='idle';S.boss=null;S.raiders=[];
+// 32 · v5 -> v6 and the flag survives a save
+const m6=migrate({v:5,journeys:1,nav:{seed:2,reg:0,col:0,row:0},visited:['0:0:0'],cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0}});
+ok('v5->v6: the line starts unbroken', m6.v===SAVE_V&&m6.linebroken===0);
+S.linebroken=true;S.origin=false;S.stop=null;S.depot=null;
+await save();S.linebroken=false;
+await load();
+ok('v6 save: linebroken round-trips', S.linebroken===true);
+S.linebroken=false;
+
 // 21 · the ledger survives a save
 S.cargo={ore:3,relic:1};S.contracts=[{k:'haul',g:'grain',n:2,reg:1,src:'0:1:0',pay:60}];S.pax=[{special:true,nm:'X',fare:99,legs:2}];
 S.mode='idle';S.depot=null;S.origin=false;S.stop=null;
@@ -205,5 +233,5 @@ await save();S.cargo={};S.contracts=[];S.pax=[];
 await load();
 ok('v4 save: cargo + contracts + passengers round-trip', S.cargo.ore===3&&S.cargo.relic===1&&S.contracts.length===1&&S.contracts[0].pay===60&&S.pax.length===1&&S.pax[0].fare===99);
 
-console.log(fails? '\n'+fails+' FAILURES':'\nALL CHECKS PASS ('+((s=>s)(0)||'choreography + schema + spine + economy + combat')+')');process.exit(fails?1:0);
+console.log(fails? '\n'+fails+' FAILURES':'\nALL CHECKS PASS ('+((s=>s)(0)||'choreography + schema + spine + economy + combat + linebreaker')+')');process.exit(fails?1:0);
 })();

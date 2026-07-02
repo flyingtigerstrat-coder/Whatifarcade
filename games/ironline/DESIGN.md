@@ -93,6 +93,14 @@ The rail ocean is **4 regions** (`REGIONS`): Rust Flats → Dead City → Bone R
 
 ---
 
+## The Linebreaker — the story on the line (Wave 4)
+
+**The gates have names.** Each region's gate is held by a **captain** (`CAPTAINS`): SPOKE (Gallows Gate) → FOREMAN FLAK (the Smoke Choir) → DEACON MARROW (the Pale Gate) → **THE LINEBREAKER** at THE TERMINUS. Captains taunt when the rigs lock brakes (announced through the region banner: ⚔ NAME), fly their clan's pennant on the lead engine, and die with a line. **Rumors** seed the story: ~35% of station arrivals drop a region-keyed rumor line (each region's set points at its captain, and always, obliquely, at the Linebreaker).
+
+**THE TERMINUS is the orphaned Fortress' job.** The final fight re-dresses `drawFortress()` (it faces LEFT, into your headlamp) as THE LINEBREAKER's engine — war banner in Cinderman colors, red running lamp — and it fights in **three breaths**: below 66% the outrider bays open (bike spawns); below 33% he mans the guns himself (faster hits, crawler spawns, the hull visibly burning). The kill sets **`S.linebroken`** (SAVE_V=6): the Terminus gate grows a **loop-home edge** to the Rust Flats entry (free-roam — the whole line is ridable forever), re-fought gates are held by **pretenders** (0.75× strength, no name, no death line), and station talk changes ("they speak your name at the gates now"). Exporter proof: `node ironline-export.js terminus 3 --T=0` (phases), `--reg=N` for a captain's gate.
+
+---
+
 ## Save schema — versioned, migrated stepwise
 
 `save()` stamps `v: SAVE_V`; `load()` runs `migrate(d)` **first**, so load logic only ever reads the current schema. `migrate()` is a **chain of stepwise upgrades** — one step per wave that grows state (v1→v2 normalized the live-shipped unversioned shape; v2→v3 will add map state and place veterans on the node graph). **Policy: a rig is sacred** — unknown/higher versions pass through untouched and load reads known fields defensively; only a genuinely unparseable blob falls back to a fresh boot. Extend save/load/reset (and the harness) together every time state grows.

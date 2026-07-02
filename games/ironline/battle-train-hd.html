@@ -239,7 +239,7 @@ const KEY='battle-train-save';
 const S={scrap:120,food:20,fuel:30,heroes:[],crewSel:-1,journeys:0,engine:1,caboose:1,maxSlots:3,
 slots:[{type:'gun',wpn:'cannon',port:'auto',lvl:1},{type:'farm',lvl:1},null],
 mode:'idle',jt:0,dur:14,waves:[],wi:0,hull:0,off:0,flash:0,raiders:[],smoke:[],booms:[],tracers:[],smT:0,saveT:0,resetArm:0,T:0,dt:0.016,ex:216,stackX:286,pan:0,maxPan:0,panHintT:0,tw:{x:360,r:0},turr:{},boss:null,crate:null,crateAt:-1,lastRegion:-1,lastWx:-1,ptrain:null,ptrainAt:-1,ptrainKind:'trader',ptrainElite:false,dist:0,depot:null,discount:false,view:'travel',logHist:[],layout:'',layoutManual:false,immersive:false,engineSkin:null,fortressUnlocked:false,origin:false,stationX:null,stop:null,lampK:1,
-nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null,cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0}};
+nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null,cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0},linebroken:false};
 const gun=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='gun'?s.lvl*wpow(s.wpn||'cannon',s.port||'auto'):0),0)*crewBuffs().gunMult;
 const troops=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='troop'?s.lvl*4:0),0);
 const farm=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='farm'?s.lvl*0.5:0),0)*crewBuffs().foodMult;
@@ -275,6 +275,17 @@ const ACNM={light:'light raiders',armored:'armored plate',swarm:'a bike swarm'};
 function gunVs(cl){const m=dtMix(),a=AC[cl]||AC.light;return m.kinetic*a.kinetic+m.blast*a.blast+m.fire*a.fire}
 const markMult=t=>(S.mark&&S.mark===t)?1.3:1;                                    // MARK TARGET: tap the duel enemy, all guns focus
 const CLANS=[{nm:'the Rustborn',c:'#c96b3e'},{nm:'the Smoke Choir',c:'#7e8a93'},{nm:'the Marrow Kings',c:'#d8c6a8'},{nm:'the Cindermen',c:'#e06a3a'}]; // clans are enemies with names, never bookkeeping
+/* ---- WAVE 4: THE LINEBREAKER — the gates have names, and the last one has a story ---- */
+const CAPTAINS=[
+ {nm:'SPOKE',taunt:'"Every wheel that rolls west pays me tribute, engineer. Yours looks expensive."',die:'"The gate... was never mine to hold..."'},
+ {nm:'FOREMAN FLAK',taunt:'"The Choir sings in shell-bursts. Stay for the hymn."',die:'"The Choir... goes quiet now..."'},
+ {nm:'DEACON MARROW',taunt:'"The Reef keeps its bones, and I keep the Reef. Yours will file in with the rest."',die:'"Lay my bones... facing west..."'},
+ {nm:'THE LINEBREAKER',taunt:'"I broke this line so nothing would ever cross it again. And here you come — dragging hope behind you like a chain."',die:'"...then cross it. See what the world does with you."'}];
+const RUMORS=[
+ ['They say SPOKE nails a coin from every rig he burns above the Gallows Gate.','A driver swears THE LINEBREAKER was a Dispatcher once. Nobody laughs.','Past the gate the city is dead — but the lights still move.'],
+ ['FOREMAN FLAK conducts his gun crews like a choir. The hymn is flak.','They say THE LINEBREAKER broke the line with one train and no guns at all.','The Marrow Kings pay well for relics. Ask nothing worth answering.'],
+ ['DEACON MARROW buries every crew he wrecks. Proper graves. Facing west.','The Seam glows at night — the rails there never fully cool.','They say THE LINEBREAKER is still ABOARD the Terminus. Waiting for someone worth the wait.'],
+ ['Nothing lives past the Terminus. That is the point of a Terminus.','The Cindermen do not follow THE LINEBREAKER. They avoid him. Think on that.','On a still night you can hear the fortress engine idling from EMBERFALL.']];
 const nextTop=w=>TOPKEYS[(TOPKEYS.indexOf(w)+1)%TOPKEYS.length];
 const nextPort=p=>PORTKEYS[(PORTKEYS.indexOf(p)+1)%PORTKEYS.length];
 const REFIT=30;
@@ -364,7 +375,7 @@ let canSave=typeof window.storage!=='undefined';
 // ---- save schema: versioned, migrated stepwise (one step per state-growing wave; BRIEF v1.2 rule 2) ----
 // POLICY: a rig is sacred. Unknown/higher versions pass through untouched and load reads known fields
 // defensively — we never wipe. Only a genuinely unparseable blob falls back to a fresh boot.
-const SAVE_V=5;
+const SAVE_V=6;
 function migrate(d){
  if(!d||typeof d!=='object')return null;
  if(!d.v){                                  // v1: the unversioned live-shipped shape -> v2 (normalize, no behavior change)
@@ -391,7 +402,11 @@ function migrate(d){
   d.rep={disp:0,carav:0,tr:0};
   d.v=5;
  }
- // future steps append here, in order: if(d.v==5){ ... d.v=6 }
+ if(d.v==5){                                // v5 -> v6: THE LINEBREAKER — the line starts unbroken
+  d.linebroken=0;
+  d.v=6;
+ }
+ // future steps append here, in order: if(d.v==6){ ... d.v=7 }
  return d;
 }
 function setSaveMsg(t){document.getElementById('savemsg').textContent=t}
@@ -399,7 +414,7 @@ let saveTimer=null;
 async function save(){
 if(!canSave){setSaveMsg('Saving unavailable here');return}
 try{
-const d={v:SAVE_V,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0,nav:S.nav,visited:S.visited,cargo:S.cargo,pax:S.pax,contracts:S.contracts,rep:S.rep};
+const d={v:SAVE_V,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0,nav:S.nav,visited:S.visited,cargo:S.cargo,pax:S.pax,contracts:S.contracts,rep:S.rep,linebroken:S.linebroken?1:0};
 const r=await window.storage.set(KEY,JSON.stringify(d));
 if(r){setSaveMsg('Progress saved');clearTimeout(saveTimer);saveTimer=setTimeout(()=>setSaveMsg(''),2500)}
 }catch(e){canSave=false;setSaveMsg('Saving unavailable here')}
@@ -416,7 +431,7 @@ if(d.nav&&typeof d.nav=='object')S.nav={seed:(d.nav.seed|0)||1,reg:Math.max(0,Ma
 else S.nav={seed:1,reg:0,col:0,row:0};                                                           // defensive: a future save without nav still boots ON the map
 S.visited=Array.isArray(d.visited)&&d.visited.length?d.visited.slice():[navVK(S.nav.reg,S.nav.col,S.nav.row)];
 S.sel=0;S.navT=null;
-S.cargo=(d.cargo&&typeof d.cargo=='object')?d.cargo:{};S.pax=Array.isArray(d.pax)?d.pax:[];S.contracts=Array.isArray(d.contracts)?d.contracts:[];S.rep=(d.rep&&typeof d.rep=='object')?{disp:d.rep.disp|0,carav:d.rep.carav|0,tr:d.rep.tr|0}:{disp:0,carav:0,tr:0};
+S.cargo=(d.cargo&&typeof d.cargo=='object')?d.cargo:{};S.pax=Array.isArray(d.pax)?d.pax:[];S.contracts=Array.isArray(d.contracts)?d.contracts:[];S.rep=(d.rep&&typeof d.rep=='object')?{disp:d.rep.disp|0,carav:d.rep.carav|0,tr:d.rep.tr|0}:{disp:0,carav:0,tr:0};S.linebroken=!!d.linebroken;
 if(d.origin&&S.nav.reg==0&&S.nav.col==0){S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1} // saved while docked at the origin — wake up there
 else{S.origin=false;S.stop=null;S.stationX=null;S.lampK=1}                                       // ...otherwise the load is authoritative: mid-journey, no stop
 return true}
@@ -512,7 +527,8 @@ if(!edges.length){log('The line ends at THE TERMINUS. Beyond the dead signals th
 const to=edges[Math.max(0,Math.min(edges.length-1,S.sel))],ty=nodeType(to.reg,to.col,to.row),nm=nodeName(to.reg,to.col,to.row);
 S.fuel-=fuelC();S.food=Math.max(0,S.food-rations());S.mode='run';S.jt=0;S.raiders=[];S.tracers=[];S.crate=null;
 S.navT={to,regChange:to.reg!==S.nav.reg};S.boss=null;S.ptrain=null;
-if(ty=='G'){S.dur=Math.max(11,18-S.engine);S.waves=[];S.wi=0;const tier=Math.min(3,S.nav.reg),guns=Math.min(3,S.nav.reg),wp=['cannon','rocket','mortar'],cars=[{type:'engine'}];for(let g=0;g<guns;g++)cars.push({type:'gun',wpn:wp[g%3]});cars.push({type:'fuel'});const m=Math.round((55+eff()*22)*(1+guns*0.4));S.boss={hp:m,max:m,x:380,tx:200,hitT:1.5,dead:false,set:false,cars,tier,guns};S.crateAt=-1;S.ptrainAt=-1;log('The gate at '+nm+' is held \u2014 a warlord convoy blocks the crossing ('+(guns?guns+' gun car'+(guns>1?'s':'')+' + lead gun':'lead gun only')+'). Bring everything you have.')} // the region GATE: tier grows with the region, not the calendar
+if(ty=='G'){S.dur=Math.max(11,18-S.engine);S.waves=[];S.wi=0;const tier=Math.min(3,S.nav.reg),fin=S.nav.reg==3&&!S.linebroken,pret=S.linebroken,guns=fin?3:Math.min(3,S.nav.reg),wp=['cannon','rocket','mortar'],cars=[{type:'engine'}];for(let g=0;g<guns;g++)cars.push({type:'gun',wpn:wp[g%3]});cars.push({type:'fuel'});const m=Math.round((55+eff()*22)*(1+guns*0.4)*(fin?1.6:pret?0.75:1));S.boss={hp:m,max:m,x:380,tx:fin?190:200,hitT:1.5,dead:false,set:false,cars,tier,guns,cap:S.nav.reg,final:fin,pret,phase:1};S.crateAt=-1;S.ptrainAt=-1;
+ log(fin?'THE TERMINUS. The fortress engine sits across the gate, dark and idling. He knew you were coming.':pret?'A pretender flies '+CAPTAINS[S.nav.reg].nm+'\u2019s colors over the gate \u2014 the wastes never learn.':'The gate at '+nm+' is held \u2014 '+CAPTAINS[S.nav.reg].nm+' and a warlord convoy of '+CLANS[S.nav.reg].nm+' block the crossing ('+(guns?guns+' gun car'+(guns>1?'s':'')+' + lead gun':'lead gun only')+'). Bring everything you have.')} // the region GATE: a named captain until the line breaks; a pretender after
 else if(ty=='B'){S.dur=Math.max(8,15-S.engine);S.waves=[0.3*S.dur];S.wi=0;S.ptrainElite=true;S.ptrainKind='raider';S.ptrainBoard=eff()>=6&&Math.random()<0.5;S.ptrainAt=S.dur*(0.15+Math.random()*0.22);S.crateAt=-1;log('Departing for '+nm+'. The line ahead is blockaded \u2014 heavy dust rising off the parallel rail...')} // a BLOCKADE leg forces the elite warband
 else{S.dur=Math.max(8,15-S.engine);const hz=ty=='H';S.waves=(hz?[0.2,0.42,0.64,0.86]:[0.27,0.55,0.82]).map(p=>p*S.dur);S.wi=0;S.ptrainElite=false;S.crateAt=(Math.random()<0.65)?S.dur*(0.3+Math.random()*0.4):-1;S.ptrainAt=(!hz&&Math.random()<0.4)?S.dur*(0.2+Math.random()*0.35):-1;S.ptrainKind=(Math.random()<Math.min(0.55,0.32+eff()*0.02))?'raider':'trader';if(!hz&&S.ptrainAt<0&&Math.random()<0.03){S.ptrainKind='ghost';S.ptrainAt=S.dur*(0.3+Math.random()*0.3)}log(hz?'Departing for '+nm+'. Bad country ahead \u2014 raider sign on every mile-post.':'Departing for '+nm+'. Raider dust on the horizon...')} // a HAZARD leg runs 4 waves; a plain leg keeps the classic 3
 if(S.stop){if(S.stop.vis)log('The Dispatcher tips his hat as the drivers bite: "Mind the wastes, engineer. We’ll keep a lamp burning."');stopDepart()}
@@ -525,7 +541,7 @@ S.scrap=120;S.food=20;S.fuel=30;S.heroes=[];S.crewSel=-1;S.journeys=0;S.engine=1
 S.slots=[{type:'gun',wpn:'cannon',port:'auto',lvl:1},{type:'farm',lvl:1},null];S.slots.forEach(s=>crewOf(s));
 S.hull=maxHull();S.mode='idle';S.raiders=[];S.booms=[];S.tracers=[];S.boss=null;S.crate=null;S.dist=0;S.depot=null;S.discount=false;renderDepot();
 S.nav={seed:1+Math.floor(Math.random()*99999),reg:0,col:0,row:0};S.visited=['0:0:0'];S.sel=0;S.navT=null;
-S.cargo={};S.pax=[];S.contracts=[];S.rep={disp:0,carav:0,tr:0};
+S.cargo={};S.pax=[];S.contracts=[];S.rep={disp:0,carav:0,tr:0};S.linebroken=false;
 S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1;   // a fresh rig begins where every rig begins — docked at THE RAILHEAD
 if(canSave){try{await window.storage.delete(KEY)}catch(e){}}
 log('The old rig burns behind you. A fresh engine waits on the line.');
@@ -556,7 +572,10 @@ if(cl=='armored'&&eff()>=8&&dmg>0&&Math.random()<0.5&&!S.mined){S.mined=true;log
 if(S.hull<=0){const r=Math.round(base()*0.25);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.mode='idle';S.raiders=[];S.ptrain=null;navFail();log('Hull failure! You limp back to '+nodeName(S.nav.reg,S.nav.col,S.nav.row)+' with only '+r+' scrap. Repair and rearm.');cards();save()}
 }
 function finish(){const r=Math.round(base()*crewBuffs().scrapMult);S.scrap+=r;S.journeys++;S.mode='idle';S.ptrain=null;S.crate=null;log('Crossing complete. Salvaged '+r+' scrap from the far shore.');navArrive()}
-function bossKill(){const r=Math.round(base()*2.2*crewBuffs().scrapMult);S.scrap+=r;S.journeys++;const cn=(S.boss.cars||[1,1]).length;for(let i=0;i<7+cn*2;i++)S.booms.push({x:S.boss.x-26+i*(BENGW+(cn-1)*BCARW)/(7+cn*2),y:138+(i%3)*7,t:0.04+i*0.04});S.boss=null;S.mode='idle';S.raiders=[];S.tracers=[];S.crate=null;log('Warlord convoy destroyed! You haul back '+r+' scrap and the wastes learn your name.');if(Math.random()<0.85)recruitHero('war');else{const b=Math.round(30+eff()*8);S.scrap+=b;log('No survivors worth taking \u2014 you strip the wreck for '+b+' more scrap.');}navArrive()}
+function bossKill(){const wasCap=(S.boss.cap!=null&&!S.boss.pret)?CAPTAINS[S.boss.cap]:null,wasFinal=!!S.boss.final;const r=Math.round(base()*2.2*crewBuffs().scrapMult);S.scrap+=r;S.journeys++;const cn=(S.boss.cars||[1,1]).length;for(let i=0;i<7+cn*2;i++)S.booms.push({x:S.boss.x-26+i*(BENGW+(cn-1)*BCARW)/(7+cn*2),y:138+(i%3)*7,t:0.04+i*0.04});S.boss=null;S.mode='idle';S.raiders=[];S.tracers=[];S.crate=null;log('Warlord convoy destroyed! You haul back '+r+' scrap and the wastes learn your name.');if(Math.random()<0.85)recruitHero('war');else{const b=Math.round(30+eff()*8);S.scrap+=b;log('No survivors worth taking \u2014 you strip the wreck for '+b+' more scrap.');}
+if(wasFinal&&!S.linebroken){S.linebroken=true;log('THE LINEBREAKER: '+CAPTAINS[3].die);log('THE TERMINUS FALLS. The line is broken open \u2014 and it is yours, engineer. The loop home is open; pretenders will squat the old gates.');setRegion('THE LINE IS YOURS')}
+else if(wasCap)log(wasCap.nm+': '+wasCap.die);
+navArrive()}
 function bossEscape(){const r=Math.round(base()*0.3);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.boss=null;S.mode='idle';S.raiders=[];S.tracers=[];S.crate=null;navFail();log('The warlord overran your line \u2014 you uncouple and limp home with '+r+' scrap. The gate still answers to them.');cards();save()}
 function grabCrate(){const c=S.crate;if(!c||c.grabbed)return;c.grabbed=true;if(Math.random()<0.65){const sc=Math.round(28+eff()*14),fd=4+Math.floor(Math.random()*5);S.scrap+=sc;S.food+=fd;S.booms.push({x:c.x+5,y:c.y+4,t:0.12});log('Salvage secured — +'+sc+' scrap, +'+fd+' food.')}else{const dmg=Math.round(5+eff()*1.5);S.hull=Math.max(Math.round(maxHull()*0.35),S.hull-dmg);S.flash=1.2;for(let i=0;i<2;i++)S.raiders.push(raiderSpawn(340+i*22));log('Ambush! The wreck was bait — hull takes '+dmg+' and raiders close in.')}S.crate=null}
 /* ---- THE SPINE: the node-graph journey (BRIEF v1.2 wave 1) ----
@@ -573,7 +592,7 @@ function navRows(reg,col){const R=REGIONS[reg];if(col<=0||col>=R.cols-1)return 1
 function nodeType(reg,col,row){const R=REGIONS[reg];if(col<=0)return 'S';if(col>=R.cols-1)return 'G';
  const r=hash(S.nav.seed+reg*1000+col*37+row*7+9);return r<0.42?'S':r<0.67?'E':r<0.87?'H':'B'}
 function nodeEdges(reg,col,row){const R=REGIONS[reg];
- if(col>=R.cols-1)return reg>=REGIONS.length-1?[]:[{reg:reg+1,col:0,row:0}]; // a gate opens the next region — the Terminus gate ends the line
+ if(col>=R.cols-1)return reg>=REGIONS.length-1?(S.linebroken?[{reg:0,col:0,row:0}]:[]):[{reg:reg+1,col:0,row:0}]; // the Terminus ends the line — until the line is broken open, then it loops home
  const nr=navRows(reg,col+1),a=Math.min(nr-1,row),out=[{reg,col:col+1,row:a}];
  const h=hash(S.nav.seed+reg*1000+col*37+row*7+3);
  if(nr>1&&h<0.6){const b=(a+(h<0.3?1:nr-1))%nr;if(b!==a)out.push({reg,col:col+1,row:b})}
@@ -646,7 +665,7 @@ function navArrive(){ // every completed leg lands here: move the rig on the map
   if(ty=='E')navEvent(nm);
   else if(ty=='H'){const heal=Math.round(maxHull()*0.25);S.hull=Math.min(maxHull(),S.hull+heal);log('You clear the bad country and breathe at '+nm+'. The crew patches plate — +'+heal+' hull.')}
   else if(ty=='B'){const g=Math.round(15+eff()*6);S.scrap+=g;log('The blockade lies burning behind you. '+nm+' is open rail again — you strip the wrecks for +'+g+' scrap.')}
-  else if(ty=='G'){if(to.reg>=REGIONS.length-1&&to.col>=REGIONS[to.reg].cols-1)log('THE TERMINUS. The last gate on the last line. Beyond the dead signals... something waits. (The line ends here — for now.)');
+  else if(ty=='G'){if(to.reg>=REGIONS.length-1&&to.col>=REGIONS[to.reg].cols-1)log(S.linebroken?'THE TERMINUS — yours now. The signals burn amber down the whole broken line. Depart to ride the loop home.':'THE TERMINUS. The last gate on the last line. Beyond the dead signals... something waits.');
    else log('The gate stands broken behind you. '+REGIONS[Math.min(REGIONS.length-1,to.reg+1)].name+' waits across the border — new country, worse company.')}}
  cards();save()}
 function offerObj(type,idx){
@@ -670,7 +689,10 @@ if(!pick.includes('scavenge')&&!pick.includes('cache'))pick[pick.length-1]='scav
 return pick.map(t=>offerObj(t,idx))}
 function openDepot(nm){const idx=eff(),pers=stationPers(S.nav.reg,S.nav.col,S.nav.row);
 S.depot={idx,name:nm,pers,key:navVK(S.nav.reg,S.nav.col,S.nav.row),offers:depotOffers(idx,pers),board:mkBoard()};
-S.mode='depot';stopArrive(false);log('You pull into '+nm+'. '+depotFlavor(idx));renderDepot();showView('travel')}
+S.mode='depot';stopArrive(false);log('You pull into '+nm+'. '+depotFlavor(idx));
+if(S.linebroken){if(Math.random()<0.2)log('They speak your name at the gates now, engineer.')}
+else if(Math.random()<0.35){const rl=RUMORS[S.nav.reg];log('Rumor — '+rl[Math.floor(Math.random()*rl.length)])}
+renderDepot();showView('travel')}
 function renderDepot(){const d=S.depot,el=document.getElementById('depot');if(!d){el.className='';el.innerHTML='';return}
 let h='<h3>'+d.name+'</h3><div class="flav"><span class="pers">'+d.pers.map(p=>PERS[p]).join(' + ')+'</span> — '+depotFlavor(d.idx)+'</div>';
 d.offers.forEach((o,k)=>{h+='<button class="opt" data-k="'+k+'" '+(o.can()?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'});
@@ -1473,14 +1495,28 @@ function drawBossCar(cx,by,c,ci){const m=BOSSM,R=RAIDRED;
 }
 function drawBoss(){
  const bs=S.boss;if(!bs)return;const x=Math.round(bs.x),by=150;
+ if(bs.final){drawTerminus(x-40,by,bs);
+  const w=116,hp=Math.max(0,bs.hp/bs.max);
+  px(x-44,by-70,w,5,'#241a12');px(x-43,by-69,w-2,3,'#5a1f18');px(x-43,by-69,Math.round((w-2)*hp),3,'#d23a2a');
+  return}
  const cars=bs.cars||[{type:'engine'},{type:'fuel'}];
  const fx=x-24,convoyW=BENGW+(cars.length-1)*BCARW;
  ctx.fillStyle='rgba(18,9,5,0.34)';ctx.fillRect(fx-9,by+12,convoyW+14,5);
  let cxp=fx+BENGW;
  for(let ci=1;ci<cars.length;ci++){drawBossCar(cxp,by,cars[ci],ci);cxp+=BCARW;}
  drawBossEngine(fx,by,cars[0]);                                                      // engine leads, drawn on top
+ if(bs.cap!=null&&!bs.pret){const cc=CLANS[bs.cap].c;px(fx-2,by-41,2,15,'#241a12');px(fx,by-40,7,5,cc);px(fx,by-40,7,1,'rgba(255,255,255,0.25)')} // the captain's colors
  const w=Math.min(convoyW,116),hp=Math.max(0,bs.hp/bs.max);
  px(fx-4,by-44,w,5,'#241a12');px(fx-3,by-43,w-2,3,'#5a1f18');px(fx-3,by-43,Math.round((w-2)*hp),3,'#d23a2a');
+}
+// THE TERMINUS — the orphaned Fortress showpiece finally gets its job: re-dressed as THE LINEBREAKER's engine (it faces LEFT, into your headlamp)
+function drawTerminus(ox,by,bs){
+ drawFortress(ox,by);
+ const cc=CLANS[3].c;
+ px(ox+96,by-56,2,22,'#241a12');px(ox+98,by-55,7,6,cc);px(ox+98,by-55,7,1,'#f0a060');   // war banner over the rear unit
+ px(ox+8,by-34,2,2,Math.floor(S.T*2)%2?'#ff6a4a':'#d23a2a');                              // red running lamp on the smokebox
+ if(bs.phase>=2){for(let v=0;v<3;v++){const vx=ox+30+v*24,puff=(S.T*1.6+v*0.33)%1;pxa(vx,by-38-puff*12,2,2,'rgba(240,120,50,'+(0.55*(1-puff)).toFixed(2)+')')}}
+ if(bs.phase>=3){for(let f=0;f<4;f++){const fx2=ox+22+f*20,fl=Math.floor(S.T*8+f)%2;px(fx2,by-31-fl,2,3,'#ff8a3a');px(fx2,by-29,2,1,'#ffd23e')}}
 }
 // ===================================================================================
 // FORTRESS — a showpiece armored war-train recreated from the "Fortress" reference.
@@ -1831,7 +1867,7 @@ if(bgReady){ctx.drawImage(bgImg,0,0,320,180);return}
 const nreg=S.nav?S.nav.reg:0,R=REGIONS[nreg],lseg=Math.floor(S.off/BIOME_LEN); // the MAP owns the biome now: where the rig IS decides the country
 const regChange=!!(S.navT&&S.navT.regChange&&S.mode=='run');
 blendT=regChange?Math.max(0,Math.min(1,(S.jt/S.dur-0.5)*2)):0;                 // on a gate leg the new region bleeds in across the back half
-curIdx=R.biome;nextIdx=regChange?REGIONS[Math.min(REGIONS.length-1,nreg+1)].biome:curIdx;
+curIdx=R.biome;nextIdx=regChange?REGIONS[S.navT.to.reg].biome:curIdx;
 const cur=BIOMES[curIdx],nxt=BIOMES[nextIdx];
 computeWeather();
 dayNight();
@@ -2248,10 +2284,17 @@ if(repairRate()>0&&S.hull<maxHull())S.hull=Math.min(maxHull(),S.hull+repairRate(
 const boss=S.boss;
 if(boss&&!boss.dead){
 boss.x+=(boss.tx-boss.x)*Math.min(1,dt*1.7);
-if(!boss.set&&boss.x-boss.tx<6){boss.set=true;log('You throw the brakes \u2014 both rigs grind to a dead stop on the line. Trade fire until one is scrap.')}
+if(!boss.set&&boss.x-boss.tx<6){boss.set=true;const cap=boss.cap!=null?CAPTAINS[boss.cap]:null;
+ if(boss.final){log('THE LINEBREAKER: '+cap.taunt);setRegion('\u2694 THE LINEBREAKER')}
+ else if(cap&&!boss.pret){log(cap.nm+' \u2014 '+cap.taunt);setRegion('\u2694 '+cap.nm)}
+ else log('You throw the brakes \u2014 both rigs grind to a dead stop on the line. Trade fire until one is scrap.')}
+if(boss.final&&boss.set){const frac=boss.hp/boss.max; // the last fight comes in three breaths
+ if(boss.phase==1&&frac<0.66){boss.phase=2;boss.spawnT=0;S.flash=1.5;log('THE TERMINUS vents burning coolant \u2014 outrider bays swing open. "You want the line? EARN IT."')}
+ if(boss.phase==2&&frac<0.33){boss.phase=3;log('The fortress engine is burning and will not stop. THE LINEBREAKER mans the guns himself.')}
+ if(boss.phase>=2){boss.spawnT=(boss.spawnT||0)-dt;if(boss.spawnT<=0){boss.spawnT=3.2;S.raiders.push(raiderSpawn(344,boss.phase==3?'crawler':'bike'))}}}
 const dps=gunVs('armored')*markMult('boss')+troops()*1.5;boss.hp-=dps*dt;if(dps>0&&S.flash<0.3)S.flash=0.3;
 boss.hitT-=dt;
-if(boss.hitT<=0){boss.hitT=1.7;const dmg=Math.max(2,Math.round((7+eff()*2-troops()*0.5)*(1+(boss.guns||0)*0.25)));hurt(dmg);S.flash=1.3;S.booms.push({x:210,y:128,t:0.1});
+if(boss.hitT<=0){boss.hitT=(boss.final&&boss.phase==3)?1.1:1.7;const dmg=Math.max(2,Math.round((7+eff()*2-troops()*0.5)*(1+(boss.guns||0)*0.25)));hurt(dmg);S.flash=1.3;S.booms.push({x:210,y:128,t:0.1});
 if(S.hull<=0)bossEscape();}
 if(S.boss&&S.boss.hp<=0)bossKill();
 }
