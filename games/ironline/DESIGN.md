@@ -65,4 +65,71 @@ Every node-stop shares one reusable state machine, `S.stop = {ph, t, vis, v0, T}
 
 **Begin-at-origin:** a fresh game (no save) boots `docked` at The Railhead — journey 0, world at rest, the Dispatcher's greeting in the ticker. Saving while docked persists one flag (`origin`) so a pre-departure reload wakes up on the platform; any other save loads mid-journey and never sees it. Scuttle-&-restart re-docks. Save/load/reset extended together.
 
-**Headless QA:** `tick`/`stopArrive`/`stopDepart` are exposed through the exporter's `__G`, and the scratch harness (`chor-qa`) boots the real script and asserts all phases (frozen world, exact landing, lamp state, drift resume, save round-trips). Keyframe stills: `node ironline-export.js railhead --sx=N --lamp=K`.
+**Headless QA:** `tick`/`stopArrive`/`stopDepart` are exposed through the exporter's `__G`, and the repo-resident harness **`ironline-qa.cjs`** boots the real script and asserts all phases (frozen world, exact landing, lamp state, drift resume, save round-trips) **plus the save schema** (v1 migration, v2 round-trip, garbage fallback, never-wipe on unknown versions). Run `node ironline-qa.cjs`; extend it every wave a system grows. Keyframe stills: `node ironline-export.js railhead --sx=N --lamp=K`.
+
+---
+
+## The Spine — the node-graph journey (Wave 1)
+
+The rail ocean is **4 regions** (`REGIONS`): Rust Flats → Dead City → Bone Reef → Cinder Seam, each a **seeded node graph** — columns of stops (6/6/6/7), 1–2 forward edges per node, one entry anchor (col 0), one named mid anchor, and a **GATE** (warlord boss crossing) at the far end that opens the next region. The Terminus gate ends the line (Wave 4 gives it its story). Node types: **S** station (depot offers) · **E** event (light for now; Wave 3 deepens) · **H** hazard (4-wave leg, rest on arrival) · **B** blockade (elite-warband leg) · **G** gate. The graph is pure functions of `S.nav.seed` (`navRows`/`nodeType`/`nodeEdges`/`nodeName`) — nothing stored but position, so saves stay tiny and the map can't corrupt.
+
+**Position drives threat:** `eff() = reg*6 + col` replaces journey-count difficulty everywhere (BRIEF v1.2 rule 6) — the world is dangerous because of *where you are*, not how long you've played. `S.journeys` remains as flavor/records. **The map owns the biome:** `drawBackdrop` reads `REGIONS[S.nav.reg].biome`; on a gate leg the next region's palette bleeds in across the back half of the crossing (`blendT` from `S.jt/S.dur`). `biomeIdx`-by-distance is retired. **Choosing a fork:** when a node has two edges, the travel strip shows labeled Depart buttons and the Map tab's lit nodes are tappable — same choice, two surfaces. A failed leg (`S.navT=null`) leaves the rig at the node it departed — the map never moves on a loss. Every arrival is a physical stop: stations dock until you leave; event/rest halts carry `stop.auto` and release themselves.
+
+---
+
+## The Ledger — station economics (Wave 2)
+
+**Goods with a regional spread.** 5 trade goods (`GOODS`: Ore/Parts/Medicine/Grain/Relics); price = base × **region supply-demand** (`GMKT` — what a region makes is cheap there, what it lacks is dear; the Seam pays dear for nearly everything) × a deterministic per-node jitter. The spread is *visible* (▼ cheap / ▲ dear on the market board) so trading is a read, not a memory test. **Cargo car** pools holds (4 at lvl 1, +2/lvl) — the crate stack and side gauge show the fill. **Passenger coach** seats fares (2 at lvl 1, +1/lvl) — riders board at stations, pay on disembarking; rare **special passengers** (named, hooded in the window) pay 5×. A lost leg scatters passengers and resets escort clocks (`navFail`).
+
+**Station personalities.** Every station carries 2 of YARD / MARKET / OUTPOST / CHAPEL (seeded; the Railhead is always YARD+MARKET so the first stop teaches the trade). Personalities pin their offer (yard→repair, outpost→recruit, chapel→blessing) and MARKET adds the trade board. **The Dispatcher board** offers 2 contracts per visit (refreshed by crossing count): **haul** (deliver N of a good to a region, pay ≈ 1.7× spot there, delivery at any station in the target region other than where it was inked) and **escort** (ride N legs unbroken). Max 2 inked. Crew grows two roles: Quartermaster (cargo, +scrap%) and Conductor (coach, −fuel%).
+
+---
+
+## The Teeth — combat depth (Wave 3)
+
+**Damage types are live.** Every weapon already carried a `dt` tag (kinetic/blast/fire); now enemies have **armor classes** (`AC`): *light* (neutral, fire +), *armored* (blast blooms ×1.5, kinetic sparks ×0.7), *swarm* (fire eats it ×1.6). `dtMix()` totals the rig's output per type; `gunVs(class)` prices the matchup — the refit choice finally matters, and the wave log says so ("your blast fire blooms…" / "kinetic rounds spark off…"). Waves roll a class (crawler-led armored columns, bike swarms); bosses and elites are armored. **MINELAYER**: an unrepelled armored wave may seed the rail — the next wave opens with mine damage. **MARK TARGET**: tap the duel enemy (boss or convoy) on the canvas — all guns focus (+30%), pulsing chevron overhead; tap again to lift.
+
+**Troops are manpower, not just mitigation.** The **BOARDER WAGON** (blockade legs, eff ≥ 6) grapples alongside: its boarding meter fills against your `troops()` — full meter cuts a hold open (scrap stolen); repelling it leans hard toward a war-hero drop. Troops also clear mined sidings at events, run send-a-party sweeps (≥8), and earn wall-duty scrap at OUTPOSTs; escorts pay a rifleman bonus. **Factions:** Dispatchers rep (+1 per contract, up to ★10 → +2%/★ contract pay) and Caravaneers rep (+1 per 4 trades → ±1%/★ market prices, friendlier traders). **Clans are enemies with names, never bookkeeping** (`CLANS`, one per region — the Rustborn, the Smoke Choir, the Marrow Kings, the Cindermen) — they color the logs and the crawler's band. **THE GHOST HAULER**: a rare pale train (≈3% of quiet legs) that passes without a sound and leaves a relic on the coupling if the holds have room.
+
+---
+
+## The Linebreaker — the story on the line (Wave 4)
+
+**The gates have names.** Each region's gate is held by a **captain** (`CAPTAINS`): SPOKE (Gallows Gate) → FOREMAN FLAK (the Smoke Choir) → DEACON MARROW (the Pale Gate) → **THE LINEBREAKER** at THE TERMINUS. Captains taunt when the rigs lock brakes (announced through the region banner: ⚔ NAME), fly their clan's pennant on the lead engine, and die with a line. **Rumors** seed the story: ~35% of station arrivals drop a region-keyed rumor line (each region's set points at its captain, and always, obliquely, at the Linebreaker).
+
+**THE TERMINUS is the orphaned Fortress' job.** The final fight re-dresses `drawFortress()` (it faces LEFT, into your headlamp) as THE LINEBREAKER's engine — war banner in Cinderman colors, red running lamp — and it fights in **three breaths**: below 66% the outrider bays open (bike spawns); below 33% he mans the guns himself (faster hits, crawler spawns, the hull visibly burning). The kill sets **`S.linebroken`** (SAVE_V=6): the Terminus gate grows a **loop-home edge** to the Rust Flats entry (free-roam — the whole line is ridable forever), re-fought gates are held by **pretenders** (0.75× strength, no name, no death line), and station talk changes ("they speak your name at the gates now"). Exporter proof: `node ironline-export.js terminus 3 --T=0` (phases), `--reg=N` for a captain's gate.
+
+---
+
+## The Bench — heroes deepen (Wave 5)
+
+**+8 heroes.** Four join the recruit pools: Signalwoman & Cartwright (wanderers), Spotter & The Uncoupled (spoils of war). Four are **named story heroes** (`grp:'story'`, unique — `grantHero`/`hasHero` guarantee once-only): **THE STOWAWAY** (a special passenger who doesn't step down, 25% per special disembark), **THE LANTERNKEEPER** (steps off the Ghost Hauler, 35% per relic gift), **THE GATEWRIGHT** (freed from the first pretender's wreck), **THE SURVEYOR** (waiting at the Cinder Seam's entry, first arrival). Story chips read "found on the line."
+
+**Tap the rig.** On calm rail, tapping a car (or the engine) inspects it — name, level, statline, who's aboard — with an amber outline pulse (`S.inspI/S.inspT`); the same crate-tap pointer path powers it. **Noodle is tappable** at the origin platform: no stats, a faster tail (`S.noodleT`), and a line from `NOODLE_LINES`. **Hero's favor:** ~35% of station stops, one non-elite hero offers a discounted rank-up (60% of training cost) on the depot board. **Elite laurel:** any crew figure at MAXRANK wears a plain amber laurel above the head — mastery reads on the rig itself.
+
+---
+
+## The Polish — band by band (Wave 6)
+
+**The Cinder Seam got its full pass**: cinder cones with glowing crowns, ridge glow-veins, slag heaps alight at the seams, ember chimney stacks, collapsed gantries, pulsing ground fissures — and **THE CRUCIBLE**, a cracked foundry tower with fire still standing in its ribs, as its band-3 landmark. **EMBER GALE** is a sixth weather rolled by the Seam alone (horizontal ember streaks, hot tint). Each old region gained a mid-band prop (Rust: pipeline arch · City: collapsed footbridge · Reef: half-buried skull dome). **Region-tinted atmosphere** (`REGTINT`) lays a whisper of each country's color over the grade — the Flats are the baseline.
+
+**Hardware parity**: hull gun-ports now grow with the car's tier (bare port → armored casemate → twin mount), kick with **recoil**, and drop **spent casings**; impact booms inherit the round's damage-type color. The engine's rank reads in silhouette (armored cab brow → plow horns → war pennant), not just its ramp. The **Fortress-skin smoke** finally respects THE STOP (no plume at rest — old debt paid). Passing raider trains wear the **local clan's warpaint**.
+
+**Parked from the wave-6 list, for the human's direction:** physical station art at non-origin stops (extending the vis-stop choreography + a per-personality settlement recipe — a real chunk, worth its own pass), cargo/passenger car art beyond the wave-2 shapes, and further enemy-sprite variety.
+
+---
+
+## Save schema — versioned, migrated stepwise
+
+`save()` stamps `v: SAVE_V`; `load()` runs `migrate(d)` **first**, so load logic only ever reads the current schema. `migrate()` is a **chain of stepwise upgrades** — one step per wave that grows state (v1→v2 normalized the live-shipped unversioned shape; v2→v3 will add map state and place veterans on the node graph). **Policy: a rig is sacred** — unknown/higher versions pass through untouched and load reads known fields defensively; only a genuinely unparseable blob falls back to a fresh boot. Extend save/load/reset (and the harness) together every time state grows.
+
+---
+
+## Extraction candidates for the studio pipeline (PROPOSALS — rule of three, Tier-1 serialized)
+
+Born in IRONLINE, worth lifting to `/tools` **when a second game needs them** (never before; proposals only, per GOVERNANCE §7):
+- The exporter's **dependency-free Canvas2D mock + PNG codec** (affine stack, gradients, path fill/stroke, PNG decode) — the general "render any canvas game headless" kernel.
+- The **crop/zoom pixel-QA tool** (magnify any region of a render for defect-hunting — caught the roof wart, the scrub collisions, the kid's contrast).
+- **`rhText` micro-glyph font** (3×5 pixel lettering for in-world signage).
+- The **building grammar** pattern (parts + recipes + entity lists) — if a second game wants procedural settlements.
+- The **behavioral-harness pattern** (universal-proxy DOM, eval the real script, drive the loop, assert).
