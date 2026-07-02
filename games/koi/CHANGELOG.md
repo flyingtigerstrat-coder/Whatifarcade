@@ -1,6 +1,18 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-02 — B.2.2: half-res water buffer + adaptive quality shed (human: 11 fps live)
+DECIDED: the human's live fps readout came back **11 fps** — their machine rasterizes the canvas in software (matches our headless software-raster measurements exactly), so the bottleneck is the full-frame WATER painting, as the B.2.1 profile predicted (JS ~2.5%; raster ~97%). Pulled the staged lever. Engine v3.2.1 → **v3.2.2**.
+
+CHANGED:
+- **Half-res water buffer:** the water passes (bg grade, caustics, beams, ribbons, wakes) — soft glows all — now paint into a persistent WS=.5 offscreen buffer and upscale to the frame. Water raster cost drops ~9× (WS² vs DPR²); the glow reads identically. (Rain already had its own buffer; untouched.)
+- **One-shot adaptive shed:** the first ~6s are sampled; if the machine still can't hold ~22 fps, quality sheds ONCE (DPR cap → 1, WS → .4) instead of staying a slideshow. No oscillation; healthy machines never shed.
+
+MEASURED (real Chromium, software raster — the environment that reproduces the human's 11 fps): natural **10.8 → 32.3 fps**, metal **13.3 → 33.5 fps**, worst frame gap 100 → 67ms — near the 40 fps cap, before any shed. Suites green (37/37).
+
+OPEN: human re-verifies the live fps chip after deploy — expect ~30-40. If a machine still reads low after the 6s shed kicks in, the last lever is koi-pattern pre-render to body-space textures.
+
+
 ## 2026-07-02 — B.2.1: re-bake hitch fix (human: "even slower, almost unplayable" after B.2)
 DECIDED: the human reported the live pond WORSE after the B.2 merge. Assessed in a REAL headless Chromium (Playwright), not the counting stub. Engine v3.2 → **v3.2.1**.
 
