@@ -339,12 +339,30 @@ if(typeof window.storage==='undefined'&&typeof localStorage!=='undefined'){try{w
  set:async(k,v)=>{localStorage.setItem(k,v);return{ok:1}},
  delete:async k=>{localStorage.removeItem(k);return{ok:1}}}}catch(e){}}
 let canSave=typeof window.storage!=='undefined';
+// ---- save schema: versioned, migrated stepwise (one step per state-growing wave; BRIEF v1.2 rule 2) ----
+// POLICY: a rig is sacred. Unknown/higher versions pass through untouched and load reads known fields
+// defensively — we never wipe. Only a genuinely unparseable blob falls back to a fresh boot.
+const SAVE_V=2;
+function migrate(d){
+ if(!d||typeof d!=='object')return null;
+ if(!d.v){                                  // v1: the unversioned live-shipped shape -> v2 (normalize, no behavior change)
+  d.fuel=d.fuel!=null?d.fuel:30;
+  d.heroes=Array.isArray(d.heroes)?d.heroes:[];
+  d.slots=Array.isArray(d.slots)?d.slots:[];
+  d.slots.forEach(s=>{if(s&&s.type=='gun'){if(!s.wpn)s.wpn='cannon';if(!s.port)s.port='auto'}});
+  d.dist=d.dist||0;d.discount=!!d.discount;d.layout=d.layout||'';d.layoutManual=!!d.layoutManual;
+  d.engineSkin=d.engineSkin||null;d.fortressUnlocked=!!d.fortressUnlocked;d.origin=d.origin?1:0;
+  d.v=2;
+ }
+ // future steps append here, in order: if(d.v==2){ ...map state, place veteran on the node graph... d.v=3 }
+ return d;
+}
 function setSaveMsg(t){document.getElementById('savemsg').textContent=t}
 let saveTimer=null;
 async function save(){
 if(!canSave){setSaveMsg('Saving unavailable here');return}
 try{
-const d={scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0};
+const d={v:SAVE_V,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0};
 const r=await window.storage.set(KEY,JSON.stringify(d));
 if(r){setSaveMsg('Progress saved');clearTimeout(saveTimer);saveTimer=setTimeout(()=>setSaveMsg(''),2500)}
 }catch(e){canSave=false;setSaveMsg('Saving unavailable here')}
@@ -354,7 +372,8 @@ if(!canSave)return false;
 try{
 const r=await window.storage.get(KEY);
 if(r&&r.value){
-const d=JSON.parse(r.value);
+const d=migrate(JSON.parse(r.value));
+if(!d)return false;
 S.scrap=d.scrap;S.food=d.food;S.fuel=(d.fuel!=null?d.fuel:30);S.heroes=Array.isArray(d.heroes)?d.heroes:[];S.crewSel=-1;S.journeys=d.journeys;S.engine=d.engine;S.caboose=d.caboose;S.maxSlots=d.maxSlots;S.slots=d.slots;S.slots.forEach(s=>{if(s&&s.type=='gun'){if(!s.wpn)s.wpn='cannon';if(!s.port)s.port='auto'}crewOf(s)});S.hull=Math.min(d.hull,maxHull());S.dist=d.dist||0;S.discount=!!d.discount;S.layout=d.layout||'';S.layoutManual=!!d.layoutManual;S.engineSkin=d.engineSkin||null;S.fortressUnlocked=!!d.fortressUnlocked;
 if(d.origin){S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1} // saved while docked at the origin — wake up there
 else{S.origin=false;S.stop=null;S.stationX=null;S.lampK=1}                                       // ...otherwise the load is authoritative: mid-journey, no stop

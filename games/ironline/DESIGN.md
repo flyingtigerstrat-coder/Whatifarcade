@@ -65,4 +65,21 @@ Every node-stop shares one reusable state machine, `S.stop = {ph, t, vis, v0, T}
 
 **Begin-at-origin:** a fresh game (no save) boots `docked` at The Railhead — journey 0, world at rest, the Dispatcher's greeting in the ticker. Saving while docked persists one flag (`origin`) so a pre-departure reload wakes up on the platform; any other save loads mid-journey and never sees it. Scuttle-&-restart re-docks. Save/load/reset extended together.
 
-**Headless QA:** `tick`/`stopArrive`/`stopDepart` are exposed through the exporter's `__G`, and the scratch harness (`chor-qa`) boots the real script and asserts all phases (frozen world, exact landing, lamp state, drift resume, save round-trips). Keyframe stills: `node ironline-export.js railhead --sx=N --lamp=K`.
+**Headless QA:** `tick`/`stopArrive`/`stopDepart` are exposed through the exporter's `__G`, and the repo-resident harness **`ironline-qa.cjs`** boots the real script and asserts all phases (frozen world, exact landing, lamp state, drift resume, save round-trips) **plus the save schema** (v1 migration, v2 round-trip, garbage fallback, never-wipe on unknown versions). Run `node ironline-qa.cjs`; extend it every wave a system grows. Keyframe stills: `node ironline-export.js railhead --sx=N --lamp=K`.
+
+---
+
+## Save schema — versioned, migrated stepwise
+
+`save()` stamps `v: SAVE_V`; `load()` runs `migrate(d)` **first**, so load logic only ever reads the current schema. `migrate()` is a **chain of stepwise upgrades** — one step per wave that grows state (v1→v2 normalized the live-shipped unversioned shape; v2→v3 will add map state and place veterans on the node graph). **Policy: a rig is sacred** — unknown/higher versions pass through untouched and load reads known fields defensively; only a genuinely unparseable blob falls back to a fresh boot. Extend save/load/reset (and the harness) together every time state grows.
+
+---
+
+## Extraction candidates for the studio pipeline (PROPOSALS — rule of three, Tier-1 serialized)
+
+Born in IRONLINE, worth lifting to `/tools` **when a second game needs them** (never before; proposals only, per GOVERNANCE §7):
+- The exporter's **dependency-free Canvas2D mock + PNG codec** (affine stack, gradients, path fill/stroke, PNG decode) — the general "render any canvas game headless" kernel.
+- The **crop/zoom pixel-QA tool** (magnify any region of a render for defect-hunting — caught the roof wart, the scrub collisions, the kid's contrast).
+- **`rhText` micro-glyph font** (3×5 pixel lettering for in-world signage).
+- The **building grammar** pattern (parts + recipes + entity lists) — if a second game wants procedural settlements.
+- The **behavioral-harness pattern** (universal-proxy DOM, eval the real script, drive the loop, assert).

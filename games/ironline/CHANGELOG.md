@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-07-02 · session 10 — THE MATURITY SPRINT opens: BRIEF v1.2 promoted, Wave 0 done
+DECIDED: BRIEF v1.2 (seven waves to a finished realm) promoted, status -> building. Four plan calls ratified at check-in: (1) two-step save upgrade — Wave 0 is invisible versioning plumbing, veterans get placed onto the map when the map exists (Wave 1); (2) veteran placement = one region per 5 completed crossings (the old boss-every-5th rhythm translated); (3) branch choice = labeled Depart buttons in place + map-tap equivalent; (4) EVENT nodes ship light in Wave 1 (existing rewards), gain their troops-content teeth in Wave 3. WAVE 0 BUILT: SAVE_V=2 + stepwise migrate() chain on top of the shim (v1 live saves normalize to v2; policy: a rig is sacred — unknown versions pass through, load reads defensively, never wipes; only unparseable blobs fall back to fresh boot).
+TRIED: Visual-identity check against a stale pre-choreography baseline flagged a false DIFFERS (the exporter camera changed at ba3e65c); re-based against HEAD proper — byte-IDENTICAL, Wave 0 DoD holds (no visual change).
+PARKED: art-spec/ reorganization (nothing to move without churn — the art is inline procedural); pipeline extraction candidates recorded in DESIGN.md as proposals instead.
+CHANGED: Harness promoted into the repo as ironline-qa.cjs and extended 20 -> 29 assertions (choreography + save schema); DESIGN.md gains "Save schema" canon + the extraction-proposals ledger.
+OPEN: Wave 1 — the spine: seeded node graph, four regions (Cinder Seam placeholder), Depart-along-edges, difficulty rebase to region tiers, map tab as the graph, v2->v3 migration placing veterans. Map tab is DOM — human eyes judge it on a phone.
+FEELING: The plumbing nobody will ever see is the promise every player keeps: nobody loses a rig. Now we draw the map.
+
 ## 2026-07-02 · session 9 — SHIPPED to whatifarcade.com + live hotfixes
 DECIDED: Phase A deployed (PR #21) with a standalone localStorage save shim (window.storage was undefined on the live site — saves now persist for real players; brief -> shipped). Live QA with the human's eyes caught three bugs, hotfixed same-day: (1) landscape DOM chrome (route pill + ticker) stacked on the canvas banner — the banner now draws only in portrait/immersive where no chrome announces the place, and the landscape ticker got readable (17px, darker backing) (PR #22); (2) the foreground wreck-tire was CAR-SIZED — broke the world's proportions at any speed — retired entirely (trackside debris lives in the deb cells); (3) the floating DEPART button sat on top of open panel text in landscape — the panel now reserves a lane for it.
 TRIED: Verifying the live domain from the sandbox (network policy blocks it) — Pages deploy success per merge SHA is the authoritative signal instead.
