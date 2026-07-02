@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v3.2.3 (living pond, B.2.3: full-length koi fix + quality-first adaptive DPR) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.2.4 (living pond, B.2.4: trail commit fix — full-length koi, verified by data) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
@@ -222,6 +222,10 @@ function makeKoi(variety,x,y,age,seed,parents){
     phase:rand(0,TAU), finph:rand(0,TAU), wig:rand(.85,1.2), turn:0, trail:[],
     age:age??rand(.35,1), hunger:rand(.2,.6), wellfed:0, wake:[], seed:sd, parents:parents??null};
   k.pattern=buildPattern(v,sd);                 // per-individual markings (no two koi alike)
+  // pre-fill the trail straight behind the fish so it renders full-length from frame one
+  // (otherwise a fish "grows" for its first seconds while the trail accumulates)
+  const n=Math.ceil(elen(k)*1.25/2)+6;
+  for(let i=0;i<n;i++)k.trail.push({x:k.x-Math.cos(k.ang)*i*2,y:k.y-Math.sin(k.ang)*i*2});
   return k;
 }
 function makePad(x,y,size,vr){return {type:'pad',vr:vr||'classic',x,y,size:size??rand(.2,.5),rot:rand(0,TAU),grow:size?1:rand(.2,.6),bloom:0,hue:rand(-8,8),bp:rand(0,TAU),amp:rand(2,3.6),dx:0,dy:0,vx:0,vy:0,rv:rand(-.04,.04)};}
@@ -912,10 +916,14 @@ function drawFX(c){
 // body, so the rear of every koi collapsed to a point (fish always rendered boxy-short).
 // Elder fins scale with the INTENDED length, which made the collapse read as broken fins.
 // Points are now distance-gated (2px) and the cap covers the full body length.
-function trailPush(k){const t0=k.trail[0];
-  if(!t0||((k.x-t0.x)**2+(k.y-t0.y)**2)>=4)k.trail.unshift({x:k.x,y:k.y});
-  else{t0.x=k.x;t0.y=k.y;}
-  const mx=Math.ceil(elen(k)*1.25/2)+6;if(k.trail.length>mx)k.trail.length=mx;}
+// (B.2.4) commit-or-replace: the previous gate dragged trail[0] WITH the head every
+// frame, so the 2px spacing never tripped — the trail starved at 1 point (stiff
+// straight-fallback fish) and any frame spike committed a ~2px trail (collapsed box).
+// Now the head is exact every frame, and a point COMMITS only once it is 2px behind.
+function trailPush(k){const tr=k.trail;
+  if(tr.length>1&&((tr[0].x-tr[1].x)**2+(tr[0].y-tr[1].y)**2)<4)tr.shift();
+  tr.unshift({x:k.x,y:k.y});
+  const mx=Math.ceil(elen(k)*1.25/2)+6;if(tr.length>mx)tr.length=mx;}
 function updateKoi(k,dt){
   if(k.departing){                                                   // "let it swim on": gather way toward the edge and go
     const a=Math.atan2(k.exit.y-k.y,k.exit.x-k.x);let da=((a-k.ang+Math.PI*3)%TAU)-Math.PI;
@@ -1156,7 +1164,7 @@ kcSwim.addEventListener('click',()=>{if(!sel)return;
 function devWarp(days){Pond.eco.lastSeen=Date.now()-days*864e5;idleReturn(true);persist();}
 let devFps=null;
 if(DEV){const dtr=document.getElementById('devtray');dtr.style.display='flex';
-  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='… fps';dtr.appendChild(devFps);
+  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.2.4 · … fps';dtr.appendChild(devFps);
   const acts=[['+1d',()=>devWarp(1)],['+7d',()=>devWarp(7)],['+30d',()=>devWarp(30)],
     ['+200❀',()=>{Pond.econ.serenity+=200;}],
     ['mature flora',()=>{for(const p of Pond.plants){p.grow=1;if(p.type==='lotus'||p.type==='iris'||p.type==='pad')p.bloom=1;}for(const r of Pond.rocks)r.grow=1;persist();}],
@@ -1232,7 +1240,7 @@ function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;retu
   if(_adT>=5){const f=_adN/_adT;_adN=0;_adT=0;
     if(f<22&&_shed<2){_shed++;DPR_CAP=_shed===1?1.5:1;WS=_shed===1?.45:.4;resize();
       try{localStorage.setItem('koipond_q',String(_shed));}catch(e){}}}
-  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent=(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
+  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.2.4 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
   saveT+=dt;if(saveT>5){saveT=0;persist();}}
 addEventListener('beforeunload',persist);
 
