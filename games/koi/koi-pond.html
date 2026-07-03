@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v3.3.2 (living pond, C.2: seeded per-instance variety — driftwood forms, rock jitter, flora spread/tone) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.4.1 (living pond, C.4: size-led feeding hierarchy — dominant koi go first, elders lead the charge) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
@@ -214,14 +214,20 @@ const CAPS={koi:18,plants:36,rocks:12,school:20,fireflies:10};
 const AGE_MAX=1.6, GROW_DAY=.01, GROW_FED=.02, PASSIVE_SEC=GROW_DAY/86400;
 function stage(k){return k.age<.25?'fry':k.age<.6?'young':k.age<1.25?'adult':'elder';}
 function eldF(k){return clamp((k.age-1.25)/.2,0,1);}   // 0..1 ramp into eldership (fins flow in gradually)
+// feeding rank (C.4) — real koi ponds run a size-led pecking order: bigger, older fish
+// dominate the food, with individual boldness as a secondary, PERSONALITY axis (partly
+// genetic — so it's derived from the saved seed, stable for the life of the fish, never
+// re-rolled). 60% size / 40% boldness. A fish that grows up climbs the order naturally.
+function domin(k){const sz=clamp((elen(k)-90)/60,0,1);return clamp(sz*.6+(k.bold??.5)*.4,0,1);}
 
 function makeKoi(variety,x,y,age,seed,parents){
   const v=V[variety]||V.kohaku, len=rand(96,150), sd=seed??(Math.random()*1e4|0);
   const k={variety, V:v, x:x??rand(W*.25,W*.75), y:y??rand(W?H*.25:200,H*.75||400), ang:rand(0,TAU),
     spd:rand(15,26)*(REDUCE?.5:1), len, wd:len*rand(.105,.125), depth:rand(0,1),
-    phase:rand(0,TAU), finph:rand(0,TAU), wig:rand(.85,1.2), turn:0, trail:[],
+    phase:rand(0,TAU), finph:rand(0,TAU), wig:rand(.85,1.2), turn:0, excite:0, gulp:0, trail:[],
     age:age??rand(.35,1), hunger:rand(.2,.6), wellfed:0, wake:[], seed:sd, parents:parents??null};
   k.pattern=buildPattern(v,sd);                 // per-individual markings (no two koi alike)
+  k.bold=(()=>{const x=Math.sin((sd+1)*12.9898)*43758.5453;return x-Math.floor(x);})();  // stable temperament from the seed (0=timid .. 1=bold); persists, never saved separately
   // pre-fill the trail straight behind the fish so it renders full-length from frame one
   // (otherwise a fish "grows" for its first seconds while the trail accumulates)
   const n=Math.ceil(elen(k)*1.25/2)+6;
@@ -1081,6 +1087,7 @@ SKINS.rain={
     drawSchool(pondCtx);drawFrogBelow(pondCtx);
     for(const r of Pond.rocks)drawRock(pondCtx,r);
     for(const k of Pond.koi){const sp=spine(k,18);SKINS.natural.koi(pondCtx,k,sp,lerp(.62,1,1-k.depth));}
+    drawGulps(pondCtx);
     for(const p of Pond.plants)if(!BELOW_TYPES[p.type])SKINS.natural.plant(pondCtx,p);
     drawFrog(pondCtx);drawDragonfly(pondCtx);drawFireflies(pondCtx);
     for(const f of Pond.food){if(f.r<=0)continue;pondCtx.fillStyle='#c39a5e';pondCtx.beginPath();pondCtx.ellipse(f.x,f.y,f.r,f.r*.84,0,0,TAU);pondCtx.fill();}
@@ -1096,6 +1103,16 @@ SKINS.rain={
     for(const r of Pond.ripples)if(r.age<.05&&r.s>1)for(let i=0;i<3;i++)drops.push({x:r.x+rand(-12,12),y:r.y+rand(-12,12),r:rand(3,7),vy:0,trail:rand(.4,1)});}
 };
 
+// the gulp (C.3): a feeding koi works its mouth — the classic top-down "O" cycling
+// open-shut at the nose, with a wet lip ring; fades right after the last pellet.
+// Engine-level (drawn over whichever skin painted the koi), so it reads everywhere.
+function drawGulps(c){for(const k of Pond.koi){const g=k.gulp||0;if(g<=0||k.departing)continue;
+  const fade=Math.min(1,g/.15),o=(.3+.7*(.5+.5*Math.sin(Pond._t*13+k.phase)))*fade;
+  const mr=Math.max(1.1,ewd(k)*.3)*(.5+.5*o),mx=k.x+Math.cos(k.ang)*4,my=k.y+Math.sin(k.ang)*4;
+  c.save();c.translate(mx,my);c.rotate(k.ang);
+  c.fillStyle=`rgba(28,15,9,${.75*fade})`;c.beginPath();c.ellipse(0,0,mr,mr*.8,0,0,TAU);c.fill();
+  c.strokeStyle=`rgba(255,240,214,${.45*o})`;c.lineWidth=1.1;c.beginPath();c.ellipse(0,0,mr+1.5,mr*.8+1.5,0,0,TAU);c.stroke();
+  c.restore();}}
 // ---------- generic fx (ripples + food) for non-rain skins ----------
 function drawFX(c){
   // per-skin ripple styling — metal beads into bright specular mercury; others stay watery
@@ -1109,9 +1126,10 @@ function drawFX(c){
       c.beginPath();c.arc(r.x,r.y,rr+2.4,0,TAU);c.stroke();}}                   // trough = bent light just outside
   c.globalCompositeOperation='source-over';
   for(const f of Pond.food){if(f.r<=0)continue;
-    c.fillStyle='rgba(18,12,6,.28)';c.beginPath();c.ellipse(f.x+.8,f.y+1.1,f.r,f.r*.84,0,0,TAU);c.fill();
-    c.fillStyle=`hsl(${33+(f.hue||0)},44%,57%)`;c.beginPath();c.ellipse(f.x,f.y,f.r,f.r*.84,0,0,TAU);c.fill();
-    c.fillStyle='rgba(255,244,222,.55)';c.beginPath();c.arc(f.x-f.r*.3,f.y-f.r*.32,f.r*.34,0,TAU);c.fill();}
+    const fr=f.r*(1+.07*Math.sin(Pond._t*3.2+(f.bob||0)));          // surface bob — pellets breathe, not freeze
+    c.fillStyle='rgba(18,12,6,.28)';c.beginPath();c.ellipse(f.x+.8,f.y+1.1,fr,fr*.84,0,0,TAU);c.fill();
+    c.fillStyle=`hsl(${33+(f.hue||0)},44%,57%)`;c.beginPath();c.ellipse(f.x,f.y,fr,fr*.84,0,0,TAU);c.fill();
+    c.fillStyle='rgba(255,244,222,.55)';c.beginPath();c.arc(f.x-fr*.3,f.y-fr*.32,fr*.34,0,TAU);c.fill();}
   // ripple rings break into foam at rock rims (cheap arc highlight, not wave physics)
   for(const r of Pond.ripples){const p2=r.age/r.life;if(p2>=1)continue;
     for(const rk of Pond.rocks){const d=Math.hypot(rk.x-r.x,rk.y-r.y),rr=rockR(rk);
@@ -1151,8 +1169,19 @@ function updateKoi(k,dt){
     for(const w of k.wake)w.age+=dt;while(k.wake.length&&k.wake[k.wake.length-1].age>1.5)k.wake.pop();
     k.phase+=dt*7*k.wig;k.finph+=dt*6;return;}
   k.turn+=(Math.sin(Pond._t*.4+k.phase)*.6+rand(-.4,.4))*dt;k.turn=clamp(k.turn,-1.2,1.2);let desired=k.turn;
-  let bf=null,bd=1e9;for(const f of Pond.food){const d=(f.x-k.x)**2+(f.y-k.y)**2;if(d<bd){bd=d;bf=f;}}
-  if(bf&&bd<280*280){const a=Math.atan2(bf.y-k.y,bf.x-k.x);let da=((a-k.ang+Math.PI*3)%TAU)-Math.PI;desired+=clamp(da,-2,2)*1.6;}
+  // the feeding frenzy (C.3): the splash excites the pond — excited koi sense food from
+  // across the water and steer hard for it; calm koi keep the old modest 280px radius
+  const ex=k.excite||0;
+  // nearest UNCLAIMED pellet: skip food already in a rival's mouth so the crowd
+  // spreads across pellets instead of stacking on one (fall back to any if all claimed)
+  let bf=null,bd=1e9,af=null,ad=1e9;
+  for(const f of Pond.food){const d=(f.x-k.x)**2+(f.y-k.y)**2;
+    if(d<ad){ad=d;af=f;}
+    if(f.eater&&f.eater!==k&&(f.eater.gulp||0)>0)continue;
+    if(d<bd){bd=d;bf=f;}}
+  if(!bf){bf=af;bd=ad;}
+  const sense=280+430*ex;if(bf&&bd>sense*sense)bf=null;
+  if(bf){const a=Math.atan2(bf.y-k.y,bf.x-k.x);let da=((a-k.ang+Math.PI*3)%TAU)-Math.PI;desired+=clamp(da,-2,2)*(1.6+1.7*ex);}
   for(const r of Pond.ripples)if(r.s>1&&r.age<.5){const dx=k.x-r.x,dy=k.y-r.y,d=Math.hypot(dx,dy);if(d<150){const a=Math.atan2(dy,dx);let da=((a-k.ang+Math.PI*3)%TAU)-Math.PI;desired+=da*(1-d/150)*1.3;}}
   for(const r of Pond.rocks){const dx=k.x-r.x,dy=k.y-r.y,d=Math.hypot(dx,dy),rr=rockR(r)+34;   // koi steer around stone
     if(d<rr){const a=Math.atan2(dy,dx);let da=((a-k.ang+Math.PI*3)%TAU)-Math.PI;desired+=da*(1-d/rr)*1.6;}}
@@ -1165,11 +1194,53 @@ function updateKoi(k,dt){
   if(k.x<m||k.x>W-m||k.y<m||k.y>H-m){let da=((toC-k.ang+Math.PI*3)%TAU)-Math.PI;desired+=da*1.2;}
   // min turn radius ~ half a body length: turn rate scales with speed, so a slow fish
   // sweeps a graceful arc instead of pivoting in place (the "curled into a ball" bug)
-  const wmax=Math.max(.45,Math.min(2.4,(k.spd*(bf?1.5:1))/(elen(k)*.55)));
+  // frenzy surge: up to ~2.5x toward the splash, braking in the last stretch so the
+  // crowd gathers AT the food instead of overshooting through it. Dominant fish press
+  // HARDER (they reach the food first and take the first bites)
+  const dm=domin(k);
+  // brake into the food: ease off at 40px, and nearly stop in the last ~18px so a fish
+  // SETTLES onto the pellet to mouth it instead of torpedoing through (an overshooting
+  // fast fish was letting nimbler small ones camp the food — real koi decelerate hard)
+  const brake=bd<18*18?.22:(bd<40*40?.6:1);
+  const rush=bf?(1.3+(1.0+.7*dm)*ex*(REDUCE?.6:1))*brake*(k.wellfed>1?.85:1):1;
+  // excited fish are also allowed a sharper turn-in (floor rises with excitement —
+  // still bounded well above the ball-curl regime; the spine curvature clamp holds regardless)
+  const wmax=Math.max(.45+.55*ex,Math.min(2.4,(k.spd*rush)/(elen(k)*.55)));
   k.ang+=clamp(desired,-wmax,wmax)*dt*.9;
-  const eat=bf&&bd<160*160?1.5:1, eld=1-.28*eldF(k);              // elders drift slower, statelier
-  k.x+=Math.cos(k.ang)*k.spd*eat*eld*dt;k.y+=Math.sin(k.ang)*k.spd*eat*eld*dt;
-  if(bf&&bd<13*13){bf.r-=dt*7;k.hunger=Math.max(0,k.hunger-dt*.5);k.wellfed=4;k.age=Math.min(AGE_MAX,k.age+dt*GROW_FED);}
+  // elders drift slower and statelier WHEN CALM — but the biggest, oldest koi are a
+  // pond's most aggressive feeders, so excitement lifts the elder brake: they lead the charge
+  const eld=1-.28*eldF(k)*(1-Math.min(1,ex*1.3));
+  k.x+=Math.cos(k.ang)*k.spd*rush*eld*dt;k.y+=Math.sin(k.ang)*k.spd*rush*eld*dt;
+  // shoulder-to-shoulder at the food — the crowd jostles and churns the surface. The
+  // shove is ASYMMETRIC by rank: the subordinate yields, the dominant holds its spot
+  // (a dominant fish pushes smaller ones aside; nobody is trapped — everyone still eats)
+  if(bf&&bd<70*70){for(const o of Pond.koi){if(o===k||o.departing)continue;
+    const ddx=k.x-o.x,ddy=k.y-o.y,d2=ddx*ddx+ddy*ddy;
+    if(d2<676&&d2>.01){const d=Math.sqrt(d2),push=(26-d)/26*30*dt;
+      const yield_=clamp(.5+(domin(o)-dm)*.9,.12,.92);            // k yields more the more o outranks it
+      k.x+=ddx/d*push*yield_;k.y+=ddy/d*push*yield_;
+      if(Math.random()<dt*1.2)Pond.ripples.push({x:(k.x+o.x)/2,y:(k.y+o.y)/2,r:2,max:24,age:0,life:.6,s:.8});}}}
+  // eating is VISIBLE: the pellet is claimed, drawn into the working mouth, and gulped —
+  // the final slurp pops a small ring other koi rush to (fish follow fish at a feeding).
+  // handling time: a fish finishes its gulp AND a short chew (wellfed fresh off 4)
+  // before claiming the NEXT pellet, so one quick fish can't hoover the whole throw —
+  // the crowd shares, like a real pond.
+  // a dominant fish can snatch a barely-touched pellet from a lesser one (it takes the
+  // first bite) — only at the very start of the bite, and handling time still forces gaps
+  // so the timid always get their turn on the next pellet (the pond stays kind, no starving)
+  const canTake=bf&&(!bf.eater||bf.eater===k||(bf.eater.gulp||0)<=0||(bf.r>1.6&&dm>domin(bf.eater)+.12));
+  if(bf&&bd<17*17&&(bf.eater===k||((k.gulp||0)<.2&&k.wellfed<3.5))&&canTake){bf.eater=k;
+    const pl=Math.min(1,dt*10),mx2=k.x+Math.cos(k.ang)*5,my2=k.y+Math.sin(k.ang)*5;
+    bf.x+=(mx2-bf.x)*pl;bf.y+=(my2-bf.y)*pl;bf.r-=dt*14;
+    k.gulp=.45;k.hunger=Math.max(0,k.hunger-dt*.5);k.wellfed=4;k.age=Math.min(AGE_MAX,k.age+dt*GROW_FED);
+    if(bf.r<=0){Pond.ripples.push({x:bf.x,y:bf.y,r:2,max:30,age:0,life:.8,s:1.05});
+      Pond.sparkles.push({x:bf.x,y:bf.y,age:0,life:.5,mag:.9});}}
+  else if(bf&&bd<52*52&&Math.random()<dt*1.6)k.gulp=Math.max(k.gulp||0,.3);   // gasping at the surface in the crowd
+  // while a pellet is in sight the frenzy HOLDS (a working floor) — real koi don't lose
+  // interest mid-rush; the moment the water is empty, calm returns within a couple seconds
+  k.excite=Math.max(0,ex-dt*(Pond.food.length?.09:.5));
+  if(bf)k.excite=Math.max(k.excite,.45);
+  k.gulp=Math.max(0,(k.gulp||0)-dt);
   k.age=Math.min(AGE_MAX,k.age+dt*PASSIVE_SEC);                    // blended growth: time counts too (idle sim covers away time)
   k.hunger=Math.min(1,k.hunger+dt*.012);k.wellfed=Math.max(0,k.wellfed-dt);
   trailPush(k);
@@ -1185,8 +1256,15 @@ function thriving(){let f=0;for(const k of Pond.koi)f+=k.wellfed>0?1:.3;f/=Math.
   let pg=0;for(const p of Pond.plants)pg+=p.grow;pg/=Math.max(1,Pond.plants.length);return clamp(f*.7+pg*.3,0,1);}
 function feed(x,y){const n=6+(Math.random()*4|0);
   for(let i=0;i<n;i++){const a=Math.random()*TAU,d=Math.random()*24;
-    Pond.food.push({x:x+Math.cos(a)*d,y:y+Math.sin(a)*d,r:rand(2.2,3.2),life:rand(12,16),hue:rand(-12,12)});}
-  Pond.ripples.push({x,y,r:3,max:120,age:0,life:2,s:1.4});Pond.lastStir=Pond._t;}
+    Pond.food.push({x:x+Math.cos(a)*d,y:y+Math.sin(a)*d,r:rand(2.2,3.2),life:rand(18,24),hue:rand(-12,12),bob:rand(0,TAU)});}
+  Pond.ripples.push({x,y,r:3,max:120,age:0,life:2,s:1.4});Pond.lastStir=Pond._t;
+  // the SPLASH is felt pond-wide (C.3): every koi surges toward it like a real feeding —
+  // nearer and hungrier fish harder; excitement sustains while food remains, then settles
+  for(const k of Pond.koi){if(k.departing)continue;
+    const d=Math.hypot(k.x-x,k.y-y),base=clamp(1.1-d/1000,.4,1)*(.5+.5*Math.min(1,k.hunger*1.8));
+    // dominant/bold fish react harder and go first; the timid still stir (floor .4 keeps
+    // it pond-wide) but hang back a beat for the leftovers, exactly as in a real pond
+    k.excite=Math.max(k.excite||0,.4,base*(.72+.5*domin(k)));}}
 
 function step(dt){Pond._t+=dt;
   if(drag){const p=drag.plant||drag.rock,heavy=!!drag.rock,r=Math.min(1,dt*(heavy?.9:3.5)),ox=p.x,oy=p.y;   // stone drags HEAVY; flora glides
@@ -1201,7 +1279,9 @@ function step(dt){Pond._t+=dt;
   for(const r of Pond.ripples){r.age+=dt;r.r=lerp(r.r,r.max,1-Math.pow(.001,dt));}
   for(let i=Pond.ripples.length-1;i>=0;i--)if(Pond.ripples[i].age>Pond.ripples[i].life)Pond.ripples.splice(i,1);
   if(Pond.ripples.length>40) Pond.ripples.splice(0,Pond.ripples.length-40);
-  for(const f of Pond.food)f.life-=dt;for(let i=Pond.food.length-1;i>=0;i--)if(Pond.food[i].life<=0||Pond.food[i].r<=0)Pond.food.splice(i,1);
+  for(const f of Pond.food){f.life-=dt;                             // pellets bob on the surface until claimed
+    if(!f.eater){f.x+=Math.sin(Pond._t*.9+(f.bob||0))*1.4*dt;f.y+=Math.cos(Pond._t*.7+(f.bob||0)*1.3)*1.2*dt;}}
+  for(let i=Pond.food.length-1;i>=0;i--)if(Pond.food[i].life<=0||Pond.food[i].r<=0)Pond.food.splice(i,1);
   const th=thriving();
   for(const p of Pond.plants){p.grow=Math.min(1,p.grow+dt*.02*(.4+th));
     if((p.type==='lotus'||p.type==='iris')&&p.grow>.9)p.bloom=Math.min(1,p.bloom+dt*.05*(.4+th));
@@ -1284,6 +1364,7 @@ function render(t){
       for(const r of Pond.rocks)drawRock(ctx,r);                     // hardscape sits in the water, under the fish
       const ks=Pond.koi.slice().sort((a,b)=>b.depth-a.depth);
       for(const k of ks){const sp=spine(k,18);S.koi(ctx,k,sp,lerp(.6,1,1-k.depth));}
+      drawGulps(ctx);                                                // feeding mouths, over any skin's koi
       for(const p of Pond.plants)if(!BELOW_TYPES[p.type])PL(ctx,p);  // ON plane (floating + emergent flora)
       drawFrog(ctx);                                                 // the mayor sits ON his pad
       drawFX(ctx);(S.overlay||(()=>{}))(ctx,t);drawSparkles(ctx);
@@ -1403,7 +1484,7 @@ kcSwim.addEventListener('click',()=>{if(!sel)return;
 function devWarp(days){Pond.eco.lastSeen=Date.now()-days*864e5;idleReturn(true);persist();}
 let devFps=null;
 if(DEV){const dtr=document.getElementById('devtray');dtr.style.display='flex';
-  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.3.2 · … fps';dtr.appendChild(devFps);
+  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.4.1 · … fps';dtr.appendChild(devFps);
   const acts=[['+1d',()=>devWarp(1)],['+7d',()=>devWarp(7)],['+30d',()=>devWarp(30)],
     ['+200❀',()=>{Pond.econ.serenity+=200;}],
     ['mature flora',()=>{for(const p of Pond.plants){p.grow=1;if(p.type==='lotus'||p.type==='iris'||p.type==='pad')p.bloom=1;}for(const r of Pond.rocks)r.grow=1;persist();}],
@@ -1479,7 +1560,7 @@ function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;retu
   if(_adT>=5){const f=_adN/_adT;_adN=0;_adT=0;
     if(f<22&&_shed<2){_shed++;DPR_CAP=_shed===1?1.5:1;WS=_shed===1?.45:.4;resize();
       try{localStorage.setItem('koipond_q',String(_shed));}catch(e){}}}
-  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.3.2 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
+  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.4.1 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
   saveT+=dt;if(saveT>5){saveT=0;persist();}}
 addEventListener('beforeunload',persist);
 
