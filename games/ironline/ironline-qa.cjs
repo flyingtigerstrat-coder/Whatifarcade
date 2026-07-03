@@ -11,11 +11,11 @@ global.document={getElementById:()=>anyElCache,querySelector:()=>anyElCache,quer
 global.Image=class{set src(v){}};
 global.requestAnimationFrame=()=>{};
 const script=fs.readFileSync(__dirname+'/battle-train-hd.html','utf8').match(/<script>([\s\S]*)<\/script>/)[1]
- +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet,theOverrun,springLeak,stokerRank,closeChoice};';
+ +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet,theOverrun,springLeak,stokerRank,closeChoice,openDepot};';
 eval(script);
 (async()=>{
 await new Promise(r=>setTimeout(r,20)); // let the async boot IIFE settle
-const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet,theOverrun,springLeak,stokerRank,closeChoice}=globalThis.__T;
+const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet,theOverrun,springLeak,stokerRank,closeChoice,openDepot}=globalThis.__T;
 let t=0,fails=0;const maxHullSafe=()=>60+S.engine*30;const step=n=>{for(let i=0;i<n;i++){t+=16;tick(t)}};
 const ok=(name,cond)=>{console.log((cond?'PASS':'FAIL')+'  '+name);if(!cond)fails++};
 
@@ -29,6 +29,7 @@ ok('docked: lamps lit', S.lampK===1);
 // v1.6 wave 0 · fresh boots field the trimmed consist + the basic prow
 ok('boot: trimmed consist (oil + gun + empty), farm out of standard issue', S.slots[0].type==='oil'&&S.slots[1].type==='gun'&&S.slots[2]===null);
 ok('boot: the basic prow rides the bow', S.prow&&S.prow.lvl===1&&S.prow.fit==='ram');
+ok('boot: the gun car ships with BOTH ladders (turret + ports)', S.slots[1].lvl===1&&S.slots[1].plvl===1);
 
 // 2 · departure: spin-up, station slides west & clears, steady cruise
 S.fuel=99;S.mode='run';S.jt=0;S.dur=9999;S.waves=[9999];S.wi=0;S.boss=null;S.ptrain=null;S.ptrainAt=-1;S.crateAt=-1;
@@ -358,6 +359,18 @@ S.leak=null;
 S.farlight=1;S.origin=false;S.stop=null;S.mode='idle';S.depot=null;await save();S.farlight=0;await load();
 ok('far light: the permanent choice round-trips', S.farlight===1);
 S.farlight=0;
+
+// ===== HOME IS A FULL STATION (QA pass 16) =====
+// 54 · docked at the origin, the depot lights around the STANDING rig — no re-staged arrival
+S.nav={seed:7,reg:0,col:0,row:0};S.place=null;S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.mode='idle';S.choice=null;
+openDepot('THE RAILHEAD');
+ok('home: the depot lights around the standing rig', S.mode==='depot'&&S.stop.ph==='docked'&&S.depot&&S.depot.name==='THE RAILHEAD');
+ok('home: the Railhead teaches the trade (yard + market)', S.depot.pers.includes('yard')&&S.depot.pers.includes('market'));
+// 55 · the loop home: opening the depot at (0,0,0) mid-journey stages the TRUE Railhead, never a composed settlement
+S.origin=false;S.stop=null;S.place=null;S.mode='idle';S.stationX=null;
+openDepot('THE RAILHEAD');
+ok('loop home: the TRUE Railhead stages (a vis arrival raises the origin)', S.origin===true&&S.stop&&S.stop.ph==='arriving'&&S.stop.vis===true&&S.place===null);
+S.stop=null;S.origin=false;S.depot=null;
 
 // 21 · the ledger survives a save
 S.cargo={ore:3,relic:1};S.contracts=[{k:'haul',g:'grain',n:2,reg:1,src:'0:1:0',pay:60}];S.pax=[{special:true,nm:'X',fare:99,legs:2}];
