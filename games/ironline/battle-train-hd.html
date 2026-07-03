@@ -38,15 +38,19 @@ canvas{width:100%;display:block;image-rendering:pixelated;background:#d9a05e}
 .routecard{display:flex;align-items:center;gap:8px;width:100%;min-height:46px;margin-bottom:6px;background:#241c14;border:2px solid #57432f;border-bottom-width:4px;color:#cdb894;font:inherit;font-size:17px;padding:4px 10px;text-align:left;cursor:pointer}
 .routecard:active{border-bottom-width:2px;transform:translateY(1px)}
 .routecard .rg{font-size:19px;color:#c98f4a;width:22px;text-align:center;flex:0 0 auto}
-.routecard .rn{color:#efe3cc}
+.routecard .rn{color:#efe3cc;flex:0 0 auto;max-width:46%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.routecard .rt{min-width:0}
 .routecard .rt{flex:1;text-align:right;font-size:14px;color:#8a7a64}
 .routecard.sel{border-color:#e0a33a;background:#2c2014;box-shadow:0 0 0 1px #8a5a1a inset}
 .routecard.sel .rg{color:#f2c560}
 .routecard.sel .rt{color:#cdb894}
-#chips{position:absolute;left:0;right:0;bottom:6px;z-index:12;display:none;pointer-events:none;height:0}
-#chips .chip{position:absolute;bottom:0;transform:translateX(-50%);pointer-events:auto;font:inherit;font-size:14px;letter-spacing:1px;color:#efe3cc;background:rgba(28,20,12,0.88);border:2px solid #8a5a1a;border-bottom-width:3px;padding:3px 9px;white-space:nowrap;text-transform:uppercase}
+#chips{position:absolute;inset:0;z-index:12;display:none;pointer-events:none}
+#chips .chip{position:absolute;transform:translateX(-50%);pointer-events:auto;font:inherit;font-size:14px;letter-spacing:1px;color:#efe3cc;background:rgba(28,20,12,0.88);border:2px solid #8a5a1a;border-bottom-width:3px;padding:3px 9px;white-space:nowrap;text-transform:uppercase}
 #chips .chip:active{transform:translateX(-50%) translateY(1px)}
 #chips .chip .cg{color:#f2c560;margin-right:4px}
+#chips .chip.sign{background:rgba(34,24,14,0.92);border-color:#5f4d38;border-top-color:#8a5a1a;box-shadow:0 3px 8px rgba(0,0,0,0.45)}
+#chips .chip.sign::after{content:'';position:absolute;left:50%;top:100%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#8a5a1a}
+#chips .chip.plat{border-color:#6b4a2e}
 #depot{display:none;position:absolute;z-index:40;left:0;right:0;bottom:0;top:auto;max-height:62dvh;overflow-y:auto;background:rgba(18,14,10,0.97);border-top:3px solid #8a5a1a;padding:10px 12px 12px;box-shadow:0 -8px 26px rgba(0,0,0,0.55);scrollbar-width:thin;scrollbar-color:#6b4a2e #1a1410}
 #depot.show{display:block;animation:sheetup 0.22s ease}
 @keyframes sheetup{from{transform:translateY(26px);opacity:0.3}to{transform:none;opacity:1}}
@@ -173,8 +177,13 @@ button{font-family:'VT323',monospace;cursor:pointer;border:none}
 /* top-center route header (travel info + biome, all in one place) */
 #app.land #content{position:absolute;top:8px;left:50%;right:auto;transform:translateX(-50%);bottom:auto;width:auto;max-width:54%;z-index:6;max-height:none;overflow:visible;padding:3px 16px 4px;text-align:center;background:rgba(8,6,4,0.46);border:0;border-radius:0 0 6px 6px}
 #app.land #nextdepot{margin:0;font-size:17px;color:#cdb894}
+#app.land .routecard{min-height:32px;font-size:14px;padding:2px 8px;margin-bottom:4px}
+#app.land .routecard .rt br{display:none}
+#app.land .routecard .rt .rfuel{margin-left:8px}
+#app.land #nextdepot .rbhd{font-size:12px;margin-bottom:4px}
+#app.land #nextdepot .rbkm{font-size:12px;margin:1px 0 2px}
 #app.land #travelstatus{font-size:14px;color:#9fd8d8;letter-spacing:1px}
-#app.land #ticker{position:absolute;top:64px;bottom:auto;left:50%;transform:translateX(-50%);z-index:5;max-width:74%;background:rgba(8,6,4,0.78);border:0;border-radius:4px;padding:4px 16px;min-height:0;justify-content:center;text-align:center;font-size:17px}
+#app.land #ticker{position:absolute;top:150px;bottom:auto;left:50%;transform:translateX(-50%);z-index:5;max-width:74%;background:rgba(8,6,4,0.78);border:0;border-radius:4px;padding:4px 16px;min-height:0;justify-content:center;text-align:center;font-size:17px}
 /* heavy views / depot: slide-up tray from the bottom (overrides the top header) */
 #app.land.vopen #content{top:auto;left:0;right:0;transform:none;bottom:48px;width:auto;max-width:none;max-height:62%;overflow-y:auto;background:rgba(12,9,6,0.96);border:0;border-top:3px solid #2a221b;border-radius:0;padding:12px 168px 12px 16px;text-align:left}
 #app.land.vopen #ticker{opacity:0}
@@ -263,10 +272,10 @@ function blitSprite(name,x,y,scale,flip){const s=SPRITES[name];if(!s||!s.ready)r
 loadSprite('fortress',100,50,'data:image/png;base64,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');
 const KEY='battle-train-save';
 const S={scrap:120,food:20,fuel:30,heroes:[],crewSel:-1,journeys:0,engine:1,caboose:1,maxSlots:3,
-slots:[{type:'oil',lvl:1},{type:'gun',wpn:'cannon',port:'auto',lvl:1},null],
+slots:[{type:'oil',lvl:1},{type:'gun',wpn:'cannon',port:'auto',lvl:1,plvl:1},null],
 mode:'idle',jt:0,dur:14,waves:[],wi:0,hull:0,off:0,flash:0,raiders:[],smoke:[],booms:[],tracers:[],smT:0,saveT:0,resetArm:0,T:0,dt:0.016,ex:216,stackX:286,pan:0,maxPan:0,panHintT:0,tw:{x:360,r:0},turr:{},boss:null,crate:null,crateAt:-1,lastRegion:-1,lastWx:-1,ptrain:null,ptrainAt:-1,ptrainKind:'trader',ptrainElite:false,dist:0,depot:null,discount:false,view:'travel',logHist:[],layout:'',layoutManual:false,immersive:false,engineSkin:null,fortressUnlocked:false,origin:false,stationX:null,stop:null,lampK:1,
 nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null,cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0},linebroken:false,prow:{lvl:1,fit:'ram'},leak:null,crippled:[],prizes:[],place:null,fam:{},depotView:null,farlight:0};
-const gun=()=>S.slots.reduce((a,s)=>a+(s&&!s.crip&&s.type=='gun'?s.lvl*wpow(s.wpn||'cannon',s.port||'auto'):0),0)*crewBuffs().gunMult;
+const gun=()=>S.slots.reduce((a,s)=>a+(s&&!s.crip&&s.type=='gun'?s.lvl*(TOPW[s.wpn||'cannon']?TOPW[s.wpn||'cannon'].pow:5)+(s.plvl||s.lvl)*(PORTW[s.port||'auto']?PORTW[s.port||'auto'].pow:4):0),0)*crewBuffs().gunMult;
 const troops=()=>S.slots.reduce((a,s)=>a+(s&&!s.crip&&s.type=='troop'?s.lvl*4:0),0);
 const farm=()=>S.slots.reduce((a,s)=>a+(s&&!s.crip&&s.type=='farm'?s.lvl*0.5:0),0)*crewBuffs().foodMult;
 const repairRate=()=>S.slots.reduce((a,s)=>a+(s&&!s.crip&&s.type=='repair'?s.lvl*3:0),0);
@@ -295,7 +304,7 @@ const PORTW={auto:{nm:'Autocannon',pow:4,dt:'kinetic',c:'#cdb894'},flak:{nm:'Fla
 const TOPKEYS=Object.keys(TOPW),PORTKEYS=Object.keys(PORTW);
 const wpow=(top,port)=>(TOPW[top]?TOPW[top].pow:5)+(PORTW[port]?PORTW[port].pow:0);
 /* ---- WAVE 3: damage types go LIVE — armor classes make the refit choice matter ---- */
-const dtMix=()=>{const m={kinetic:0,blast:0,fire:0};for(const s of S.slots){if(s&&!s.crip&&s.type=='gun'){m[TOPW[s.wpn||'cannon'].dt]+=s.lvl*TOPW[s.wpn||'cannon'].pow;m[PORTW[s.port||'auto'].dt]+=s.lvl*PORTW[s.port||'auto'].pow}}const g=crewBuffs().gunMult;for(const k in m)m[k]*=g;return m};
+const dtMix=()=>{const m={kinetic:0,blast:0,fire:0};for(const s of S.slots){if(s&&!s.crip&&s.type=='gun'){m[TOPW[s.wpn||'cannon'].dt]+=s.lvl*TOPW[s.wpn||'cannon'].pow;m[PORTW[s.port||'auto'].dt]+=(s.plvl||s.lvl)*PORTW[s.port||'auto'].pow}}const g=crewBuffs().gunMult;for(const k in m)m[k]*=g;return m};
 const AC={light:{kinetic:1,blast:1,fire:1.3},armored:{kinetic:0.7,blast:1.5,fire:0.8},swarm:{kinetic:0.8,blast:0.9,fire:1.6}}; // resist sparks · weakness blooms
 const ACNM={light:'light raiders',armored:'armored plate',swarm:'a bike swarm'};
 function gunVs(cl){const m=dtMix(),a=AC[cl]||AC.light;return m.kinetic*a.kinetic+m.blast*a.blast+m.fire*a.fire}
@@ -388,7 +397,7 @@ function crewBuffs(){
 }
 const crewCount=()=>S.slots.reduce((a,s)=>a+(s?1:0),0);
 const crewRankCost=r=>Math.round(50*Math.pow(2.1,r));      // scrap to train a crew rank r\u2192r+1
-function hurt(raw){const cb=crewBuffs();const d=raw*cb.hullDmgMult;S.hull-=d;const fl=maxHull()*cb.hullFloor;if(fl>0&&S.hull<fl)S.hull=fl;return Math.round(d)}
+function hurt(raw){const cb=crewBuffs();const d=raw*cb.hullDmgMult*(S.prow&&S.prow.fit=='shield'?1-Math.min(0.12,S.prow.lvl*0.02):1);S.hull-=d;const fl=maxHull()*cb.hullFloor;if(fl>0&&S.hull<fl)S.hull=fl;return Math.round(d)}
 // ---- HEROES: special crew recruited from victories, kept on a bench, assignable to any car ----
 // ---- HEROES: two rosters — Spoils of War (boss) & Wanderers (friendly) ----
 function ownedHero(kind){for(const h of S.heroes)if(h.kind==kind)return h;for(const s of S.slots)if(s&&s.hero&&s.hero.kind==kind)return s.hero;return null}
@@ -456,6 +465,7 @@ function migrate(d){
  }
  if(d.v==6){                                // v6 -> v7: THE OCEAN — bow fitting, tank integrity, wound & prize ledgers. The caboose converts 1:1 into the Rearguard.
   d.prow={lvl:1,fit:'ram'};d.leak=null;d.crippled=[];d.prizes=[];d.fam={};d.farlight=0;
+  if(Array.isArray(d.slots))d.slots.forEach(s=>{if(s&&s.type=='gun'&&s.plvl==null)s.plvl=s.lvl});
   d.v=7;
  }
  // future steps append here, in order: if(d.v==7){ ... d.v=8 }
@@ -478,7 +488,7 @@ const r=await window.storage.get(KEY);
 if(r&&r.value){
 const d=migrate(JSON.parse(r.value));
 if(!d)return false;
-S.scrap=d.scrap;S.food=d.food;S.fuel=(d.fuel!=null?d.fuel:30);S.heroes=Array.isArray(d.heroes)?d.heroes:[];S.crewSel=-1;S.journeys=d.journeys;S.engine=d.engine;S.caboose=d.caboose;S.maxSlots=d.maxSlots;S.slots=d.slots;S.slots.forEach(s=>{if(s&&s.type=='gun'){if(!s.wpn)s.wpn='cannon';if(!s.port)s.port='auto'}crewOf(s)});S.hull=Math.min(d.hull,maxHull());S.dist=d.dist||0;S.discount=!!d.discount;S.layout=d.layout||'';S.layoutManual=!!d.layoutManual;S.engineSkin=d.engineSkin||null;S.fortressUnlocked=!!d.fortressUnlocked;
+S.scrap=d.scrap;S.food=d.food;S.fuel=(d.fuel!=null?d.fuel:30);S.heroes=Array.isArray(d.heroes)?d.heroes:[];S.crewSel=-1;S.journeys=d.journeys;S.engine=d.engine;S.caboose=d.caboose;S.maxSlots=d.maxSlots;S.slots=d.slots;S.slots.forEach(s=>{if(s&&s.type=='gun'){if(!s.wpn)s.wpn='cannon';if(!s.port)s.port='auto';if(s.plvl==null)s.plvl=s.lvl}crewOf(s)});S.hull=Math.min(d.hull,maxHull());S.dist=d.dist||0;S.discount=!!d.discount;S.layout=d.layout||'';S.layoutManual=!!d.layoutManual;S.engineSkin=d.engineSkin||null;S.fortressUnlocked=!!d.fortressUnlocked;
 if(d.nav&&typeof d.nav=='object')S.nav={seed:(d.nav.seed|0)||1,reg:Math.max(0,Math.min(REGIONS.length-1,d.nav.reg|0)),col:d.nav.col|0,row:d.nav.row|0};
 else S.nav={seed:1,reg:0,col:0,row:0};                                                           // defensive: a future save without nav still boots ON the map
 S.visited=Array.isArray(d.visited)&&d.visited.length?d.visited.slice():[navVK(S.nav.reg,S.nav.col,S.nav.row)];
@@ -493,7 +503,7 @@ return true}
 }catch(e){}
 return false;
 }
-function statLine(s){if(s.type=='gun')return TOPW[s.wpn||'cannon'].nm+' + '+PORTW[s.port||'auto'].nm+' · pow '+Math.round(s.lvl*wpow(s.wpn||'cannon',s.port||'auto'));if(s.type=='farm')return '+'+(s.lvl*0.5).toFixed(1)+' food/s';if(s.type=='oil')return '+'+(s.lvl*0.4).toFixed(1)+' fuel/s';if(s.type=='repair')return '+'+(s.lvl*3)+' hull/s in combat';if(s.type=='cargo')return (2+s.lvl*2)+' cargo holds · trade the spread';if(s.type=='pass')return (1+s.lvl)+' coach seats · fares on arrival';return s.lvl*4+' troops · escort'}
+function statLine(s){if(s.type=='gun')return TOPW[s.wpn||'cannon'].nm+' LV'+s.lvl+' + '+PORTW[s.port||'auto'].nm+' LV'+(s.plvl||1)+' · pow '+Math.round(s.lvl*TOPW[s.wpn||'cannon'].pow+(s.plvl||1)*PORTW[s.port||'auto'].pow);if(s.type=='farm')return '+'+(s.lvl*0.5).toFixed(1)+' food/s';if(s.type=='oil')return '+'+(s.lvl*0.4).toFixed(1)+' fuel/s';if(s.type=='repair')return '+'+(s.lvl*3)+' hull/s in combat';if(s.type=='cargo')return (2+s.lvl*2)+' cargo holds · trade the spread';if(s.type=='pass')return (1+s.lvl)+' coach seats · fares on arrival';return s.lvl*4+' troops · escort'}
 function pip(c){return '<span class="pip" style="background:'+c+'"></span>'}
 function tierMk(l){const t=vtier(l);return '<span style="color:#e0a33a;letter-spacing:1px">'+('★'.repeat(t+1))+'</span>'}
 function renderCrew(){
@@ -533,7 +543,7 @@ let h='<div class="card"><div class="hd"><span class="nm">'+pip('#e0a33a')+'Engi
 +'<div class="sub" style="margin-top:6px">\u2693 THE PROW · '+pf.nm+' LV '+S.prow.lvl+' · \u2212'+Math.round(prowMit(pf.classes[0])*100)+'% vs '+pf.classes.join('/')+'<br><i>the ocean always keeps its cut — broadsides, bait, sabotage and surges bypass it</i></div>'
 +'<div class="wsel"><button class="wcyc" data-act="prowFit" '+(S.scrap<PROW_REFIT?'disabled':'')+'>\u27f3 '+pfo.nm+' · '+PROW_REFIT+'</button><button class="wcyc" data-act="prowUp" '+(S.scrap<prowC()?'disabled':'')+'>Reinforce · '+prowC()+'</button></div></div>';
 S.slots.forEach((s,i)=>{
-if(s){h+='<div class="card"><div class="hd"><span class="nm">'+pip(s.type=='gun'?WP[s.wpn||'cannon']:PIP[s.type])+(s.type=='gun'?WN[s.wpn||'cannon']:NM[s.type])+'</span><span class="lv">LV '+s.lvl+' '+tierMk(s.lvl)+'</span></div><div class="sub">'+statLine(s)+'</div>'+(s.type=='gun'?'<div class="wsel"><button class="wcyc" data-act="cycTop" data-i="'+i+'" '+(S.scrap<REFIT?'disabled':'')+'>⟳ '+TOPW[nextTop(s.wpn||'cannon')].nm+' · '+REFIT+'</button><button class="wcyc" data-act="cycPort" data-i="'+i+'" '+(S.scrap<REFIT?'disabled':'')+'>⟳ '+PORTW[nextPort(s.port||'auto')].nm+' · '+REFIT+'</button></div>':'')+'<button class="up" data-act="up" data-i="'+i+'" '+(S.scrap<upC(s.lvl)?'disabled':'')+'>Upgrade · '+upC(s.lvl)+' scrap</button></div>'}
+if(s){h+='<div class="card"><div class="hd"><span class="nm">'+pip(s.type=='gun'?WP[s.wpn||'cannon']:PIP[s.type])+(s.type=='gun'?WN[s.wpn||'cannon']:NM[s.type])+'</span><span class="lv">LV '+s.lvl+' '+tierMk(s.lvl)+'</span></div><div class="sub">'+statLine(s)+'</div>'+(s.type=='gun'?'<div class="wsel"><button class="wcyc" data-act="cycTop" data-i="'+i+'" '+(S.scrap<REFIT?'disabled':'')+'>⟳ '+TOPW[nextTop(s.wpn||'cannon')].nm+' · '+REFIT+'</button><button class="wcyc" data-act="cycPort" data-i="'+i+'" '+(S.scrap<REFIT?'disabled':'')+'>⟳ '+PORTW[nextPort(s.port||'auto')].nm+' · '+REFIT+'</button></div><div class="wsel"><button class="wcyc" data-act="up" data-i="'+i+'" '+(S.scrap<upC(s.lvl)?'disabled':'')+'>\u25b2 Turret LV'+(s.lvl+1)+' · '+upC(s.lvl)+'</button><button class="wcyc" data-act="upPort" data-i="'+i+'" '+(S.scrap<upC(s.plvl||1)?'disabled':'')+'>\u25b2 Ports LV'+((s.plvl||1)+1)+' · '+upC(s.plvl||1)+'</button></div>':'<button class="up" data-act="up" data-i="'+i+'" '+(S.scrap<upC(s.lvl)?'disabled':'')+'>Upgrade · '+upC(s.lvl)+' scrap</button>')+'</div>'}
 else{const cant=(S.scrap<NEWCAR||S.food<carFoodC())?'disabled':'';
 h+='<div class="card empty"><div class="hd"><span class="nm">Empty slot</span></div><div class="sub">Weld a car · '+NEWCAR+' scrap · '+carFoodC()+' food</div>'+
 '<button class="up build" data-act="build" data-i="'+i+'" data-t="farm" '+cant+'>Farm</button>'+
@@ -559,8 +569,9 @@ else if(act=='fortressOff'){S.engineSkin=null;log('Reverted to the standard war-
 else if(act=='cab'){S.scrap-=dc(cbC());S.caboose++;log('The Rearguard is fortified — '+RGT[vtier(S.caboose)]+', garrison '+rgGarrison()+'. The stern holds.')}
 else if(act=='prowUp'){if(S.scrap<dc(prowC()))return;S.scrap-=dc(prowC());S.prow.lvl++;log('THE PROW is reinforced to LV '+S.prow.lvl+' — she cuts the water harder. (The ocean still keeps its cut.)')}
 else if(act=='prowFit'){if(S.scrap<dc(PROW_REFIT))return;S.scrap-=dc(PROW_REFIT);S.prow.fit=S.prow.fit=='ram'?'shield':'ram';log('Bow refit \u2192 '+PROW_FITS[S.prow.fit].nm+' — '+(S.prow.fit=='ram'?'mines, debris and storm-wrack meet the plow.':'frontal fire meets riveted plate.'))}
-else if(act=='up'){const s=S.slots[+b.dataset.i];S.scrap-=dc(upC(s.lvl));s.lvl++;log(NM[s.type]+' upgraded to level '+s.lvl+'.')}
-else if(act=='build'){S.scrap-=dc(NEWCAR);S.food=Math.max(0,S.food-carFoodC());const t=b.dataset.t;const ns=t=='gun'?{type:'gun',wpn:b.dataset.w,port:'auto',lvl:1}:{type:t,lvl:1};crewOf(ns);S.slots[+b.dataset.i]=ns;log((t=='gun'?WN[b.dataset.w]:NM[t])+' welded onto the line — '+CREW[crewOf(ns).kind].nm+' takes their post.')}
+else if(act=='up'){const s=S.slots[+b.dataset.i];S.scrap-=dc(upC(s.lvl));s.lvl++;log(s.type=='gun'?'Turret raised to LV '+s.lvl+' — the '+TOPW[s.wpn||'cannon'].nm+' speaks louder.':NM[s.type]+' upgraded to level '+s.lvl+'.')}
+else if(act=='upPort'){const s=S.slots[+b.dataset.i];const pl=s.plvl||1;if(S.scrap<dc(upC(pl)))return;S.scrap-=dc(upC(pl));s.plvl=pl+1;log('Hull ports raised to LV '+s.plvl+' — the broadside grows teeth.')}
+else if(act=='build'){S.scrap-=dc(NEWCAR);S.food=Math.max(0,S.food-carFoodC());const t=b.dataset.t;const ns=t=='gun'?{type:'gun',wpn:b.dataset.w,port:'auto',lvl:1,plvl:1}:{type:t,lvl:1};crewOf(ns);S.slots[+b.dataset.i]=ns;log((t=='gun'?WN[b.dataset.w]:NM[t])+' welded onto the line — '+CREW[crewOf(ns).kind].nm+' takes their post.')}
 else if(act=='crew'){const s=S.slots[+b.dataset.i],c=crewOf(s);if(c.rank>=MAXRANK)return;const cost=crewRankCost(c.rank);if(S.scrap<cost)return;S.scrap-=cost;c.rank++;log(CREW[c.kind].nm+' trained to rank '+RNK[c.rank]+' — '+CREW[c.kind].buff(c.rank)+'.')}
 else if(act=='cycTop'){const s=S.slots[+b.dataset.i];if(S.scrap<dc(REFIT))return;S.scrap-=dc(REFIT);s.wpn=nextTop(s.wpn||'cannon');log('Turret refit → '+TOPW[s.wpn].nm+' · '+TOPW[s.wpn].dt+' rounds.')}
 else if(act=='cycPort'){const s=S.slots[+b.dataset.i];if(S.scrap<dc(REFIT))return;S.scrap-=dc(REFIT);s.port=nextPort(s.port||'auto');log('Broadside refit → '+PORTW[s.port].nm+' · '+PORTW[s.port].dt+' rounds.')}
@@ -579,9 +590,10 @@ else return;
 renderCrew();cards();save();
 });
 document.getElementById('go').addEventListener('click',()=>{
-if(S.mode=='depot'){S.depotView='services';S.depotMin=false;renderDepot();showView('travel');return} // the Depart button doubles as the Services bell while docked
+if(S.mode=='depot'){S.depot=null;S.depotView=null;S.depotMin=false;S.mode='idle';renderDepot();renderChips()} // DEPART from the platform: close the town, fall through to the departure
 if(S.mode=='run')return;
 if(S.stop&&S.stop.ph=='arriving')return;                     // she's still rolling in — let her settle first
+if(S.choice)return;                                          // a choice is on the table — the line waits for your answer
 const edges=nodeEdges(S.nav.reg,S.nav.col,S.nav.row);
 if(!edges.length){log('The line ends at THE TERMINUS. Beyond the dead signals there is nothing left to cross \u2014 yet.');return}
 const to=edges[Math.max(0,Math.min(edges.length-1,S.sel))],ty=nodeType(to.reg,to.col,to.row),nm=nodeName(to.reg,to.col,to.row);
@@ -599,7 +611,7 @@ const b=document.getElementById('reset');
 if(!S.resetArm){S.resetArm=1;b.textContent='Tap again to confirm';setTimeout(()=>{S.resetArm=0;b.innerHTML='Scuttle &amp; restart'},3000);return}
 S.resetArm=0;b.innerHTML='Scuttle &amp; restart';
 S.scrap=120;S.food=20;S.fuel=30;S.heroes=[];S.crewSel=-1;S.journeys=0;S.engine=1;S.caboose=1;S.maxSlots=3;
-S.slots=[{type:'oil',lvl:1},{type:'gun',wpn:'cannon',port:'auto',lvl:1},null];S.slots.forEach(s=>crewOf(s));
+S.slots=[{type:'oil',lvl:1},{type:'gun',wpn:'cannon',port:'auto',lvl:1,plvl:1},null];S.slots.forEach(s=>crewOf(s));
 S.prow={lvl:1,fit:'ram'};S.leak=null;S.crippled=[];S.prizes=[];S.place=null;S.fam={};S.depotView=null;S.farlight=0;
 S.hull=maxHull();S.mode='idle';S.raiders=[];S.booms=[];S.tracers=[];S.boss=null;S.crate=null;S.dist=0;S.depot=null;S.discount=false;renderDepot();
 S.nav={seed:1+Math.floor(Math.random()*99999),reg:0,col:0,row:0};S.visited=['0:0:0'];S.sel=0;S.navT=null;
@@ -607,6 +619,7 @@ S.cargo={};S.pax=[];S.contracts=[];S.rep={disp:0,carav:0,tr:0};S.linebroken=fals
 S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1;   // a fresh rig begins where every rig begins — docked at THE RAILHEAD
 if(canSave){try{await window.storage.delete(KEY)}catch(e){}}
 log('The old rig burns behind you. A fresh engine waits on the line.');
+openDepot('THE RAILHEAD'); // a fresh rig wakes at a working station
 cards();
 });
 function raiderKind(){const j=eff(),roll=Math.random();
@@ -646,10 +659,10 @@ function grabCrate(){const c=S.crate;if(!c||c.grabbed)return;c.grabbed=true;if(M
    a GATE (warlord boss) at each region's far end. S.nav = where the rig IS; S.navT = the leg in flight.
    Difficulty comes from position (eff() = reg*6+col), not crossings — the world is dangerous, not the calendar. */
 const REGIONS=[
- {name:'THE RUST FLATS',biome:0,cols:6,anchors:['THE RAILHEAD','RUST JUNCTION','GALLOWS GATE']},
- {name:'THE DEAD CITY',biome:1,cols:6,anchors:['ASHGATE','THE SUNKEN YARD','CATHEDRAL GATE']},
- {name:'THE BONE REEF',biome:2,cols:6,anchors:['MARROW LANDING','THE RIBWALK','PALE GATE']},
- {name:'THE CINDER SEAM',biome:3,cols:7,anchors:['EMBERFALL','THE CRUCIBLE LINE','THE TERMINUS']}];
+ {name:'THE RUST FLATS',biome:0,cols:6,anchors:['THE RAILHEAD','THE JUNCTION','GALLOWS GATE']},
+ {name:'THE DEAD CITY',biome:1,cols:6,anchors:['ASHGATE','OLD EXCHANGE','CATHEDRAL GATE']},
+ {name:'THE BONE REEF',biome:2,cols:6,anchors:['MARROW LANDING','THE RIBYARD','PALE GATE']},
+ {name:'THE CINDER SEAM',biome:3,cols:7,anchors:['EMBERFALL','SLAGSIDE','THE TERMINUS']}];
 const navVK=(reg,col,row)=>reg+':'+col+':'+row;
 function navRows(reg,col){const R=REGIONS[reg];if(col<=0||col>=R.cols-1)return 1;return 2+(hash(S.nav.seed+reg*1000+col*37+5)<0.5?0:1)}
 function nodeType(reg,col,row){const R=REGIONS[reg];if(row===9)return 'D';if(col<=0)return 'S';if(col>=R.cols-1)return 'G';
@@ -765,6 +778,25 @@ const KEEPERS=[{nm:'THE YARDMASTER',line:'"Every rig that ever mattered came thr
 function stationNeed(reg,col,row){const k=reg*1000+col*37+row*7,vk=navVK(reg,col,row),v=(S.fam[vk]|0);
  return GKEYS[Math.floor(hash(S.nav.seed+k*29+v*7+41)*GKEYS.length)]}
 function famGreet(nm,v){return v<=1?'You pull into '+nm+'.':v<4?'They remember the rig at '+nm+'. Nods from the platform.':'Lamps swing a welcome at '+nm+' \u2014 they know this engine by sound now.'}
+const LOCAL_LINES=[
+ ['\u201cFlats iron is honest iron. Everything else out here lies.\u201d','\u201cSPOKE\u2019s boys tax the west road. You look taxable.\u201d','\u201cWe had rain once. Kept it in a jar.\u201d'],
+ ['\u201cThe towers hum at night. We don\u2019t ask what to.\u201d','\u201cThe Choir pays for quiet. Nobody sells it.\u201d','\u201cOld Exchange will buy ANYTHING. Even that.\u201d'],
+ ['\u201cBones keep the wind off. Dead things are good neighbors.\u201d','\u201cThe Curate blesses every rig that stops. Even yours.\u201d','\u201cPast the Drifts there\u2019s a light. Forty years now.\u201d'],
+ ['\u201cThe ground here never cooled. Neither did the grudges.\u201d','\u201cSLAGSIDE\u2019s forge can sharpen a bow to a whisper.\u201d','\u201cNobody rides east of the Wellhead. Nobody rides BACK, anyway.\u201d']];
+function localSpeak(){const d=S.depot;if(!d)return;
+ const need=d.need,held=S.cargo[need]||0;
+ log(LOCAL_LINES[S.nav.reg][Math.floor(Math.random()*3)]+' \u2014 a local, eyeing your rig.');
+ if(held>0&&!d.localDone){d.localDone=true;const px2=Math.round(gPrice(need)*1.6);
+  showChoice('THE LOCAL LEANS IN','\u201cThat '+GOODS[need].nm+' in your hold \u2014 we NEED that here. Name your price.\u201d',[
+   {label:'Sell '+held+' '+GOODS[need].nm,desc:'+'+(px2*held)+' scrap \u00b7 1.6\u00d7 spot',fn:()=>{closeChoice();S.scrap+=px2*held;S.cargo[need]=0;S.rep.carav=Math.min(10,S.rep.carav+1);log('The whole town turns out to unload it. +'+(px2*held)+' scrap, and they will remember this.');save()}},
+   {label:'Keep the hold',desc:'the need keeps',fn:()=>{closeChoice();log('You tip your hat and keep your manifest.')}}])}}
+function houseGossip(){const d=S.depot;if(!d)return;
+ const v=famOf(d.key),rl=RUMORS[S.nav.reg];
+ const bits=[];
+ if(S.prizes.length)bits.push('Word is a clan camp is flying '+(S.prizes[0].k==='car'?'a stolen car\u2019s colors':'a captive\u2019s name')+' out there. Your colors, they say.');
+ bits.push('Rumor \u2014 '+rl[Math.floor(Math.random()*rl.length)]);
+ if(v>=4)bits.push('The station master pours you the good stuff. Regulars drink free-ish.');
+ log(bits[Math.floor(Math.random()*bits.length)]);}
 const PAXN=['The Cartographer','A Quiet Bride','The Bone-Doctor','A Debt-Runner','The Lantern Widow','The Deaf Surveyor'];
 function paxBoard(){ // seats fill at stations; specials pay 5x and carry a name
  let on=0;const free=seats()-S.pax.length;
@@ -807,7 +839,8 @@ function navArrive(){ // every completed leg lands here: move the rig on the map
  S.contracts.forEach(c=>{if(c.k=='escort')c.left--});                              // every safe leg counts toward an escort
  S.contracts=S.contracts.filter(c=>{if(c.k=='escort'&&c.left<=0){const pay=Math.round(c.pay*(1+S.rep.disp*0.02)*(1+troops()*0.01));S.scrap+=pay;S.rep.disp=Math.min(10,S.rep.disp+1);log('Escort complete — the caravan pays out '+pay+' scrap'+(troops()?' (your riflemen earn their keep)':'')+'.');return false}return true});
  paxArrive(ty=='S');
- if(ty=='S'){S.place=Object.assign(settleSpec(to.reg,to.col,to.row),{name:nm});openDepot(nm);paxBoard()}
+ if(ty=='S'){if(to.reg==0&&to.col==0)S.place=null; // the loop comes home: the TRUE Railhead stages, not a composed settlement
+  else S.place=Object.assign(settleSpec(to.reg,to.col,to.row),{name:nm});openDepot(nm);paxBoard()}
  else{stopArrive(false);S.stop.auto=true; // a real halt at every stop — then she rolls on her own
   if(ty=='E'){const k=navK(),roll=hash(S.nav.seed+k*61+19);
    if(roll<0.3){const bait=Math.random()<0.18; // WRECK — troops' work; sometimes bait, and bait BYPASSES the prow (law 8)
@@ -858,15 +891,15 @@ function navArrive(){ // every completed leg lands here: move the rig on the map
 function offerObj(type,idx){
 if(type=='repair'){const c=Math.round(18+idx*6);return{label:'Repair bay',desc:'−'+c+' scrap · full hull',can:()=>S.scrap>=c&&S.hull<maxHull(),act:()=>{S.scrap-=c;S.hull=maxHull();log('Hull fully welded at the depot.')}}}
 if(type=='food'){const c=Math.round(22+idx*7),g=Math.round(16+idx*5);return{label:'Provisioner',desc:'−'+c+' scrap · +'+g+' food',can:()=>S.scrap>=c,act:()=>{S.scrap-=c;S.food+=g;log('Loaded '+g+' food from the provisioner.')}}}
-if(type=='fuel'){const c=Math.round(14+idx*5),g=Math.round(12+idx*4);return{label:'Fuel depot',desc:'−'+c+' scrap · +'+g+' fuel',can:()=>S.scrap>=c,act:()=>{S.scrap-=c;S.fuel+=g;log('Topped off '+g+' fuel at the depot.')}}}
-if(type=='recruit'){const c=Math.round(70+idx*22);return{label:'Wandering specialist',desc:'\u2212'+c+' scrap · recruit a wanderer',can:()=>S.scrap>=c,act:()=>{S.scrap-=c;recruitHero('wander')}}}
+if(type=='fuel'){const c=Math.round(14+idx*5),g=Math.round(12+idx*4);return{home:'fuel',label:'Fuel depot',desc:'−'+c+' scrap · +'+g+' fuel',can:()=>S.scrap>=c,act:()=>{S.scrap-=c;S.fuel+=g;log('Topped off '+g+' fuel at the depot.')}}}
+if(type=='recruit'){const c=Math.round(70+idx*22);return{home:'outpost',label:'Wandering specialist',desc:'\u2212'+c+' scrap · recruit a wanderer',can:()=>S.scrap>=c,act:()=>{S.scrap-=c;recruitHero('wander')}}}
 if(type=='scrap'){const c=Math.round(12+idx*4),g=Math.round(40+idx*14);return{label:'Scrap broker',desc:'−'+c+' food · +'+g+' scrap',can:()=>S.food>=c,act:()=>{S.food-=c;S.scrap+=g;log('Sold rations for '+g+' scrap.')}}}
 if(type=='scavenge'){return{label:'Pick the wreck-stacks',desc:'free · gamble',can:()=>true,act:()=>{const r=Math.random();if(r<0.5){const g=Math.round(35+idx*13);S.scrap+=g;log('Scavenging paid off — +'+g+' scrap.')}else if(r<0.8){const g=Math.round(12+idx*5);S.food+=g;log('Found a food cache — +'+g+' food.')}else log('The stacks were already picked clean. Nothing here.')}}}
 if(type=='cache'){const g=Math.round(24+idx*10);return{label:'Supply cache',desc:'free · +'+g+' scrap',can:()=>true,act:()=>{S.scrap+=g;log('Cracked a supply cache — +'+g+' scrap.')}}}
 if(type=='patch'){const c=Math.round(20+idx*5);return{label:'Patch the breached tank',desc:'\u2212'+c+' scrap \u00b7 the leak stops',can:()=>!!S.leak&&S.scrap>=c,act:()=>{S.scrap-=c;S.leak=null;log('The yard crew sweats the tank seams tight. The leak is DONE weeping.')}}}
 if(type=='uncripple'){const c=Math.round(45+idx*12);return{label:'Repair a crippled car',desc:'\u2212'+c+' scrap \u00b7 back in the line',can:()=>S.crippled.length>0&&S.scrap>=c,act:()=>{const i=S.crippled.shift();if(S.slots[i])delete S.slots[i].crip;S.scrap-=c;log('The yard raises the charred car and makes it a CAR again. She rejoins the line.')}}}
-if(type=='guard'){return{label:'Walk the walls',desc:'free · troops earn their keep',can:()=>troops()>0,act:()=>{const g=Math.round(troops()*(6+eff()));S.scrap+=g;log('Your troops walk the walls for a night — +'+g+' scrap earned.')}}}
-if(type=='blessing'){const heal=Math.round(maxHull()*0.2);return{label:'Chapel of the Open Rail',desc:'free · the crew breathes',can:()=>true,act:()=>{S.hull=Math.min(maxHull(),S.hull+heal);S.food+=4;log('Lamp-smoke and quiet in the chapel car. The crew breathes — +'+heal+' hull, +4 food.')}}}
+if(type=='guard'){return{home:'outpost',label:'Walk the walls',desc:'free · troops earn their keep',can:()=>troops()>0,act:()=>{const g=Math.round(troops()*(6+eff()));S.scrap+=g;log('Your troops walk the walls for a night — +'+g+' scrap earned.')}}}
+if(type=='blessing'){const heal=Math.round(maxHull()*0.2);return{home:'chapel',label:'Chapel of the Open Rail',desc:'free · the crew breathes',can:()=>true,act:()=>{S.hull=Math.min(maxHull(),S.hull+heal);S.food+=4;log('Lamp-smoke and quiet in the chapel car. The crew breathes — +'+heal+' hull, +4 food.')}}}
 return{label:'Black-market fixer',desc:'free · next upgrade ½ price',can:()=>!S.discount,act:()=>{S.discount=true;log('A fixer marks down your next upgrade to half price.')}}}
 function depotOffers(idx,pers){ // personalities pin their trade first (YARD repairs, OUTPOST recruits, CHAPEL blesses); the rest rolls from the pool
 const pool=['repair','food','scrap','fuel','recruit','scavenge','cache','discount'],pick=[],used={};
@@ -878,6 +911,7 @@ if(!pick.includes('scavenge')&&!pick.includes('cache'))pick[pick.length-1]='scav
 return pick.map(t=>offerObj(t,idx))}
 function openDepot(nm){const idx=eff(),pers=stationPers(S.nav.reg,S.nav.col,S.nav.row);S.depotMin=false;
 S.depot={idx,name:nm,pers,key:navVK(S.nav.reg,S.nav.col,S.nav.row),offers:depotOffers(idx,pers),board:mkBoard()};
+if(S.place&&S.place.tier=='halt')S.depot.offers.length=Math.min(1,S.depot.offers.length); // a halt is one lamp and one trade
 if(S.place&&S.place.pump)S.depot.offers.unshift(offerObj('fuel',idx)); // an OIL PUMP sells fuel before anything else
 S.depot.need=stationNeed(S.nav.reg,S.nav.col,S.nav.row);
 if(S.place&&S.place.tier=='capital'){const rg2=S.nav.reg;
@@ -887,8 +921,11 @@ if(S.place&&S.place.tier=='capital'){const rg2=S.nav.reg;
  {label:'SLAGSIDE\u2019s forge',desc:'free \u00b7 next prow/weapon refit \u00bd price',can:()=>!S.discount,act:()=>{S.discount=true;log('The Forgemaster grins at your bow. Next refit at half price.')}}][rg2];
  if(SIG)S.depot.offers.push(SIG);
  S.depot.name=CAPNM[rg2]||nm;if(S.place)S.place.name=S.depot.name}
-S.mode='depot';if(S.place&&!S.origin){const _o=S.origin;stopArrive(true);S.origin=_o}else stopArrive(false);
-{const vk=navVK(S.nav.reg,S.nav.col,S.nav.row);S.fam[vk]=(S.fam[vk]|0)+1;log(famGreet(nm,S.fam[vk])+' '+depotFlavor(idx))}
+S.mode='depot';const _standing=!!(S.stop&&S.stop.ph=='docked'); // already at rest (boot/reset at the origin) — light the depot around the standing rig
+if(_standing){}
+else if(S.place&&!S.origin){const _o=S.origin;stopArrive(true);S.origin=_o}
+else stopArrive(S.nav.reg==0&&S.nav.col==0); // the loop home stages the TRUE Railhead (a vis arrival raises S.origin)
+if(!_standing){const vk=navVK(S.nav.reg,S.nav.col,S.nav.row);S.fam[vk]=(S.fam[vk]|0)+1;log(famGreet(nm,S.fam[vk])+' '+depotFlavor(idx))}
 S.depotView=null; // the sheet never opens itself — the chips carry the stop (law 1)
 {const cand=[];S.heroes.forEach(h=>{if(h.rank<MAXRANK)cand.push(h)});S.slots.forEach(s=>{if(s&&s.hero&&s.hero.rank<MAXRANK)cand.push(s.hero)});
  if(cand.length&&Math.random()<0.35){const h=cand[Math.floor(Math.random()*cand.length)],cost=Math.round(crewRankCost(h.rank)*0.6);
@@ -898,25 +935,37 @@ else if(Math.random()<0.35){const rl=RUMORS[S.nav.reg];log('Rumor — '+rl[Math.
 renderDepot();showView('travel')}
 function renderChips(){const el=document.getElementById('chips');if(!el)return;
 if(S.mode!='depot'||!S.depot||!(S.stop&&S.stop.ph=='docked')){el.style.display='none';el.innerHTML='';return} // the chips light when the wheels stop
-const sx=(S.stationX==null?STATION_HOME:S.stationX),ax=dx=>Math.max(5,Math.min(92,Math.round((sx+dx)/320*100)))+'%';
-const pl=S.place,tier=pl?pl.tier:'station',caps=tier=='capital';
-const at=k=>{const b=pl&&pl.B.find(b=>b.f===k);return b?b.dx+10:40};
-const items=[{cv:'services',g:'\u2699',t:'Services',x:at(bStation)||30}];
-if(tier!='halt'||pl&&pl.pump)items.push({cv:'fuel',g:'\u26fd',t:'Fuel',x:pl&&pl.pump?at(bOilPump):at(bWaterTower)});
-if(tier!='halt'&&(S.depot.pers.includes('market')||caps))items.push({cv:'market',g:'\u2696',t:'Market',x:at(bStalls)||70});
-if(tier!='halt')items.push({cv:'board',g:'\u270e',t:'Board',x:at(bStation)+44});
-if(caps)items.push({cv:'keeper',g:'\u265a',t:KEEPERS[S.nav.reg].nm.split(' ').pop(),x:at(bTrainShed)+20});
-items.forEach(it=>it.p=Math.max(6,Math.min(92,Math.round((sx+it.x)/320*100))));
-items.sort((a,b)=>a.p-b.p);                                                     // anchored to meaning, but never on top of each other
-let last=-99,row=0;items.forEach(it=>{if(it.p-last<15){row=1-row;if(row===0)it.p=Math.min(92,last+15)}else row=0;it.row=row;last=it.p});
-el.innerHTML=items.map(it=>'<button class="chip" data-cv="'+it.cv+'" style="left:'+it.p+'%;bottom:'+(it.row?34:0)+'px"><span class="cg">'+it.g+'</span>'+it.t+'</button>').join('');
+const sx=(S.stationX==null?STATION_HOME:S.stationX),pl=S.place,tier=pl?pl.tier:'station',caps=tier=='capital';
+const BB=pl?pl.B:(S.origin?RH_BUILDINGS:null); // at home the chips hang over the Railhead's own quarters
+const at=(k,fb)=>{const b=BB&&BB.find(b=>b.f===k);return b?b.dx+(k===bTrainShed?36:k===bStation?30:10):fb}; // the chip hangs over ITS building
+const hasB=k=>!!(BB&&BB.find(b=>b.f===k));
+const homes=new Set((S.depot.offers||[]).map(o=>o.home||'services'));
+const items=[{cv:'services',g:'\u2699',t:'Services',x:at(bStation,at(bDepot,30))}];
+if(homes.has('fuel')||tier!='halt')items.push({cv:'fuel',g:'\u26fd',t:'Fuel',x:hasB(bOilPump)?at(bOilPump,64):hasB(bSilo)?at(bSilo,64):at(bWaterTower,64)});
+if(tier!='halt'&&(S.depot.pers.includes('market')||caps))items.push({cv:'market',g:'\u2696',t:'Market',x:at(bStalls,at(bFreight,96))});
+if(homes.has('chapel')&&hasB(bBellShack))items.push({cv:'chapel',g:'\u2626',t:'Chapel',x:at(bBellShack,118)});
+if(homes.has('outpost')&&hasB(bWatchpost))items.push({cv:'outpost',g:'\u265f',t:'Watch',x:at(bWatchpost,100)});
+if(caps)items.push({cv:'keeper',g:'\u265a',t:KEEPERS[S.nav.reg].nm.split(' ').pop(),x:at(bTrainShed,-6)});
+if(tier!='halt')items.push({cv:'board',g:'\u270e',t:'Board',plat:true,x:118}); // the Board lives on the PLATFORM, with the people
+const f=_fit(),land=appEl.classList.contains('land'),maxX=land?f.r.width*0.5:f.r.width-30;
+items.forEach(it=>{it.px=Math.max(30,Math.min(maxX,Math.round(f.ox+((sx+it.x)/320)*f.dw)))});
+items.sort((a,b)=>a.px-b.px);
+let last=-999,row=0;items.forEach(it=>{if(!it.plat&&it.px-last<88){row=1-row;if(row===0)it.px=Math.min(maxX,last+88)}else if(!it.plat)row=0;if(!it.plat)last=it.px;it.row=row});
+const skyY=Math.round(f.oy+(40/180)*f.dh),platB=Math.max(4,Math.round(f.r.height-(f.oy+f.dh)))+6+(land?96:0);
+el.innerHTML=items.map(it=>it.plat
+ ?'<button class="chip plat" data-cv="'+it.cv+'" style="left:'+it.px+'px;bottom:'+platB+'px"><span class="cg">'+it.g+'</span>'+it.t+'</button>'
+ :'<button class="chip sign" data-cv="'+it.cv+'" style="left:'+it.px+'px;top:'+(skyY+it.row*30)+'px"><span class="cg">'+it.g+'</span>'+it.t+'</button>').join('');
 el.style.display='block'}
 function renderDepot(){const d=S.depot,el=document.getElementById('depot');renderChips();
+if(S.choice)return; // never wipe a live choice card
 if(!d||S.depotMin||!S.depotView){el.className='';if(!d)el.innerHTML='';else el.innerHTML='';return}
 if(S.depotView=='keeper'){log(KEEPERS[S.nav.reg].nm+': '+KEEPERS[S.nav.reg].line+' \u2014 "'+CAPTAINS[Math.min(3,S.nav.reg)].nm+' holds the gate east. Mind the tolls where the clans grew bold."');S.depotView=null;el.className='';return}
 let h='<button class="dstep" data-k="-2" title="Back to the platform">\u2715</button><h3>'+d.name+'</h3><div class="flav"><span class="pers">'+d.pers.map(p=>PERS[p]).join(' + ')+'</span> — needs <b style="color:#e0a33a">'+GOODS[d.need||'grain'].nm+'</b></div>';
-if(S.depotView=='services'){d.offers.forEach((o,k)=>{h+='<button class="opt" data-k="'+k+'" '+(o.can()?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'})}
-if(S.depotView=='fuel'){const fo=offerObj('fuel',d.idx);h+='<button class="opt" data-k="-3" '+(fo.can()?'':'disabled')+'><span>'+fo.label+'</span><span class="od">'+fo.desc+'</span></button>';h+='<div class="flav">tank '+Math.floor(S.fuel)+' / '+tankCap()+'</div>'}
+if(S.depotView=='services'||S.depotView=='chapel'||S.depotView=='outpost'){const want=S.depotView;
+ d.offers.forEach((o,k)=>{const hm=o.home||'services';if((want=='services'&&hm!='chapel'&&hm!='outpost'&&hm!='fuel')||hm===want)h+='<button class="opt" data-k="'+k+'" '+((o.can()&&!o.used)?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+(o.used?'done for this visit':o.desc)+'</span></button>'});
+ if(want=='chapel')h+='<div class="flav">bell-metal and lamp-smoke \u2014 the yard of markers faces west</div>';
+ if(want=='outpost')h+='<div class="flav">the watch sees everything on the flat \u2014 and hires</div>'}
+if(S.depotView=='fuel'){d.offers.forEach((o,k)=>{if((o.home||'')==='fuel')h+='<button class="opt" data-k="'+k+'" '+(o.can()?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'});const fo=offerObj('fuel',d.idx);h+='<button class="opt" data-k="-3" '+(fo.can()?'':'disabled')+'><span>'+fo.label+'</span><span class="od">'+fo.desc+'</span></button>';h+='<div class="flav">tank '+Math.floor(S.fuel)+' / '+tankCap()+'</div>'}
 if(S.depotView=='market'&&(d.pers.includes('market')||(S.place&&S.place.tier=='capital'))){ // the trade board: spot prices with the regional spread visible
  h+='<div class="mkthd">MARKET · hold '+cargoUsed()+'/'+cargoCap()+(cargoCap()?'':' — weld a Cargo car to trade')+(S.rep.carav?' · Caravaneers '+'★'.repeat(S.rep.carav):'')+'</div>';
  GKEYS.forEach(g=>{const p=gPrice(g),held=S.cargo[g]||0,tr=gTrend(g);
@@ -931,7 +980,7 @@ if(S.depotView=='board'){h+='<div class="mkthd">DISPATCHER BOARD · '+S.contract
    +(dl?'<button class="tbtn hot" data-cact="deliver" data-ci="'+i+'">Deliver · +'+c.pay+'</button>':'<span class="gp">'+c.pay+' scrap</span>')+'</div>'});
  d.board.forEach((c,i)=>{if(S.contracts.length>=2)return;
   h+='<div class="mrow crow"><span class="gn">'+cLabel(c)+'</span><span class="gp">'+c.pay+' scrap</span><button class="tbtn" data-cact="accept" data-ci="'+i+'">Ink it</button></div>'})}
-if(S.depotView=='services')h+='<button class="leave" data-k="-1">Press on without stopping</button>';
+
 el.innerHTML=h;el.className='show';
 }
 document.getElementById('depot').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||!S.depot)return;
@@ -948,7 +997,7 @@ if(b.dataset.cact){const ci=+b.dataset.ci; // contracts keep it open too
 const k=+b.dataset.k;
 if(k==-3){const fo=offerObj('fuel',S.depot.idx);if(fo.can()){fo.act();renderDepot();upd();save()}return}
 if(k==-2){S.depotView=null;renderDepot();upd();return} // ✕ = back to the platform; the stop stays open, the chips stay lit
-if(k>=0)S.depot.offers[k].act();S.depot=null;S.depotMin=false;S.depotView=null;S.mode='idle';if(S.stop)stopDepart();renderDepot();cards();save();showView('travel')});
+if(k>=0){const o=S.depot.offers[k];if(o&&!o.used&&o.can()){o.act();o.used=true}renderDepot();upd();cards();save()}}); // you stay DOCKED — only Depart ends the stop
 /* ---- view router: persistent shell + swappable content ---- */
 function showView(v){S.view=v;
 for(const id of ['travel','train','crew','map','log'])document.getElementById('v-'+id).hidden=(id!=v);
@@ -1034,6 +1083,10 @@ cv.addEventListener('pointerdown',e=>{_pd=true;_pdrag=false;_psx=_lx(e);_ppan=S.
 cv.addEventListener('pointermove',e=>{if(!_pd)return;const dx=_lx(e)-_psx;if(!_pdrag&&Math.abs(dx)>6)_pdrag=true;if(_pdrag&&!(S.boss||S.raiders.length)){S.pan=Math.max(0,Math.min(S.maxPan,_ppan+dx));S.panHintT=2;}});
 const NOODLE_LINES=['Noodle\u2019s tail goes like a signal flag. No notes.','Noodle looks up, decides you are good people, and says so with his whole body.','A small black puppy accepts your affection as tribute. The line can wait.','Noodle sneezes at the coal dust, then immediately forgives it.'];
 cv.addEventListener('pointerup',e=>{const ix=_lx(e),iy=_ly(e);if(_pd&&Math.abs(ix-_psx)<8){if(S.crate&&!S.crate.grabbed){const c=S.crate;if(ix>=c.x-9&&ix<=c.x+20&&iy>=c.y-10&&iy<=c.y+20){grabCrate();_pd=false;_pdrag=false;return}}
+ // docked at a town: the LOCAL on the platform and the STATION HOUSE both answer a tap
+ if(S.mode=='depot'&&S.place&&S.stop&&S.stop.ph=='docked'&&!S.choice){const psx=(S.stationX==null?STATION_HOME:S.stationX);
+  if(iy>146&&iy<176&&Math.abs(ix-(psx+100))<44){localSpeak();_pd=false;_pdrag=false;return}
+  {const bST=S.place.B.find(b2=>b2.f===bStation);if(bST&&iy>76&&iy<114&&ix>=psx+bST.dx&&ix<=psx+bST.dx+64){houseGossip();_pd=false;_pdrag=false;return}}}
  // Noodle is tappable. No stats. Obviously.
  if(S.origin&&S.stop&&S.stop.ph=='docked'){const nx=(S.stationX==null?STATION_HOME:S.stationX)+118-86+38;
   if(ix>=nx-5&&ix<=nx+7&&iy>=157&&iy<=172){S.noodleT=3;log(NOODLE_LINES[Math.floor(Math.random()*NOODLE_LINES.length)]);_pd=false;_pdrag=false;return}}
@@ -1053,21 +1106,20 @@ function upd(){
 document.getElementById('s-scrap').textContent=Math.floor(S.scrap);
 document.getElementById('s-food').textContent=Math.floor(S.food);
 document.getElementById('s-fuel').textContent=Math.floor(S.fuel)+'/'+tankCap();
+document.getElementById('s-fuel').parentNode.className='st'+(S.leak?' warn':'');
 document.getElementById('s-hull').textContent=Math.max(0,Math.round(S.hull))+'/'+maxHull();
 document.getElementById('hullbox').className='st'+(S.hull<maxHull()*0.35?' warn':'');
 const b=document.getElementById('go'),nd=document.getElementById('nextdepot'),docked=S.mode=='depot';
 b.classList.toggle('docked',docked);
-const _edges=(!docked&&S.mode!='run')?nodeEdges(S.nav.reg,S.nav.col,S.nav.row):null,atEnd=_edges&&!_edges.length;
-if(docked){b.disabled=false;b.textContent=S.view=='travel'?'At '+S.depot.name:'\u25b8 Open '+S.depot.name}
-else if(S.mode=='run'){b.disabled=true;b.textContent='Crossing the rail ocean...'}
+const _edges=(S.mode!='run')?nodeEdges(S.nav.reg,S.nav.col,S.nav.row):null,atEnd=_edges&&!_edges.length;
+if(S.mode=='run'){b.disabled=true;b.textContent='Crossing the rail ocean...'}
 else if(atEnd){b.disabled=true;b.textContent='The end of the line'}
 else{const _s=_edges[Math.min(S.sel,_edges.length-1)],_c=legCost(_s);b.disabled=S.fuel<_c;b.textContent='Depart \u25b8 '+nodeName(_s.reg,_s.col,_s.row)+' \u00b7 '+_c+' fuel'}
 {const km='<span style="color:#cdb894">'+Math.floor(S.dist)+' km</span>';let h;
- if(docked)h=km+' \u00b7 docked at '+S.depot.name;
- else if(S.mode=='run'){const t=S.navT&&S.navT.to;h=km+' \u00b7 crossing to <span style="color:#cdb894">'+(t?nodeName(t.reg,t.col,t.row):'the far shore')+'</span>\u2026'}
+ if(S.mode=='run'){const t=S.navT&&S.navT.to;h=km+' \u00b7 crossing to <span style="color:#cdb894">'+(t?nodeName(t.reg,t.col,t.row):'the far shore')+'</span>\u2026'}
  else if(atEnd)h=km+' \u00b7 THE TERMINUS \u2014 the last gate stands broken behind you';
  else{S.sel=Math.min(S.sel,_edges.length-1);const fork=_edges.length>1;
-  h='<div class="rbhd">'+(fork?'\u26a0 THE LINE FORKS \u2014 choose your heading':'NEXT STOP')+'</div>'
+  h='<div class="rbhd">'+(docked?'DOCKED AT '+S.depot.name+' \u00b7 ':'')+(fork?'\u26a0 THE LINE FORKS \u2014 choose your heading':'NEXT STOP')+'</div>'
    +_edges.map((e,i)=>{const t=nodeType(e.reg,e.col,e.row),sel=i==S.sel,cross=e.reg!=S.nav.reg;
     const rt=cross?(e.reg<S.nav.reg?'the loop home \u00b7 '+REGIONS[e.reg].name:'across the border \u00b7 '+REGIONS[e.reg].name)
      :t=='D'?'DARK WATER \u00b7 a legend \u00b7 TWO-OIL COUNTRY':t=='S'?'station \u00b7 trade &amp; repair':t=='E'?'event \u00b7 unknown':t=='H'?'hazard \u00b7 heavy raids':t=='B'?'BLOCKADE \u00b7 elite warband':'GATE \u00b7 warlord crossing';
@@ -1423,9 +1475,9 @@ crewFig(cx+2,activeCrew(s).kind,activeCrew(s).rank);
 if(s.type=='cargo'){
 // slat-walled freight body with an open top: the crate stack + lashed tarp — the fill reads at a glance
 const fill=cargoCap()?Math.min(1,cargoUsed()/cargoCap()):0,ncr=Math.round(fill*4);
-for(let sl=DECK+4;sl<BASE-5;sl+=3)px(cx+2,sl,carW-4,1,'rgba(20,14,10,0.35)');
+for(let sl=DECK+5;sl<BASE-6;sl+=4)px(cx+2,sl,carW-4,1,'rgba(20,14,10,0.3)');
 px(cx+2,DECK+1,carW-4,2,'#241a12');
-for(let c2=0;c2<ncr;c2++){const bx2=cx+4+c2*Math.floor((carW-14)/3),bh=5+(c2%2)*2;
+for(let c2=0;c2<ncr;c2++){const bx2=cx+4+c2*Math.floor((carW-14)/3),bh=5+(c2%2);
  px(bx2,DECK-bh+2,7,bh,'#6e5436');px(bx2,DECK-bh+2,7,1,'#8a6a42');px(bx2+3,DECK-bh+2,1,bh,'#4a3826')}
 const tw2=Math.floor(carW*0.44),tx2=cx+carW-tw2-2;
 px(tx2,DECK-3,tw2,4,'#5a6248');px(tx2,DECK-3,tw2,1,'#6e765a');
@@ -1438,12 +1490,12 @@ if(s.type=='pass'){
 // the coach: clerestory roof + a row of berth windows that light as fares board
 px(cx+1,DECK-2,carW-2,3,'#3a322c');px(cx+2,DECK-3,carW-4,1,'#4a443c');
 for(let v2=cx+5;v2<cx+carW-4;v2+=7)px(v2,DECK-2,2,1,'#241a12');
-const wn2=Math.min(5,Math.max(2,Math.floor((carW-8)/8))),wgap=Math.floor((carW-8)/Math.max(1,wn2));
-for(let w2=0;w2<wn2;w2++){const wx2=cx+5+w2*wgap,lit=w2<S.pax.length;
- px(wx2-1,DECK+3,7,1,'#241a12');px(wx2-1,DECK+10,7,1,'#241a12');
- px(wx2,DECK+4,5,6,lit?'#e8c37a':'#22262a');px(wx2,DECK+4,5,1,lit?'#f4dca0':'#2e343a');
- if(lit){const hood=S.pax[w2]&&S.pax[w2].special;px(wx2+1,DECK+6,2,3,hood?'#2a2230':'#4a3826');px(wx2+1,DECK+5,2,1,hood?'#3a3242':'#c9a07a')}}
-px(cx+2,DECK+3,2,BASE-DECK-9,'#241a12');px(cx+carW-4,DECK+3,2,BASE-DECK-9,'#241a12'); // end doors
+const wn2=Math.min(4,Math.max(2,Math.floor((carW-10)/9))),wgap=Math.floor((carW-10)/Math.max(1,wn2));
+for(let w2=0;w2<wn2;w2++){const wx2=cx+6+w2*wgap,lit=w2<S.pax.length;
+ px(wx2-1,DECK+4,7,1,'#241a12');px(wx2-1,DECK+11,7,1,'#241a12');
+ px(wx2,DECK+5,5,6,lit?'#e8c37a':'#22262a');px(wx2,DECK+5,5,1,lit?'#f4dca0':'#2e343a');
+ if(lit){const hood=S.pax[w2]&&S.pax[w2].special;px(wx2+1,DECK+7,2,3,hood?'#2a2230':'#4a3826');px(wx2+1,DECK+6,2,1,hood?'#3a3242':'#c9a07a')}}
+px(cx+2,DECK+4,1,BASE-DECK-10,'#241a12');px(cx+carW-3,DECK+4,1,BASE-DECK-10,'#241a12'); // end door seams, slimmed
 px(cx+2,BASE-5,3,1,'#4a443c');px(cx+carW-5,BASE-5,3,1,'#4a443c');                     // boarding steps
 crewFig(cx+2,activeCrew(s).kind,activeCrew(s).rank);
 }
@@ -1515,7 +1567,7 @@ const rkx=cx+Math.floor(carW/2)-7,rky=DECK+14;
 px(rkx-1,rky-1,16,1,'#3a2f22');px(rkx-1,rky+5,16,1,'#3a2f22');px(rkx-1,rky-1,1,7,'#5a4632');px(rkx+15,rky-1,1,7,'#5a4632');
 for(let r=0;r<2;r++)for(let sc=0;sc<3;sc++){const sx=rkx+1+sc*5,sy=rky+r*3;px(sx,sy,4,2,'#b89a4a');px(sx,sy,4,1,'#d8c078');px(sx+4,sy,1,2,'#e0a33a')}
 // ---- HULL GUN PORTS (broadside casemate guns — ship-of-the-line detail) ----
-const port=s.port||'auto',PW=PORTW[port],pvt=vtier(s.lvl);
+const port=s.port||'auto',PW=PORTW[port],pvt=vtier(s.plvl||s.lvl);
 if(typeof st.pt!='number')st.pt=-9;
 const psince=S.T-st.pt,pflash=psince<0.08,prec=Math.round(Math.max(0,1-psince/0.1)*2),gy=DECK+4;
 [cx+3,cx+carW-12].forEach((gx,pi)=>{
@@ -2470,7 +2522,8 @@ function settleSpec(reg,col,row){const tier=settleTier(reg,col,row),k=reg*1000+c
   pick(bWatchtower,-46,2);pick(bFreight,-30,2);pick(bSilo,14,2);pick(bShack,34,2);pick(bWaterTower,58,2); // the rear rank: mass behind the wall
   pick(bRailGate,-34);pick(bTrainShed,-6);
   pick(pers.includes('market')?bStalls:pers.includes('outpost')?bWatchpost:pers.includes('chapel')?bBellShack:bFreight,84);
-  pick(bWindpump,124);pick(bShack,148);pick(bSignal,176);
+  if(pers.includes('market'))pick(bWindpump,124);else pick(bStalls,116); // a capital ALWAYS keeps a market row (the chip never points at a warehouse)
+  pick(bOilPump,146);pick(bSignal,180);
   return{tier,pers,pal:[-60,-38],pal2:[74,196],B,figs:5}}
  // station — a true settlement: personality anchor + cluster + homes
  pick(bShack,-34);pick(bWaterTower,-6);
@@ -2479,13 +2532,13 @@ function settleSpec(reg,col,row){const tier=settleTier(reg,col,row),k=reg*1000+c
  if(pers.includes('yard'))pick(bFreight,126);
  if(pers.includes('outpost'))pick(bWatchpost,100);
  if(pers.includes('chapel'))pick(bBellShack,118);
- pick(bSilo,160);pick(bWindpump,184);
+ pick(bOilPump,160);pick(bWindpump,188); // every station sells fuel, so every station HAS a fuel island (the chip hangs on truth)
  return{tier,pers,pump:false,B,figs:2+Math.floor(hash(S.nav.seed+k*5+3)*3)}}
 // the railhead settlement, as a list of building entities (offsets from the station anchor):
 // homes quarter west (shack · water tower · shed), the STATION as anchor, working quarter east
 // (freight house · silo · signal · wind pump) — two quarters flanking the anchor, tied by the wire.
 const RH_BUILDINGS=[{f:bShack,dx:-38},{f:bWaterTower,dx:6},{f:bShed,dx:31},{f:bStation,dx:50},
- {f:bFreight,dx:118},{f:bSilo,dx:160},{f:bSignal,dx:188},{f:bWindpump,dx:224}];
+ {f:bFreight,dx:118},{f:bOilPump,dx:158},{f:bSignal,dx:188},{f:bWindpump,dx:224}]; // the pump island keeps the old silo slot — fuel lives WHERE the fuel is
 // THE RAILHEAD — BAND 4 (backdrop, BEHIND the train): the depot cluster, set on the far rail and
 // haze-dimmed by aerial perspective. No over-rail structures — the train stays alone on band 5.
 function drawRailhead(sx){
@@ -2640,7 +2693,7 @@ if(S.stop){const st=S.stop;st.t+=dt;
   if(st.vis)S.stationX=STATION_HOME+st.v0*st.T*0.5*(1-u)*(1-u);           // exact integral of the decel — she settles as the world stops
   S.lampK=u<0.8?0:(u<0.97?((Math.sin(S.T*34)>-0.2?1:0.3)*(u-0.8)/0.17):1);// the lanterns flicker up as she settles
   if(u>=1){st.ph='docked';spd=0;S.lampK=1;if(st.vis)S.stationX=STATION_HOME;if(S.mode=='depot')renderChips()}}
- else if(st.ph=='docked'){spd=0;if(st.auto&&st.t>2.4)stopDepart()} // an auto stop (event/rest halt) breathes, then rolls on her own
+ else if(st.ph=='docked'){spd=0;if(st.auto&&st.t>2.4&&!S.choice)stopDepart()} // an auto stop breathes, then rolls — but never out from under a live choice card
  else if(st.ph=='departing'){const u=Math.min(1,st.t/st.T),vt=S.mode=='run'?((S.boss&&S.boss.set&&!S.boss.dead)?0:110):14;
   spd=vt*u*u;                                                             // she leans into the run
   if(st.vis){S.stationX-=spd*dt;if(S.stationX<-300){S.origin=false;S.place=null;S.stop=null;S.lampK=1}}
@@ -2665,10 +2718,11 @@ if(S.leak&&S.mode=='run'&&S.navT&&S.navT.prof){S.fuel=Math.max(0,S.fuel-S.leak.r
    {label:'Stand and fight',desc:'hold until they stop coming',fn:()=>{closeChoice();S.adrift.stand=true;log('You kill the lamps, man the guns, and let the ocean come.')}}])}}
 if(S.adrift){S.adrift.t+=dt; // adrift: the waves escalate until an out is taken (losing here is the heaviest overrun)
  if(S.adrift.stand&&S.adrift.t>4){S.adrift.t=0;S.adrift.wv++;
-  if(S.adrift.wv>=4){S.adrift=null;S.fuel=Math.min(tankCap(),14);S.leak=null;log('The last wave breaks and does not re-form. You strip their fuel \u2014 enough to crawl on.');save()}
+  if(S.adrift.wv>=4){S.adrift=null;S.fuel=Math.min(tankCap(),14);S.leak=null;S.mode='run';log('The last wave breaks and does not re-form. You strip their fuel \u2014 enough to crawl on.');save()}
   else{wave();log('They come again out of the dark \u2014 wave '+S.adrift.wv+' of 4.')}}}
 {const hr=crewBuffs().hullRegen;if(hr>0&&S.hull<maxHull())S.hull=Math.min(maxHull(),S.hull+hr*dt);}
 if(S.mode=='idle'&&S.hull<maxHull())S.hull=Math.min(maxHull(),S.hull+1.3*dt);
+if(S.mode=='depot'&&S.stop&&S.stop.ph=='docked'){if(S.hull<maxHull())S.hull=Math.min(maxHull(),S.hull+2.6*dt);S.food=Math.min(999,S.food+0.05*dt)} // warm bunks, warm meals — lingering at a stop is worth something
 S.smT-=dt;
 if(S.smT<=0&&!S.engineSkin&&spd>2){S.smoke.push({x:S.stackX,y:90,t:1.4});S.smT=S.mode=='run'?0.08:0.35} // no chuff at rest — the smoke thins to nothing
 S.smoke.forEach(s=>{s.t-=dt;s.x-=(spd*0.32)*dt;s.y-=9*dt});
@@ -2705,7 +2759,7 @@ if(boss.final&&boss.set){const frac=boss.hp/boss.max; // the last fight comes in
  if(boss.phase==1&&frac<0.66){boss.phase=2;boss.spawnT=0;S.flash=1.5;log('THE TERMINUS vents burning coolant \u2014 outrider bays swing open. "You want the line? EARN IT."')}
  if(boss.phase==2&&frac<0.33){boss.phase=3;log('The fortress engine is burning and will not stop. THE LINEBREAKER mans the guns himself.')}
  if(boss.phase>=2){boss.spawnT=(boss.spawnT||0)-dt;if(boss.spawnT<=0){boss.spawnT=3.2;S.raiders.push(raiderSpawn(344,boss.phase==3?'crawler':'bike'))}}}
-const dps=gunVs('armored')*markMult('boss')+troops()*1.5;boss.hp-=dps*dt;if(dps>0&&S.flash<0.3)S.flash=0.3;
+const dps=gunVs('armored')*markMult('boss')*(S.prow&&S.prow.fit=='ram'?1+Math.min(0.15,S.prow.lvl*0.025):1)+troops()*1.5;boss.hp-=dps*dt; // the ram SHOVES the duelif(dps>0&&S.flash<0.3)S.flash=0.3;
 boss.hitT-=dt;
 if(boss.hitT<=0){boss.hitT=(boss.final&&boss.phase==3)?1.1:1.7;const dmg=Math.max(2,Math.round((7+eff()*2-troops()*0.5)*(1+(boss.guns||0)*0.25)));hurt(dmg);S.flash=1.3;S.booms.push({x:210,y:128,t:0.1});
 if(S.hull<=0)bossEscape();}
@@ -2738,7 +2792,7 @@ if(S.mark=='ptrain'&&(!S.ptrain||S.ptrain.dead||S.ptrain.state=='out'))S.mark=nu
 if(S.mode=='run'&&!S.boss&&S.jt>=S.dur)finish();
 }
 S.saveT+=dt;
-if(S.saveT>15&&S.mode=='idle'){S.saveT=0;save()}
+if(S.saveT>15&&(S.mode=='idle'||(S.mode=='depot'&&S.stop&&S.stop.ph=='docked'))){S.saveT=0;save()} // the linger autosaves too — a rig at rest is never lost
 draw();upd();
 requestAnimationFrame(tick);
 }
@@ -2749,6 +2803,7 @@ if(S.origin)log('The Dispatcher nods from the platform: "Still here, engineer. T
 else{S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1; // BEGIN-AT-ORIGIN: a fresh game starts docked & at rest
 S.nav={seed:1+Math.floor(Math.random()*99999),reg:0,col:0,row:0};S.visited=['0:0:0'];S.sel=0;S.navT=null; // a fresh line is drawn for a fresh rig
 log('THE RAILHEAD — last lit outpost on the line. The Dispatcher leans on the rail: "Rig’s watered and the way west is clear. Roll out whenever you’re ready, engineer."');}
+if(S.origin&&S.stop&&S.stop.ph=='docked')openDepot('THE RAILHEAD'); // home is a FULL station — market, board, services, all of it
 if(!S.layoutManual)autoLayout();
 applyLayout();
 applyImmersive();
