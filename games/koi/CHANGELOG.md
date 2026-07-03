@@ -1,6 +1,35 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-03 — C.5.1: mobile feeding stability + subtler gulp (§10 micro-loop, human's live read)
+DECIDED (human, testing on device): "the fish glitch out crazy on mobile when being fed" + "reduce mouth size a little — without the head movement fully captured we can't get the perfect angle." Engine v3.4.2 → **v3.4.3**. TRIAGE: the glitch was **frame-rate-dependent motion at the food**, invisible on desktop's small dt but violent at mobile's clamped ~.1s dt. Three compounding causes, all fixed to be fps-independent:
+
+CHANGED:
+- **Pirouette at the food (the main "glitch"):** the turn-rate floor was a flat `.45+.55*ex` that ignored the brake — a fish braked to a ~10px/s crawl at the pellet could still turn ~1 rad/s, spinning a tight 10px circle; at big dt each frame rotated it further, so it *writhed*. The floor is now **scaled by the brake** (`(.45+.55*ex)*brake`): full agility while approaching, collapses to a settle at the pellet. Measured: avg turn near food **0.73 → 0.33 rad/s** at dt=.1.
+- **Jostle teleport:** neighbor shoves were applied as per-neighbor position writes; at dt=.1 a packed crowd stacked several into a multi-pixel jump that reversed next frame (vibration). Now **gathered into one nudge and capped** (~30px/s), identical at any fps.
+- **Steering flip-flop + pellet snap:** a fish kept steering toward a pellet at zero range (heading flipped every frame) — now steers **only until contact (~14px)**, the suck-in finishes it; and the pellet suck-in `pl` is capped (no one-frame teleport of the pellet into the mouth on slow devices). Continuous brake curve (was stepped .22/.6/1 — a fish crossing a step per frame jumped 4.5× in speed).
+- **Mouth smaller + calmer:** the gulp "O" is ~25% smaller and dimmer, and cycles at 9 rad/s (was 13 — no strobe at mobile frame rates). It hints rather than declares, since without true head geometry the exact angle can't be nailed (human's call).
+- **Size advantage re-grounded:** because the (correct) anti-spin makes big fish less nimble, their feeding dominance now comes from **reach** (a bigger mouth claims a pellet from farther: `eatR = 14 + ewd*.5`) rather than out-maneuvering — bulk, not agility, which is truer to real koi anyway.
+
+TRIED / VERIFIED: new C.5.1 gate suite (7→8 tests) with a **mobile-dt reproducer** that FAILS on the committed C.5 build (0.73 rad/s writhe) and PASSES here (0.33) — plus no NaN/teleport frames, low heading-reversal, and the frenzy still lands (pellets eaten, crowd holds) at dt=.1. All prior suites re-run green (**124/124 total**; C.4's two single-seed asserts hardened — "most fish in one throw" + speed-pinned elder — since the anti-spin slightly shifted close-range dynamics; aggregate size advantage and no-starvation both still hold). REAL-BROWSER: 390px mobile viewport under 6× CPU throttle — fish stay coherent through a feeding, no writhing — screenshot shared.
+
+OPEN: the mouth still can't perfectly track the eating angle (no separate head bone); a future head-articulation pass would let it. Flagged by the human.
+
+
+## 2026-07-03 — C.5: soft shape-matched day-aware shadows (§10 micro-loop, human's live read)
+DECIDED (human, from a night screenshot during soak-testing): "refine the shadow elements more." The read: every rock/pad sat on a hard-edged dark ellipse — wrong shape (logs floating in round blobs), sticker-crisp edges, and full daytime strength at night when there's no sun. Engine v3.4.1 → **v3.4.2**.
+
+CHANGED (shadows now behave like light in water):
+- **One shared soft shadow sprite** (dark radial, baked once) replaces every hard-edged ellipse fill — edges diffuse the way submerged shadows actually do. One `drawImage` per entity, zero per-frame gradients (the B.2 budget holds).
+- **Shape-matched:** shadows are elongated and **rotated to the object** — a log shades a long sliver along its own axis, slate sits low and thin, the lantern only shades at its base, pads/lotus/cluster colonies get correctly sized soft pools, reeds/iris keep a small waterline contact. Offset scales gently with size (a fixed light direction, bigger things cast a touch farther).
+- **Day-aware (`SHDIM`, set per frame from `dayMix`):** full strength under the noon sun → softened through dusk/dawn → **~35% at night** (moonlight, not sun). Koi floor shadows and the dragonfly's water shadow follow the same dial. Ink keeps a fixed stylized weight (its eternal dusk).
+- **Moved OUT of the sprite bakes:** rock/pad shadows used to be baked into the entity sprites (which is why they couldn't react to the day); they now draw live under the cached sprite — bakes stay static, shadows stay honest.
+
+TRIED / VERIFIED: new C.5 gate suite (8/8 — SHDIM 1.0 at noon / ≤.45 at night / between at dusk+dawn / ink fixed .85; full flora+hardscape scene renders in all four skins × day+night with zero warnings; reduced-motion clean). All six prior suites re-run green (**117/117 total**). REAL-BROWSER: noon + night screenshots of the same hardscape-heavy pond — shadows hug the driftwood along its axis by day and melt into the water at night — shared in channel.
+
+OPEN: shadow direction is a fixed light azimuth (down-right); if the director ever wants it to track the wandering sunbeam it's a live-draw change now (no bake in the way), at the cost of shadows that visibly crawl.
+
+
 ## 2026-07-03 — C.4: size-led feeding hierarchy (§10 micro-loop, human's live read + koi research)
 DECIDED (human, from watching real ponds): "the biggest koi be most aggressive for food — make it realistic." Researched wild/pond koi behavior first: koi run a **size-led pecking order** — larger, older fish hold higher rank and get priority access to food and prime position; the biggest/boldest reaches the food first and takes the first bite, pushing smaller fish aside. Boldness is a **second, personality axis** (partly genetic — "bold koi rush the surface; shy ones linger for leftovers"). Human ratified: **size-led (60% size / 40% seeded boldness)** + **nudge-and-yield** aggression (dominant holds the spot, subordinate shoved to leftovers, nobody starved). Engine v3.4 → **v3.4.1**.
 
