@@ -1,6 +1,21 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-03 — C.5.1: mobile feeding stability + subtler gulp (§10 micro-loop, human's live read)
+DECIDED (human, testing on device): "the fish glitch out crazy on mobile when being fed" + "reduce mouth size a little — without the head movement fully captured we can't get the perfect angle." Engine v3.4.2 → **v3.4.3**. TRIAGE: the glitch was **frame-rate-dependent motion at the food**, invisible on desktop's small dt but violent at mobile's clamped ~.1s dt. Three compounding causes, all fixed to be fps-independent:
+
+CHANGED:
+- **Pirouette at the food (the main "glitch"):** the turn-rate floor was a flat `.45+.55*ex` that ignored the brake — a fish braked to a ~10px/s crawl at the pellet could still turn ~1 rad/s, spinning a tight 10px circle; at big dt each frame rotated it further, so it *writhed*. The floor is now **scaled by the brake** (`(.45+.55*ex)*brake`): full agility while approaching, collapses to a settle at the pellet. Measured: avg turn near food **0.73 → 0.33 rad/s** at dt=.1.
+- **Jostle teleport:** neighbor shoves were applied as per-neighbor position writes; at dt=.1 a packed crowd stacked several into a multi-pixel jump that reversed next frame (vibration). Now **gathered into one nudge and capped** (~30px/s), identical at any fps.
+- **Steering flip-flop + pellet snap:** a fish kept steering toward a pellet at zero range (heading flipped every frame) — now steers **only until contact (~14px)**, the suck-in finishes it; and the pellet suck-in `pl` is capped (no one-frame teleport of the pellet into the mouth on slow devices). Continuous brake curve (was stepped .22/.6/1 — a fish crossing a step per frame jumped 4.5× in speed).
+- **Mouth smaller + calmer:** the gulp "O" is ~25% smaller and dimmer, and cycles at 9 rad/s (was 13 — no strobe at mobile frame rates). It hints rather than declares, since without true head geometry the exact angle can't be nailed (human's call).
+- **Size advantage re-grounded:** because the (correct) anti-spin makes big fish less nimble, their feeding dominance now comes from **reach** (a bigger mouth claims a pellet from farther: `eatR = 14 + ewd*.5`) rather than out-maneuvering — bulk, not agility, which is truer to real koi anyway.
+
+TRIED / VERIFIED: new C.5.1 gate suite (7→8 tests) with a **mobile-dt reproducer** that FAILS on the committed C.5 build (0.73 rad/s writhe) and PASSES here (0.33) — plus no NaN/teleport frames, low heading-reversal, and the frenzy still lands (pellets eaten, crowd holds) at dt=.1. All prior suites re-run green (**124/124 total**; C.4's two single-seed asserts hardened — "most fish in one throw" + speed-pinned elder — since the anti-spin slightly shifted close-range dynamics; aggregate size advantage and no-starvation both still hold). REAL-BROWSER: 390px mobile viewport under 6× CPU throttle — fish stay coherent through a feeding, no writhing — screenshot shared.
+
+OPEN: the mouth still can't perfectly track the eating angle (no separate head bone); a future head-articulation pass would let it. Flagged by the human.
+
+
 ## 2026-07-03 — C.5: soft shape-matched day-aware shadows (§10 micro-loop, human's live read)
 DECIDED (human, from a night screenshot during soak-testing): "refine the shadow elements more." The read: every rock/pad sat on a hard-edged dark ellipse — wrong shape (logs floating in round blobs), sticker-crisp edges, and full daytime strength at night when there's no sun. Engine v3.4.1 → **v3.4.2**.
 
