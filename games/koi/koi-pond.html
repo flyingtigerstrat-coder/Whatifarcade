@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v3.4.4 (living pond, C.5.2: shadows hug their forms, moss lies in the grain) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.4.5 (living pond, C.5.3: rain-on-glass fixed — pond graded behind the glass, not the fog) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
@@ -1103,7 +1103,7 @@ let pond=null,pondCtx=null,fog=null,fogCtx=null,drops=[],PS=.5;
 function buildBuffers(){if(!W)return;pond=document.createElement('canvas');pond.width=Math.max(2,W*PS|0);pond.height=Math.max(2,H*PS|0);pondCtx=pond.getContext('2d');
   fog=document.createElement('canvas');fog.width=W;fog.height=H;fogCtx=fog.getContext('2d');drops=[];for(let i=0;i<70;i++)drops.push({x:rand(0,W),y:rand(-H,H),r:rand(2.5,8),vy:0,trail:rand(.4,1)});}
 SKINS.rain={
-  full:true, // draws everything itself
+  full:true, selfTint:true, // draws everything itself; grades its pond INSIDE the buffer (tinting the fog reads as milk)
   render(c,t){const w=pond.width,h=pond.height;pondCtx.save();pondCtx.clearRect(0,0,w,h);
     pondCtx.scale(PS,PS);SKINS.natural.water(pondCtx,t);
     for(const p of Pond.plants)if(BELOW_TYPES[p.type])SKINS.natural.plant(pondCtx,p);
@@ -1114,6 +1114,7 @@ SKINS.rain={
     for(const p of Pond.plants)if(!BELOW_TYPES[p.type])SKINS.natural.plant(pondCtx,p);
     drawFrog(pondCtx);drawDragonfly(pondCtx);drawFireflies(pondCtx);
     for(const f of Pond.food){if(f.r<=0)continue;pondCtx.fillStyle='#c39a5e';pondCtx.beginPath();pondCtx.ellipse(f.x,f.y,f.r,f.r*.84,0,0,TAU);pondCtx.fill();}
+    dayTint(pondCtx);                    // grade the POND behind the glass — never the fog sheet
     pondCtx.restore();
     c.imageSmoothingEnabled=true;c.filter='blur(2px)';c.drawImage(pond,0,0,W,H);c.filter='none';
     c.fillStyle='rgba(40,30,20,.12)';c.fillRect(0,0,W,H);
@@ -1123,7 +1124,8 @@ SKINS.rain={
     for(const d of drops)c.drawImage(dropSprite,d.x-d.r*.78,d.y-d.r,d.r*1.56,d.r*2);   // perf: baked highlight (was a radial gradient per drop per frame)
     for(const d of drops){d.r+=(Math.random()<.02?rand(0,1.2):0);if(d.r>6||Math.random()<.01)d.vy+=.5;d.vy*=.96;d.y+=d.vy;if(d.vy>1)d.r*=.992;
       if(d.y>H+10||d.r<1.6)Object.assign(d,{x:rand(0,W),y:rand(-40,-5),r:rand(2.5,8),vy:0,trail:rand(.4,1)});}
-    for(const r of Pond.ripples)if(r.age<.05&&r.s>1)for(let i=0;i<3;i++)drops.push({x:r.x+rand(-12,12),y:r.y+rand(-12,12),r:rand(3,7),vy:0,trail:rand(.4,1)});}
+    for(const r of Pond.ripples)if(r.age<.05&&r.s>1)for(let i=0;i<3;i++)drops.push({x:r.x+rand(-12,12),y:r.y+rand(-12,12),r:rand(3,7),vy:0,trail:rand(.4,1)});
+    if(drops.length>130)drops.splice(0,drops.length-130);}   // frenzy slurps spawn drops too — cap the pane
 };
 
 // the gulp (C.3): a feeding koi works its mouth — the classic top-down "O" cycling
@@ -1400,7 +1402,7 @@ function render(t){
   ctx.filter='none';ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.shadowColor='transparent';
   const S=SKINS[skin];ctx.save();
   try{
-    if(S.full){S.render(ctx,t);dayTint(ctx);}
+    if(S.full){S.render(ctx,t);if(!S.selfTint)dayTint(ctx);}
     else{
       wctx.setTransform(WS,0,0,WS,0,0);S.water(wctx,t);            // soft water at reduced res
       ctx.imageSmoothingEnabled=true;ctx.drawImage(wbuf,0,0,W,H);  // upscale — glow doesn't mind
@@ -1530,7 +1532,7 @@ kcSwim.addEventListener('click',()=>{if(!sel)return;
 function devWarp(days){Pond.eco.lastSeen=Date.now()-days*864e5;idleReturn(true);persist();}
 let devFps=null;
 if(DEV){const dtr=document.getElementById('devtray');dtr.style.display='flex';
-  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.4.4 · … fps';dtr.appendChild(devFps);
+  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.4.5 · … fps';dtr.appendChild(devFps);
   const acts=[['+1d',()=>devWarp(1)],['+7d',()=>devWarp(7)],['+30d',()=>devWarp(30)],
     ['+200❀',()=>{Pond.econ.serenity+=200;}],
     ['mature flora',()=>{for(const p of Pond.plants){p.grow=1;if(p.type==='lotus'||p.type==='iris'||p.type==='pad')p.bloom=1;}for(const r of Pond.rocks)r.grow=1;persist();}],
@@ -1606,7 +1608,7 @@ function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;retu
   if(_adT>=5){const f=_adN/_adT;_adN=0;_adT=0;
     if(f<22&&_shed<2){_shed++;DPR_CAP=_shed===1?1.5:1;WS=_shed===1?.45:.4;resize();
       try{localStorage.setItem('koipond_q',String(_shed));}catch(e){}}}
-  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.4.4 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
+  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.4.5 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
   saveT+=dt;if(saveT>5){saveT=0;persist();}}
 addEventListener('beforeunload',persist);
 

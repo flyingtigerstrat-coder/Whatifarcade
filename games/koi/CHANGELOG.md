@@ -1,6 +1,18 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-03 — C.5.3: rain-on-glass fixed (§10 micro-loop, human's live read)
+DECIDED (human): "rain on glass is broken." Engine v3.4.4 → **v3.4.5**. TRIAGE: reproduced in real Chromium — at noon rain looked plausible, but at **dusk/night the whole pane turned muddy khaki / flat blue milk**. Root cause: rain is a `full` skin, so the Phase-C day/night grade (`dayTint`) was applied to the **final composite — fog sheet, droplets and all**. Multiply-tinting the pale fog reads as milk; the pond behind the glass vanished. (Latent since Phase C's day cycle; surfaced now that testing happens at night.)
+
+CHANGED:
+- **The pond is graded BEHIND the glass:** rain now calls `dayTint` on its own pond buffer (before fog/droplets composite) and declares `selfTint:true` so `render()` skips the composite-level tint. The glass stays neutral mist; the pond behind it carries the dusk/night grade — and the lantern's night glow is now correctly blurred by the glass instead of sitting crisp on top of it.
+- **Condensation-drop cap:** frenzy slurp ripples (s>1) spawn pane drops — the array grew unbounded during rainy feedings (a slow leak). Capped at 130, oldest recycled.
+
+TRIED / VERIFIED: all eight suites green (125/125); real-Chromium rain at noon + dusk + night with a feeding mid-rain — pond readable behind neutral glass at every hour, zero page errors. Screenshots shared.
+
+OPEN: overall fog density (`rgba(205,212,210,.5)`) is unchanged — a taste dial if the glass should read clearer; director's eye.
+
+
 ## 2026-07-03 — C.5.2: shadows hug their forms, moss lies in the grain (§10 micro-loop, human's live read)
 DECIDED (human, from a night hardscape screenshot): the driftwood's shadow oval didn't match the log it anchored ("it doesn't match up"), and the moss creep read as unidentifiable green blobs at high quantity — though "the pond is looking beautiful." Engine v3.4.3 → **v3.4.4**.
 
