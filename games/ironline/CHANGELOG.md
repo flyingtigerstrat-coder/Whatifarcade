@@ -9,6 +9,30 @@ phase: in-code
 
 ---
 
+## 2026-07-03 · session 14 (cont.) — v1.6 Wave 2 · STATION LIFE: the chips light when the wheels stop
+DECIDED: The world is the interface (law 1). Docked, the screen IS the station: 2–5 CHIPS anchored to their meaning in the drawn scene (Services at the anchor, Fuel at the pump/tower, Market at the stalls, Board by the door, the KEEPER under the capital's shed) — two-lane spacing so anchors never stack, and they light only when the wheels stop. One chip = one compact panel (the auto-opening sheet RETIRES; ✕ returns to the platform, the stop stays open). Services by tier: halts pin fuel; YARDs patch breached tanks and repair crippled cars; capitals carry signature services (scrapworks ½-price · the auction clears your hold +15% · the bone-choir sings the hull whole · SLAGSIDE's forge) and their named KEEPERS speak gate intel. STATIONS REMEMBER (fam ledger in v7, greetings warm with visits) and HAVE A PULSE (a seeded NEED that pays +40% and heads the panel). Every board keeps one no-hold work-back contract (law 7's road home).
+TRIED: Playwright caught two real UX bugs before the human could: chips anchored to a still-arriving settlement (now gated on docked) and Market/Board stacking (now two-lane).
+PARKED: Keeper figures drawn in-scene (chips carry them for now); car market beyond the weld discount.
+CHANGED: renderChips + view-gated renderDepot; openDepot counts visits + names the need; gPrice×needMult; SAVE_V still 7 (fam folded into the unshipped step); harness 105 -> 108.
+OPEN: Wave 3 next — the space between: choice cards, THE LEAK live, ADRIFT, THE OVERRUN (the pity scrap dies).
+FEELING: You don't open a menu anymore. You walk up to the stalls, and the stalls answer.
+
+## 2026-07-03 · session 14 (cont.) — v1.6 Wave 1 · THE SETTLEMENT LADDER: every stop becomes a place
+DECIDED: Stations are DRAWN now, everywhere. The composer (settleTier/settleSpec) grades every S-node — HALT (1–2 structures: water stop, signal box, windpump well, or the OIL PUMP resupply island that pins a fuel offer) · STATION (a true settlement: bStation anchor + personality clusters — stalls for markets, watchpost for outposts, bell-shack + marker yard for chapels — plus homes and infrastructure) · CAPITAL (one per region at the mid anchor BY LAW: scrap palisade, watchtowers, THE RAIL GATE with its name in the new micro-font, the grand arched TRAIN-SHED with a lamp-lit mouth, and the second building rank engaged for walled-town mass). Arrival stages the full vis choreography at every station — the settlement glides in on the decel integral, exactly like home. The origin stays singular and byte-identical; nothing out-homes it.
+TRIED: Proof stills per tier (halt/station/capital) — the capital reads as a walled town from the window; the flag collision between --tier (car tier) and the settlement kind cost one render (now --kind).
+PARKED: Region-palette recipe swaps (the veil + region tint carry it for now); per-personality figure casts; keeper figures (Wave 2).
+CHANGED: 7 new recipes on the existing parts (bOilPump/bStalls/bWatchpost/bBellShack/bPalisade/bWatchtower/bRailGate/bTrainShed); drawSettlement/drawPlaceFront generalize the railhead pipeline; the banner takes any name; S.place lifecycle (session-only); exporter settlement subject; harness 100 -> 105.
+OPEN: Wave 2 next — station life: the chips (the sheet retires), services by tier, capital keepers, memory, the pulse.
+FEELING: The line stopped being dots tonight. You pull through a gate in a wall, and a town is on the other side.
+
+## 2026-07-03 · session 14 — v1.6 Wave 0 · THE OCEAN'S MATH: range, integrity, THE PROW
+DECIDED: BRIEF v1.6 (THE OCEAN SPRINT) promoted; four plan calls ratified (tank numbers builder-tuned; pity scrap survives until Wave 3's OVERRUN replaces it; the caboose keeps its save field and converts 1:1 into THE REARGUARD; fresh consist = oil+gun+empty) plus the human's addition: the Rearguard's ladder must climb to a FORTRESS — tier names now run Red Caboose → Plated Rearguard → Keep-on-Wheels (art lands Wave 5). BUILT: full A–Z+digits micro-font (Railhead glyphs byte-preserved); second building rank (rear rank, stepped + veiled; origin stays single-rank); route profiles {len/danger/reward/dry/fuel} as the one honest book; the RANGE model — per-leg fuel, tank caps (engine 30, oil +18+6/lvl capped at 5), deep crossings ≥115% of one-tank-max BY CONSTRUCTION; leak substrate (drains per mile at arrival); overrun severity fn; THE PROW fixture (ram/shield fits, 18%+8%/lvl capped 66%, four bypass classes always unmitigated — law 8 as a unit test); garrison joins the boarding fight. SAVE_V=7.
+TRIED: THE RAILHEAD render byte-identical again; Playwright confirms the tank gauge (41/60), priced route cards with danger pips, and the prow block on the engine card.
+PARKED: Leak/adrift/overrun DRAMA (Wave 3); prow + rearguard ladder art (Wave 5).
+CHANGED: go() charges legCost(edge); navT carries the profile; fuel clamps to tankCap; harness 77 -> 100 assertions.
+OPEN: Wave 1 next — the settlement ladder (halts incl. OIL PUMP, true-settlement stations, walled capitals on the second rank).
+FEELING: The rig has a bow now, and the water has a price.
+
 ## 2026-07-03 · session 13 — the station SHEET: docked, not modal (Tiny Rails pass)
 DECIDED: The human called the full-screen station modal an immersion killer and pointed at Tiny Rails: you pull in, the world stays on screen, the station menu overlays it. Rebuilt: PORTRAIT = a bottom sheet sliding up under the ticker (canvas + rig-at-rest fully visible above, max 62dvh, no scrim); LANDSCAPE = a right-side panel (44% max) with the docked rig breathing beside it. Slide-in animations, ✕ sticky in the corner, panel internals slimmed so more world shows. The step-away/reopen loop is unchanged.
 TRIED: Playwright shots in both orientations — the landscape frame keeps the caboose-to-gun-car run visible beside the panel; the engine's nose tucks under it (the rig is wider than the window at dock camera; acceptable, Tiny Rails does the same).

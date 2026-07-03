@@ -119,6 +119,14 @@ The rail ocean is **4 regions** (`REGIONS`): Rust Flats → Dead City → Bone R
 
 ---
 
+## The Ocean's Math — range, integrity, severity, THE PROW (v1.6 Wave 0)
+
+**Route profiles** (`edgeProfile`): every edge carries `{len, danger 1–3, reward, dry, deep, fuel}`, deterministic from seed + endpoints — one book that the route cards, the chart (Wave 4), and the fuel charge all read; the chart can never lie. **The range model** (law 6): fuel is charged **per leg** (`8 + 2/mile` on the spine), and fuel has a **tank cap** — engine 30, each oil car +18 +6/level (growth caps at level 5). A **deep crossing costs ≥115% of engine + one maxed oil car by construction** (`legFuelOf`) — the two-oil gate is arithmetic, not tuning. Regen and purchases clamp to the cap; the fuel stat reads `current/cap`; route cards price every leg with danger pips.
+
+**Substrates that surface in Wave 3:** `S.leak` (a breached tank drains per mile ridden — `leakDrain` runs at every arrival) and `ovrSeverity(where, who, rearguardLvl)` → overrun tier 1–3 (spine < dark < deep < adrift · swarm < blockade < captain · the Rearguard buys tiers back). **THE PROW** (law 8): a bow **fixture** like the engine — `S.prow {lvl, fit}`, two fits cycled for scrap (RAM PLOW: mine/debris/storm/collision · SHIELD PLATE: frontal/breach), mitigation `18% + 8%/level` **hard-capped at 66%**, and the four **bypass classes** (broadside, bait, sabotage, surge) always roll unmitigated — a maxed prow still bleeds on the ocean. The drawn cowcatcher is the level-1 visual; the ladder art lands Wave 5. **THE REARGUARD**: the caboose's level converts 1:1 — garrison 2/level (already draining boarding meters), loot continuity kept, tier names run Red Caboose → Plated Rearguard → **Keep-on-Wheels** (the fortress ladder the human called for; art Wave 5). Fresh boots field the trimmed consist (engine + oil + gun + empty + Rearguard); existing saves keep their farms. SAVE_V=7 adds prow/leak/crippled/prizes.
+
+---
+
 ## Save schema — versioned, migrated stepwise
 
 `save()` stamps `v: SAVE_V`; `load()` runs `migrate(d)` **first**, so load logic only ever reads the current schema. `migrate()` is a **chain of stepwise upgrades** — one step per wave that grows state (v1→v2 normalized the live-shipped unversioned shape; v2→v3 will add map state and place veterans on the node graph). **Policy: a rig is sacred** — unknown/higher versions pass through untouched and load reads known fields defensively; only a genuinely unparseable blob falls back to a fresh boot. Extend save/load/reset (and the harness) together every time state grows.

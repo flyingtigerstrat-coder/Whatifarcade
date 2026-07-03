@@ -43,6 +43,10 @@ canvas{width:100%;display:block;image-rendering:pixelated;background:#d9a05e}
 .routecard.sel{border-color:#e0a33a;background:#2c2014;box-shadow:0 0 0 1px #8a5a1a inset}
 .routecard.sel .rg{color:#f2c560}
 .routecard.sel .rt{color:#cdb894}
+#chips{position:absolute;left:0;right:0;bottom:6px;z-index:12;display:none;pointer-events:none;height:0}
+#chips .chip{position:absolute;bottom:0;transform:translateX(-50%);pointer-events:auto;font:inherit;font-size:14px;letter-spacing:1px;color:#efe3cc;background:rgba(28,20,12,0.88);border:2px solid #8a5a1a;border-bottom-width:3px;padding:3px 9px;white-space:nowrap;text-transform:uppercase}
+#chips .chip:active{transform:translateX(-50%) translateY(1px)}
+#chips .chip .cg{color:#f2c560;margin-right:4px}
 #depot{display:none;position:absolute;z-index:40;left:0;right:0;bottom:0;top:auto;max-height:62dvh;overflow-y:auto;background:rgba(18,14,10,0.97);border-top:3px solid #8a5a1a;padding:10px 12px 12px;box-shadow:0 -8px 26px rgba(0,0,0,0.55);scrollbar-width:thin;scrollbar-color:#6b4a2e #1a1410}
 #depot.show{display:block;animation:sheetup 0.22s ease}
 @keyframes sheetup{from{transform:translateY(26px);opacity:0.3}to{transform:none;opacity:1}}
@@ -215,7 +219,7 @@ button{font-family:'VT323',monospace;cursor:pointer;border:none}
 <button id="im" title="Immersive mode (hide all UI)">◹ Immerse</button>
 </div>
 </div>
-<div class="frame"><div class="cvwrap"><canvas id="cv" width="640" height="360" aria-label="Side view of your armored battle train rolling through a ruined desert wasteland on a multi-lane rail ocean"></canvas><div id="region"></div></div></div>
+<div class="frame"><div class="cvwrap"><div id="chips"></div><canvas id="cv" width="640" height="360" aria-label="Side view of your armored battle train rolling through a ruined desert wasteland on a multi-lane rail ocean"></canvas><div id="region"></div></div></div>
 <div id="ticker">The wastes are quiet. Upgrade your rig, then depart.</div>
 <div id="content">
 <div class="view" id="v-travel">
@@ -254,9 +258,9 @@ function blitSprite(name,x,y,scale,flip){const s=SPRITES[name];if(!s||!s.ready)r
 loadSprite('fortress',100,50,'data:image/png;base64,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');
 const KEY='battle-train-save';
 const S={scrap:120,food:20,fuel:30,heroes:[],crewSel:-1,journeys:0,engine:1,caboose:1,maxSlots:3,
-slots:[{type:'gun',wpn:'cannon',port:'auto',lvl:1},{type:'farm',lvl:1},null],
+slots:[{type:'oil',lvl:1},{type:'gun',wpn:'cannon',port:'auto',lvl:1},null],
 mode:'idle',jt:0,dur:14,waves:[],wi:0,hull:0,off:0,flash:0,raiders:[],smoke:[],booms:[],tracers:[],smT:0,saveT:0,resetArm:0,T:0,dt:0.016,ex:216,stackX:286,pan:0,maxPan:0,panHintT:0,tw:{x:360,r:0},turr:{},boss:null,crate:null,crateAt:-1,lastRegion:-1,lastWx:-1,ptrain:null,ptrainAt:-1,ptrainKind:'trader',ptrainElite:false,dist:0,depot:null,discount:false,view:'travel',logHist:[],layout:'',layoutManual:false,immersive:false,engineSkin:null,fortressUnlocked:false,origin:false,stationX:null,stop:null,lampK:1,
-nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null,cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0},linebroken:false};
+nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null,cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0},linebroken:false,prow:{lvl:1,fit:'ram'},leak:null,crippled:[],prizes:[],place:null,fam:{},depotView:null};
 const gun=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='gun'?s.lvl*wpow(s.wpn||'cannon',s.port||'auto'):0),0)*crewBuffs().gunMult;
 const troops=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='troop'?s.lvl*4:0),0);
 const farm=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='farm'?s.lvl*0.5:0),0)*crewBuffs().foodMult;
@@ -412,7 +416,7 @@ let canSave=typeof window.storage!=='undefined';
 // ---- save schema: versioned, migrated stepwise (one step per state-growing wave; BRIEF v1.2 rule 2) ----
 // POLICY: a rig is sacred. Unknown/higher versions pass through untouched and load reads known fields
 // defensively — we never wipe. Only a genuinely unparseable blob falls back to a fresh boot.
-const SAVE_V=6;
+const SAVE_V=7;
 function migrate(d){
  if(!d||typeof d!=='object')return null;
  if(!d.v){                                  // v1: the unversioned live-shipped shape -> v2 (normalize, no behavior change)
@@ -443,7 +447,11 @@ function migrate(d){
   d.linebroken=0;
   d.v=6;
  }
- // future steps append here, in order: if(d.v==6){ ... d.v=7 }
+ if(d.v==6){                                // v6 -> v7: THE OCEAN — bow fitting, tank integrity, wound & prize ledgers. The caboose converts 1:1 into the Rearguard.
+  d.prow={lvl:1,fit:'ram'};d.leak=null;d.crippled=[];d.prizes=[];d.fam={};
+  d.v=7;
+ }
+ // future steps append here, in order: if(d.v==7){ ... d.v=8 }
  return d;
 }
 function setSaveMsg(t){document.getElementById('savemsg').textContent=t}
@@ -451,7 +459,7 @@ let saveTimer=null;
 async function save(){
 if(!canSave){setSaveMsg('Saving unavailable here');return}
 try{
-const d={v:SAVE_V,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0,nav:S.nav,visited:S.visited,cargo:S.cargo,pax:S.pax,contracts:S.contracts,rep:S.rep,linebroken:S.linebroken?1:0};
+const d={v:SAVE_V,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0,nav:S.nav,visited:S.visited,cargo:S.cargo,pax:S.pax,contracts:S.contracts,rep:S.rep,linebroken:S.linebroken?1:0,prow:S.prow,leak:S.leak,crippled:S.crippled,prizes:S.prizes,fam:S.fam};
 const r=await window.storage.set(KEY,JSON.stringify(d));
 if(r){setSaveMsg('Progress saved');clearTimeout(saveTimer);saveTimer=setTimeout(()=>setSaveMsg(''),2500)}
 }catch(e){canSave=false;setSaveMsg('Saving unavailable here')}
@@ -469,8 +477,11 @@ else S.nav={seed:1,reg:0,col:0,row:0};                                          
 S.visited=Array.isArray(d.visited)&&d.visited.length?d.visited.slice():[navVK(S.nav.reg,S.nav.col,S.nav.row)];
 S.sel=0;S.navT=null;
 S.cargo=(d.cargo&&typeof d.cargo=='object')?d.cargo:{};S.pax=Array.isArray(d.pax)?d.pax:[];S.contracts=Array.isArray(d.contracts)?d.contracts:[];S.rep=(d.rep&&typeof d.rep=='object')?{disp:d.rep.disp|0,carav:d.rep.carav|0,tr:d.rep.tr|0}:{disp:0,carav:0,tr:0};S.linebroken=!!d.linebroken;
+S.prow=(d.prow&&typeof d.prow=='object')?{lvl:Math.max(1,d.prow.lvl|0),fit:d.prow.fit=='shield'?'shield':'ram'}:{lvl:1,fit:'ram'};
+S.leak=(d.leak&&typeof d.leak=='object')?{rate:+d.leak.rate||0,t:+d.leak.t||0}:null;
+S.crippled=Array.isArray(d.crippled)?d.crippled:[];S.prizes=Array.isArray(d.prizes)?d.prizes:[];S.fam=(d.fam&&typeof d.fam=='object')?d.fam:{};
 if(d.origin&&S.nav.reg==0&&S.nav.col==0){S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1} // saved while docked at the origin — wake up there
-else{S.origin=false;S.stop=null;S.stationX=null;S.lampK=1}                                       // ...otherwise the load is authoritative: mid-journey, no stop
+else{S.origin=false;S.stop=null;S.stationX=null;S.lampK=1}S.place=null;                          // ...otherwise the load is authoritative: mid-journey, no stop (staged places are session-only)
 return true}
 }catch(e){}
 return false;
@@ -510,7 +521,10 @@ function cards(){
 let fu;
 if(!S.fortressUnlocked)fu='<button class="up" data-act="fortress" '+(S.scrap<FORT_COST?'disabled':'')+'>⛓ Fortress refit · '+FORT_COST+' scrap</button>';
 else fu='<div class="sub">⛓ Fortress hull · '+(S.engineSkin=='fortress'?'engaged':'in reserve')+'</div>'+(S.engineSkin=='fortress'?'<button class="up alt" data-act="fortressOff">Revert to standard rig</button>':'<button class="up" data-act="fortressOn">Engage Fortress engine</button>');
-let h='<div class="card"><div class="hd"><span class="nm">'+pip('#e0a33a')+'Engine</span><span class="lv">LV '+S.engine+' '+tierMk(S.engine)+'</span></div><div class="sub">Hull '+maxHull()+' · run '+Math.max(8,15-S.engine)+'s</div><button class="up" data-act="eng" '+(S.scrap<enC()?'disabled':'')+'>Upgrade · '+enC()+' scrap</button>'+fu+'</div>';
+const pf=PROW_FITS[S.prow.fit],pfo=S.prow.fit=='ram'?PROW_FITS.shield:PROW_FITS.ram;
+let h='<div class="card"><div class="hd"><span class="nm">'+pip('#e0a33a')+'Engine</span><span class="lv">LV '+S.engine+' '+tierMk(S.engine)+'</span></div><div class="sub">Hull '+maxHull()+' · run '+Math.max(8,15-S.engine)+'s · tank '+TANK_ENG+'</div><button class="up" data-act="eng" '+(S.scrap<enC()?'disabled':'')+'>Upgrade · '+enC()+' scrap</button>'+fu
++'<div class="sub" style="margin-top:6px">\u2693 THE PROW · '+pf.nm+' LV '+S.prow.lvl+' · \u2212'+Math.round(prowMit(pf.classes[0])*100)+'% vs '+pf.classes.join('/')+'<br><i>the ocean always keeps its cut — broadsides, bait, sabotage and surges bypass it</i></div>'
++'<div class="wsel"><button class="wcyc" data-act="prowFit" '+(S.scrap<PROW_REFIT?'disabled':'')+'>\u27f3 '+pfo.nm+' · '+PROW_REFIT+'</button><button class="wcyc" data-act="prowUp" '+(S.scrap<prowC()?'disabled':'')+'>Reinforce · '+prowC()+'</button></div></div>';
 S.slots.forEach((s,i)=>{
 if(s){h+='<div class="card"><div class="hd"><span class="nm">'+pip(s.type=='gun'?WP[s.wpn||'cannon']:PIP[s.type])+(s.type=='gun'?WN[s.wpn||'cannon']:NM[s.type])+'</span><span class="lv">LV '+s.lvl+' '+tierMk(s.lvl)+'</span></div><div class="sub">'+statLine(s)+'</div>'+(s.type=='gun'?'<div class="wsel"><button class="wcyc" data-act="cycTop" data-i="'+i+'" '+(S.scrap<REFIT?'disabled':'')+'>⟳ '+TOPW[nextTop(s.wpn||'cannon')].nm+' · '+REFIT+'</button><button class="wcyc" data-act="cycPort" data-i="'+i+'" '+(S.scrap<REFIT?'disabled':'')+'>⟳ '+PORTW[nextPort(s.port||'auto')].nm+' · '+REFIT+'</button></div>':'')+'<button class="up" data-act="up" data-i="'+i+'" '+(S.scrap<upC(s.lvl)?'disabled':'')+'>Upgrade · '+upC(s.lvl)+' scrap</button></div>'}
 else{const cant=(S.scrap<NEWCAR||S.food<carFoodC())?'disabled':'';
@@ -524,7 +538,7 @@ h+='<div class="card empty"><div class="hd"><span class="nm">Empty slot</span></
 '<button class="up build" data-act="build" data-i="'+i+'" data-t="gun" data-w="cannon" '+cant+'>Cannon · fast</button>'+
 '<button class="up build" data-act="build" data-i="'+i+'" data-t="gun" data-w="rocket" '+cant+'>Rockets · hard hit</button>'+
 '<button class="up build" data-act="build" data-i="'+i+'" data-t="gun" data-w="mortar" '+cant+'>Mortar · lobbed</button></div>'}});
-h+='<div class="card"><div class="hd"><span class="nm">'+pip('#8a3a30')+'Caboose</span><span class="lv">LV '+S.caboose+' '+tierMk(S.caboose)+'</span></div><div class="sub">+'+Math.round(S.caboose*10)+'% loot</div><button class="up" data-act="cab" '+(S.scrap<cbC()?'disabled':'')+'>Upgrade · '+cbC()+' scrap</button></div>';
+h+='<div class="card"><div class="hd"><span class="nm">'+pip('#8a3a30')+'The Rearguard</span><span class="lv">LV '+S.caboose+' '+tierMk(S.caboose)+'</span></div><div class="sub">'+RGT[vtier(S.caboose)]+' · garrison '+rgGarrison()+' · +'+Math.round(S.caboose*10)+'% loot · the stern holds</div><button class="up" data-act="cab" '+(S.scrap<cbC()?'disabled':'')+'>Fortify · '+cbC()+' scrap</button></div>';
 if(S.maxSlots<8)h+='<button id="slotbtn" data-act="slot" '+(S.scrap<slC()?'disabled':'')+'>+ Couple a new car slot · '+slC()+' scrap</button>';
 document.getElementById('cars').innerHTML=h;
 }
@@ -535,7 +549,9 @@ if(act=='eng'){S.scrap-=dc(enC());S.engine++;S.hull=maxHull();log('Engine refit.
 else if(act=='fortress'){if(S.scrap<dc(FORT_COST))return;S.scrap-=dc(FORT_COST);S.fortressUnlocked=true;S.engineSkin='fortress';log('Fortress hull bolted on — the engine becomes a rolling keep.')}
 else if(act=='fortressOn'){S.engineSkin='fortress';log('Fortress engine engaged.')}
 else if(act=='fortressOff'){S.engineSkin=null;log('Reverted to the standard war-rig engine.')}
-else if(act=='cab'){S.scrap-=dc(cbC());S.caboose++;log('Caboose crew expands the salvage rigging.')}
+else if(act=='cab'){S.scrap-=dc(cbC());S.caboose++;log('The Rearguard is fortified — '+RGT[vtier(S.caboose)]+', garrison '+rgGarrison()+'. The stern holds.')}
+else if(act=='prowUp'){if(S.scrap<dc(prowC()))return;S.scrap-=dc(prowC());S.prow.lvl++;log('THE PROW is reinforced to LV '+S.prow.lvl+' — she cuts the water harder. (The ocean still keeps its cut.)')}
+else if(act=='prowFit'){if(S.scrap<dc(PROW_REFIT))return;S.scrap-=dc(PROW_REFIT);S.prow.fit=S.prow.fit=='ram'?'shield':'ram';log('Bow refit \u2192 '+PROW_FITS[S.prow.fit].nm+' — '+(S.prow.fit=='ram'?'mines, debris and storm-wrack meet the plow.':'frontal fire meets riveted plate.'))}
 else if(act=='up'){const s=S.slots[+b.dataset.i];S.scrap-=dc(upC(s.lvl));s.lvl++;log(NM[s.type]+' upgraded to level '+s.lvl+'.')}
 else if(act=='build'){S.scrap-=dc(NEWCAR);S.food=Math.max(0,S.food-carFoodC());const t=b.dataset.t;const ns=t=='gun'?{type:'gun',wpn:b.dataset.w,port:'auto',lvl:1}:{type:t,lvl:1};crewOf(ns);S.slots[+b.dataset.i]=ns;log((t=='gun'?WN[b.dataset.w]:NM[t])+' welded onto the line — '+CREW[crewOf(ns).kind].nm+' takes their post.')}
 else if(act=='crew'){const s=S.slots[+b.dataset.i],c=crewOf(s);if(c.rank>=MAXRANK)return;const cost=crewRankCost(c.rank);if(S.scrap<cost)return;S.scrap-=cost;c.rank++;log(CREW[c.kind].nm+' trained to rank '+RNK[c.rank]+' — '+CREW[c.kind].buff(c.rank)+'.')}
@@ -556,14 +572,15 @@ else return;
 renderCrew();cards();save();
 });
 document.getElementById('go').addEventListener('click',()=>{
-if(S.mode=='depot'){S.depotMin=false;renderDepot();showView('travel');return} // re-open the stop's popup
-if(S.mode=='run'||S.fuel<fuelC())return;
+if(S.mode=='depot'){S.depotView='services';S.depotMin=false;renderDepot();showView('travel');return} // the Depart button doubles as the Services bell while docked
+if(S.mode=='run')return;
 if(S.stop&&S.stop.ph=='arriving')return;                     // she's still rolling in — let her settle first
 const edges=nodeEdges(S.nav.reg,S.nav.col,S.nav.row);
 if(!edges.length){log('The line ends at THE TERMINUS. Beyond the dead signals there is nothing left to cross \u2014 yet.');return}
 const to=edges[Math.max(0,Math.min(edges.length-1,S.sel))],ty=nodeType(to.reg,to.col,to.row),nm=nodeName(to.reg,to.col,to.row);
-S.fuel-=fuelC();S.food=Math.max(0,S.food-rations());S.mode='run';S.jt=0;S.raiders=[];S.tracers=[];S.crate=null;
-S.navT={to,regChange:to.reg!==S.nav.reg};S.boss=null;S.ptrain=null;
+const _cost=legCost(to);if(S.fuel<_cost)return;                                   // range is seaworthiness: the leg names its price (law 6)
+S.fuel-=_cost;S.food=Math.max(0,S.food-rations());S.mode='run';S.jt=0;S.raiders=[];S.tracers=[];S.crate=null;
+S.navT={to,regChange:to.reg!==S.nav.reg,prof:edgeProfile(S.nav,to)};S.boss=null;S.ptrain=null;
 if(ty=='G'){S.dur=Math.max(11,18-S.engine);S.waves=[];S.wi=0;const tier=Math.min(3,S.nav.reg),fin=S.nav.reg==3&&!S.linebroken,pret=S.linebroken,guns=fin?3:Math.min(3,S.nav.reg),wp=['cannon','rocket','mortar'],cars=[{type:'engine'}];for(let g=0;g<guns;g++)cars.push({type:'gun',wpn:wp[g%3]});cars.push({type:'fuel'});const m=Math.round((55+eff()*22)*(1+guns*0.4)*(fin?1.6:pret?0.75:1));S.boss={hp:m,max:m,x:380,tx:fin?190:200,hitT:1.5,dead:false,set:false,cars,tier,guns,cap:S.nav.reg,final:fin,pret,phase:1};S.crateAt=-1;S.ptrainAt=-1;
  log(fin?'THE TERMINUS. The fortress engine sits across the gate, dark and idling. He knew you were coming.':pret?'A pretender flies '+CAPTAINS[S.nav.reg].nm+'\u2019s colors over the gate \u2014 the wastes never learn.':'The gate at '+nm+' is held \u2014 '+CAPTAINS[S.nav.reg].nm+' and a warlord convoy of '+CLANS[S.nav.reg].nm+' block the crossing ('+(guns?guns+' gun car'+(guns>1?'s':'')+' + lead gun':'lead gun only')+'). Bring everything you have.')} // the region GATE: a named captain until the line breaks; a pretender after
 else if(ty=='B'){S.dur=Math.max(8,15-S.engine);S.waves=[0.3*S.dur];S.wi=0;S.ptrainElite=true;S.ptrainKind='raider';S.ptrainBoard=eff()>=6&&Math.random()<0.5;S.ptrainAt=S.dur*(0.15+Math.random()*0.22);S.crateAt=-1;log('Departing for '+nm+'. The line ahead is blockaded \u2014 heavy dust rising off the parallel rail...')} // a BLOCKADE leg forces the elite warband
@@ -575,7 +592,8 @@ const b=document.getElementById('reset');
 if(!S.resetArm){S.resetArm=1;b.textContent='Tap again to confirm';setTimeout(()=>{S.resetArm=0;b.innerHTML='Scuttle &amp; restart'},3000);return}
 S.resetArm=0;b.innerHTML='Scuttle &amp; restart';
 S.scrap=120;S.food=20;S.fuel=30;S.heroes=[];S.crewSel=-1;S.journeys=0;S.engine=1;S.caboose=1;S.maxSlots=3;
-S.slots=[{type:'gun',wpn:'cannon',port:'auto',lvl:1},{type:'farm',lvl:1},null];S.slots.forEach(s=>crewOf(s));
+S.slots=[{type:'oil',lvl:1},{type:'gun',wpn:'cannon',port:'auto',lvl:1},null];S.slots.forEach(s=>crewOf(s));
+S.prow={lvl:1,fit:'ram'};S.leak=null;S.crippled=[];S.prizes=[];S.place=null;S.fam={};S.depotView=null;
 S.hull=maxHull();S.mode='idle';S.raiders=[];S.booms=[];S.tracers=[];S.boss=null;S.crate=null;S.dist=0;S.depot=null;S.discount=false;renderDepot();
 S.nav={seed:1+Math.floor(Math.random()*99999),reg:0,col:0,row:0};S.visited=['0:0:0'];S.sel=0;S.navT=null;
 S.cargo={};S.pax=[];S.contracts=[];S.rep={disp:0,carav:0,tr:0};S.linebroken=false;
@@ -652,8 +670,9 @@ const GKEYS=Object.keys(GOODS);
 const GMKT={ // per-region price multiplier: <1 they sell cheap (supply) · >1 they pay dear (demand). The Seam makes everything dear.
  ore:[0.6,1.2,1.1,1.4],parts:[1.2,0.6,1.1,1.3],med:[1.3,1.1,0.7,1.5],grain:[0.8,1.5,1.2,1.6],relic:[1.2,0.8,0.6,1.1]};
 const navK=()=>S.nav.reg*1000+S.nav.col*37+S.nav.row*7;
-function gPrice(g){return Math.max(2,Math.round(GOODS[g].base*GMKT[g][S.nav.reg]*(0.85+0.3*hash(S.nav.seed+navK()*11+GKEYS.indexOf(g)*29+13))))}
-const gTrend=g=>GMKT[g][S.nav.reg]<0.95?'▼':GMKT[g][S.nav.reg]>1.15?'▲':'·'; // the visible spread: ▼ cheap here, ▲ dear here
+function gPrice(g){return Math.max(2,Math.round(GOODS[g].base*GMKT[g][S.nav.reg]*needMult(g)*(0.85+0.3*hash(S.nav.seed+navK()*11+GKEYS.indexOf(g)*29+13))))}
+const gTrend=g=>GMKT[g][S.nav.reg]<0.95?'▼':GMKT[g][S.nav.reg]>1.15?'▲':'·';
+const needMult=g=>(S.depot&&S.depot.need===g)?1.4:1; // the pulse: what this stop NEEDS, it pays dear for
 const cargoUsed=()=>GKEYS.reduce((a,g)=>a+(S.cargo[g]||0),0);
 const PERS={yard:'YARD',market:'MARKET',outpost:'OUTPOST',chapel:'CHAPEL'};
 function stationPers(reg,col,row){if(reg==0&&col==0)return['yard','market']; // the Railhead teaches the trade
@@ -665,7 +684,48 @@ function mkBoard(){ // the Dispatcher board: 2 contracts per visit, refreshed by
   if(h<0.6){const g=GKEYS[Math.floor(h2*GKEYS.length)],n=2+Math.floor(hash(S.nav.seed+k*47+i*83+S.journeys*7+1)*4),tr=Math.min(REGIONS.length-1,S.nav.reg+(h2>0.5?1:0));
    out.push({k:'haul',g,n,reg:tr,src:navVK(S.nav.reg,S.nav.col,S.nav.row),pay:Math.round(GOODS[g].base*GMKT[g][tr]*1.7*n)})}
   else{const legs=2+Math.floor(h2*3);out.push({k:'escort',legs,left:legs,pay:Math.round((26+eff()*10)*legs)})}}
+ if(!out.some(c=>c.k=='escort'))out[1]={k:'escort',legs:2,left:2,pay:Math.round((26+eff()*10)*2)}; // the work-back path: one no-hold contract, always (law 7)
  return out}
+/* ---- WAVE 0 (v1.6): THE OCEAN'S MATH — profiles, range, integrity, severity, THE PROW ---- */
+// ROUTE PROFILES: one book for every edge — the chart may never lie (laws 5/6)
+const TANK_ENG=30,OIL_TANK_BASE=18,OIL_TANK_PER=6,OIL_LVL_CAP=5;
+const SINGLE_MAX=TANK_ENG+OIL_TANK_BASE+OIL_LVL_CAP*OIL_TANK_PER;                 // engine + ONE maxed oil car = 78
+const oilTank=s=>OIL_TANK_BASE+Math.min(OIL_LVL_CAP,s.lvl)*OIL_TANK_PER;
+const tankCap=()=>TANK_ENG+S.slots.reduce((a,s)=>a+(s&&s.type=='oil'?oilTank(s):0),0);
+const legFuelOf=(len,deep)=>deep?Math.ceil(SINGLE_MAX*1.15)+len:8+len*2;          // a deep crossing EXCEEDS one tank by construction (law 6)
+const RTAGS=['salvage','trade','relic','fuel','quiet'];
+const edgeKey=(a,b)=>a.reg*100000+a.col*3700+a.row*700+b.reg*1000+b.col*37+b.row;
+function edgeProfile(from,to){const k=edgeKey(from,to),ty=nodeType(to.reg,to.col,to.row);
+ const deep=!!(to.deep||from.deep);                                               // deep branches arrive with the wave-4 generator; the math is ready now
+ const len=deep?10+Math.floor(hash(S.nav.seed+k*7+11)*5):2+Math.floor(hash(S.nav.seed+k*7+11)*4); // miles
+ const danger=deep?3:ty=='G'?3:(ty=='B'||ty=='H')?Math.min(3,2+(hash(S.nav.seed+k*13+3)<0.4?1:0)):1+(hash(S.nav.seed+k*13+3)<0.35?1:0);
+ const reward=ty=='S'?'trade':ty=='G'?'the gate':RTAGS[Math.floor(hash(S.nav.seed+k*17+5)*RTAGS.length)];
+ const dry=deep||hash(S.nav.seed+k*23+7)<(to.reg>=2?0.3:0.15);
+ return{len,danger,reward,dry,deep,fuel:legFuelOf(len,deep)}}
+const legCost=e=>Math.max(3,Math.round(edgeProfile(S.nav,e).fuel*crewBuffs().fuelMult));
+// FUEL INTEGRITY: a breached tank drains per mile until patched (the drama lands wave 3)
+function leakDrain(miles){if(!S.leak)return 0;const d=S.leak.rate*miles;S.fuel=Math.max(0,S.fuel-d);return d}
+// OVERRUN SEVERITY (law 7): where < who < the Rearguard's answer (the beat lands wave 3)
+const OVR_WHERE={spine:1,dark:2,deep:3,adrift:4},OVR_WHO={swarm:0,blockade:1,captain:2};
+function ovrSeverity(where,who,rg){const s=(OVR_WHERE[where]||1)+(OVR_WHO[who]||0)-Math.floor((rg||0)/3);return s>=5?3:s>=3?2:1}
+// THE PROW (law 8): mitigation is real and NEVER total — the ocean always keeps its cut
+const PROW_CAP=0.66;
+const PROW_FITS={ram:{nm:'RAM PLOW',classes:['mine','debris','storm','collision']},shield:{nm:'SHIELD PLATE',classes:['frontal','breach']}};
+const PROW_BYPASS=['broadside','bait','sabotage','surge'];
+function prowMit(cls){if(PROW_BYPASS.includes(cls))return 0;const f=PROW_FITS[S.prow&&S.prow.fit];if(!f||!f.classes.includes(cls))return 0;return Math.min(PROW_CAP,0.18+S.prow.lvl*0.08)}
+const prowC=()=>Math.round(60*Math.pow(1.8,(S.prow?S.prow.lvl:1)-1));
+const PROW_REFIT=30;
+// THE REARGUARD: the caboose grows a garrison and, in time, becomes a keep on wheels (ladder art lands wave 5)
+const RGT=['Red Caboose','Plated Rearguard','Keep-on-Wheels','Keep-on-Wheels'];
+const rgGarrison=()=>S.caboose*2;
+const CAPNM=['THE JUNCTION','OLD EXCHANGE','THE RIBYARD','SLAGSIDE'];
+const KEEPERS=[{nm:'THE YARDMASTER',line:'"Every rig that ever mattered came through my yard. Most left."'},
+ {nm:'THE AUCTIONEER',line:'"Everything sells, engineer. The only variable is when."'},
+ {nm:'THE CURATE',line:'"The Reef keeps what it is given. Give carefully."'},
+ {nm:'THE FORGEMASTER',line:'"Bring me a bow worth sharpening and I will make the ocean flinch."'}];
+function stationNeed(reg,col,row){const k=reg*1000+col*37+row*7,vk=navVK(reg,col,row),v=(S.fam[vk]|0);
+ return GKEYS[Math.floor(hash(S.nav.seed+k*29+v*7+41)*GKEYS.length)]}
+function famGreet(nm,v){return v<=1?'You pull into '+nm+'.':v<4?'They remember the rig at '+nm+'. Nods from the platform.':'Lamps swing a welcome at '+nm+' \u2014 they know this engine by sound now.'}
 const PAXN=['The Cartographer','A Quiet Bride','The Bone-Doctor','A Debt-Runner','The Lantern Widow','The Deaf Surveyor'];
 function paxBoard(){ // seats fill at stations; specials pay 5x and carry a name
  let on=0;const free=seats()-S.pax.length;
@@ -690,7 +750,9 @@ function navEvent(nm){const r=Math.random(),tp=troops(); // troops are manpower:
 function navArrive(){ // every completed leg lands here: move the rig on the map, then let the node speak
  const to=S.navT&&S.navT.to;S.navT=null;
  if(!to){cards();save();return}
- S.dist+=4+Math.floor(S.engine*0.6);
+ const _mi=(S.navT&&S.navT.prof)?S.navT.prof.len:4;
+ S.dist+=_mi;
+ {const ld=leakDrain(_mi);if(ld>0)log('The breached tank wept '+Math.round(ld)+' fuel across the crossing. Patch it at a YARD.')}
  S.nav={seed:S.nav.seed,reg:to.reg,col:to.col,row:to.row};
  const vk=navVK(to.reg,to.col,to.row);if(!S.visited.includes(vk))S.visited.push(vk);
  if(to.reg==3&&to.col==0)grantHero('surveyor','A dust-caked mapmaker climbs down from the water tower at the Seam\u2019s edge, folding a chart of lines that should not exist.');
@@ -700,7 +762,7 @@ function navArrive(){ // every completed leg lands here: move the rig on the map
  S.contracts.forEach(c=>{if(c.k=='escort')c.left--});                              // every safe leg counts toward an escort
  S.contracts=S.contracts.filter(c=>{if(c.k=='escort'&&c.left<=0){const pay=Math.round(c.pay*(1+S.rep.disp*0.02)*(1+troops()*0.01));S.scrap+=pay;S.rep.disp=Math.min(10,S.rep.disp+1);log('Escort complete — the caravan pays out '+pay+' scrap'+(troops()?' (your riflemen earn their keep)':'')+'.');return false}return true});
  paxArrive(ty=='S');
- if(ty=='S'){openDepot(nm);paxBoard()}
+ if(ty=='S'){S.place=Object.assign(settleSpec(to.reg,to.col,to.row),{name:nm});openDepot(nm);paxBoard()}
  else{stopArrive(false);S.stop.auto=true; // a real halt at every stop — then she rolls on her own
   if(ty=='E')navEvent(nm);
   else if(ty=='H'){const heal=Math.round(maxHull()*0.25);S.hull=Math.min(maxHull(),S.hull+heal);log('You clear the bad country and breathe at '+nm+'. The crew patches plate — +'+heal+' hull.')}
@@ -716,12 +778,14 @@ if(type=='recruit'){const c=Math.round(70+idx*22);return{label:'Wandering specia
 if(type=='scrap'){const c=Math.round(12+idx*4),g=Math.round(40+idx*14);return{label:'Scrap broker',desc:'−'+c+' food · +'+g+' scrap',can:()=>S.food>=c,act:()=>{S.food-=c;S.scrap+=g;log('Sold rations for '+g+' scrap.')}}}
 if(type=='scavenge'){return{label:'Pick the wreck-stacks',desc:'free · gamble',can:()=>true,act:()=>{const r=Math.random();if(r<0.5){const g=Math.round(35+idx*13);S.scrap+=g;log('Scavenging paid off — +'+g+' scrap.')}else if(r<0.8){const g=Math.round(12+idx*5);S.food+=g;log('Found a food cache — +'+g+' food.')}else log('The stacks were already picked clean. Nothing here.')}}}
 if(type=='cache'){const g=Math.round(24+idx*10);return{label:'Supply cache',desc:'free · +'+g+' scrap',can:()=>true,act:()=>{S.scrap+=g;log('Cracked a supply cache — +'+g+' scrap.')}}}
+if(type=='patch'){const c=Math.round(20+idx*5);return{label:'Patch the breached tank',desc:'\u2212'+c+' scrap \u00b7 the leak stops',can:()=>!!S.leak&&S.scrap>=c,act:()=>{S.scrap-=c;S.leak=null;log('The yard crew sweats the tank seams tight. The leak is DONE weeping.')}}}
+if(type=='uncripple'){const c=Math.round(45+idx*12);return{label:'Repair a crippled car',desc:'\u2212'+c+' scrap \u00b7 back in the line',can:()=>S.crippled.length>0&&S.scrap>=c,act:()=>{const i=S.crippled.shift();S.scrap-=c;log('The yard raises the charred car and makes it a CAR again. She rejoins the line.')}}}
 if(type=='guard'){return{label:'Walk the walls',desc:'free · troops earn their keep',can:()=>troops()>0,act:()=>{const g=Math.round(troops()*(6+eff()));S.scrap+=g;log('Your troops walk the walls for a night — +'+g+' scrap earned.')}}}
 if(type=='blessing'){const heal=Math.round(maxHull()*0.2);return{label:'Chapel of the Open Rail',desc:'free · the crew breathes',can:()=>true,act:()=>{S.hull=Math.min(maxHull(),S.hull+heal);S.food+=4;log('Lamp-smoke and quiet in the chapel car. The crew breathes — +'+heal+' hull, +4 food.')}}}
 return{label:'Black-market fixer',desc:'free · next upgrade ½ price',can:()=>!S.discount,act:()=>{S.discount=true;log('A fixer marks down your next upgrade to half price.')}}}
 function depotOffers(idx,pers){ // personalities pin their trade first (YARD repairs, OUTPOST recruits, CHAPEL blesses); the rest rolls from the pool
 const pool=['repair','food','scrap','fuel','recruit','scavenge','cache','discount'],pick=[],used={};
-if(pers&&pers.includes('yard')){used.repair=1;pick.push('repair')}
+if(pers&&pers.includes('yard')){used.repair=1;used.patch=1;used.uncripple=1;pick.push('repair');if(S.leak)pick.push('patch');if(S.crippled&&S.crippled.length)pick.push('uncripple')}
 if(pers&&pers.includes('outpost')){used.recruit=1;used.guard=1;pick.push('recruit');pick.push('guard')}
 if(pers&&pers.includes('chapel')){used.blessing=1;pick.push('blessing')}
 let k=0;while(pick.length<3&&k<20){const t=pool[Math.floor(hash(idx*13+k*7+9)*pool.length)];if(!used[t]){used[t]=1;pick.push(t)}k++}
@@ -729,17 +793,46 @@ if(!pick.includes('scavenge')&&!pick.includes('cache'))pick[pick.length-1]='scav
 return pick.map(t=>offerObj(t,idx))}
 function openDepot(nm){const idx=eff(),pers=stationPers(S.nav.reg,S.nav.col,S.nav.row);S.depotMin=false;
 S.depot={idx,name:nm,pers,key:navVK(S.nav.reg,S.nav.col,S.nav.row),offers:depotOffers(idx,pers),board:mkBoard()};
-S.mode='depot';stopArrive(false);log('You pull into '+nm+'. '+depotFlavor(idx));
+if(S.place&&S.place.pump)S.depot.offers.unshift(offerObj('fuel',idx)); // an OIL PUMP sells fuel before anything else
+S.depot.need=stationNeed(S.nav.reg,S.nav.col,S.nav.row);
+if(S.place&&S.place.tier=='capital'){const rg2=S.nav.reg;
+ const SIG=[{label:'THE JUNCTION\u2019s scrapworks',desc:'free \u00b7 next weld/upgrade \u00bd price',can:()=>!S.discount,act:()=>{S.discount=true;log('The scrapworks marks your manifest \u2014 next work at half price.')}},
+ {label:'OLD EXCHANGE auction',desc:'sell the hold \u00b7 +15% over spot',can:()=>cargoUsed()>0,act:()=>{let t=0;GKEYS.forEach(g=>{const n=S.cargo[g]||0;if(n){t+=Math.round(gPrice(g)*1.15)*n;S.cargo[g]=0}});S.scrap+=t;log('The Auctioneer clears your hold \u2014 +'+t+' scrap, gavel down.')}},
+ {label:'THE RIBYARD\u2019s bone-choir',desc:'free \u00b7 the choir sings the hull whole',can:()=>S.hull<maxHull(),act:()=>{S.hull=maxHull();S.food+=6;log('The bone-choir sings. The hull forgets its wounds \u2014 and the crew eats well tonight.')}},
+ {label:'SLAGSIDE\u2019s forge',desc:'free \u00b7 next prow/weapon refit \u00bd price',can:()=>!S.discount,act:()=>{S.discount=true;log('The Forgemaster grins at your bow. Next refit at half price.')}}][rg2];
+ if(SIG)S.depot.offers.push(SIG);
+ S.depot.name=CAPNM[rg2]||nm;if(S.place)S.place.name=S.depot.name}
+S.mode='depot';if(S.place&&!S.origin){const _o=S.origin;stopArrive(true);S.origin=_o}else stopArrive(false);
+{const vk=navVK(S.nav.reg,S.nav.col,S.nav.row);S.fam[vk]=(S.fam[vk]|0)+1;log(famGreet(nm,S.fam[vk])+' '+depotFlavor(idx))}
+S.depotView=null; // the sheet never opens itself — the chips carry the stop (law 1)
 {const cand=[];S.heroes.forEach(h=>{if(h.rank<MAXRANK)cand.push(h)});S.slots.forEach(s=>{if(s&&s.hero&&s.hero.rank<MAXRANK)cand.push(s.hero)});
  if(cand.length&&Math.random()<0.35){const h=cand[Math.floor(Math.random()*cand.length)],cost=Math.round(crewRankCost(h.rank)*0.6);
  S.depot.offers.push({label:CREW[h.kind].nm+'\u2019s favor',desc:'\u2212'+cost+' scrap \u00b7 they train to '+RNK[h.rank+1],can:()=>S.scrap>=cost,act:()=>{S.scrap-=cost;h.rank++;log(CREW[h.kind].nm+' repays the favor in skill \u2014 rank '+RNK[h.rank]+'.')}})}}
 if(S.linebroken){if(Math.random()<0.2)log('They speak your name at the gates now, engineer.')}
 else if(Math.random()<0.35){const rl=RUMORS[S.nav.reg];log('Rumor — '+rl[Math.floor(Math.random()*rl.length)])}
 renderDepot();showView('travel')}
-function renderDepot(){const d=S.depot,el=document.getElementById('depot');if(!d||S.depotMin){el.className='';if(!d)el.innerHTML='';return}
-let h='<button class="dstep" data-k="-2" title="Step away (the stop stays open)">\u2715</button><h3>'+d.name+'</h3><div class="flav"><span class="pers">'+d.pers.map(p=>PERS[p]).join(' + ')+'</span> — '+depotFlavor(d.idx)+'</div>';
-d.offers.forEach((o,k)=>{h+='<button class="opt" data-k="'+k+'" '+(o.can()?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'});
-if(d.pers.includes('market')){ // the trade board: spot prices with the regional spread visible
+function renderChips(){const el=document.getElementById('chips');if(!el)return;
+if(S.mode!='depot'||!S.depot||!(S.stop&&S.stop.ph=='docked')){el.style.display='none';el.innerHTML='';return} // the chips light when the wheels stop
+const sx=(S.stationX==null?STATION_HOME:S.stationX),ax=dx=>Math.max(5,Math.min(92,Math.round((sx+dx)/320*100)))+'%';
+const pl=S.place,tier=pl?pl.tier:'station',caps=tier=='capital';
+const at=k=>{const b=pl&&pl.B.find(b=>b.f===k);return b?b.dx+10:40};
+const items=[{cv:'services',g:'\u2699',t:'Services',x:at(bStation)||30}];
+if(tier!='halt'||pl&&pl.pump)items.push({cv:'fuel',g:'\u26fd',t:'Fuel',x:pl&&pl.pump?at(bOilPump):at(bWaterTower)});
+if(tier!='halt'&&(S.depot.pers.includes('market')||caps))items.push({cv:'market',g:'\u2696',t:'Market',x:at(bStalls)||70});
+if(tier!='halt')items.push({cv:'board',g:'\u270e',t:'Board',x:at(bStation)+44});
+if(caps)items.push({cv:'keeper',g:'\u265a',t:KEEPERS[S.nav.reg].nm.split(' ').pop(),x:at(bTrainShed)+20});
+items.forEach(it=>it.p=Math.max(6,Math.min(92,Math.round((sx+it.x)/320*100))));
+items.sort((a,b)=>a.p-b.p);                                                     // anchored to meaning, but never on top of each other
+let last=-99,row=0;items.forEach(it=>{if(it.p-last<15){row=1-row;if(row===0)it.p=Math.min(92,last+15)}else row=0;it.row=row;last=it.p});
+el.innerHTML=items.map(it=>'<button class="chip" data-cv="'+it.cv+'" style="left:'+it.p+'%;bottom:'+(it.row?34:0)+'px"><span class="cg">'+it.g+'</span>'+it.t+'</button>').join('');
+el.style.display='block'}
+function renderDepot(){const d=S.depot,el=document.getElementById('depot');renderChips();
+if(!d||S.depotMin||!S.depotView){el.className='';if(!d)el.innerHTML='';else el.innerHTML='';return}
+if(S.depotView=='keeper'){log(KEEPERS[S.nav.reg].nm+': '+KEEPERS[S.nav.reg].line+' \u2014 "'+CAPTAINS[Math.min(3,S.nav.reg)].nm+' holds the gate east. Mind the tolls where the clans grew bold."');S.depotView=null;el.className='';return}
+let h='<button class="dstep" data-k="-2" title="Back to the platform">\u2715</button><h3>'+d.name+'</h3><div class="flav"><span class="pers">'+d.pers.map(p=>PERS[p]).join(' + ')+'</span> — needs <b style="color:#e0a33a">'+GOODS[d.need||'grain'].nm+'</b></div>';
+if(S.depotView=='services'){d.offers.forEach((o,k)=>{h+='<button class="opt" data-k="'+k+'" '+(o.can()?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'})}
+if(S.depotView=='fuel'){const fo=offerObj('fuel',d.idx);h+='<button class="opt" data-k="-3" '+(fo.can()?'':'disabled')+'><span>'+fo.label+'</span><span class="od">'+fo.desc+'</span></button>';h+='<div class="flav">tank '+Math.floor(S.fuel)+' / '+tankCap()+'</div>'}
+if(S.depotView=='market'&&(d.pers.includes('market')||(S.place&&S.place.tier=='capital'))){ // the trade board: spot prices with the regional spread visible
  h+='<div class="mkthd">MARKET · hold '+cargoUsed()+'/'+cargoCap()+(cargoCap()?'':' — weld a Cargo car to trade')+(S.rep.carav?' · Caravaneers '+'★'.repeat(S.rep.carav):'')+'</div>';
  GKEYS.forEach(g=>{const p=gPrice(g),held=S.cargo[g]||0,tr=gTrend(g);
   const pb=Math.max(2,Math.round(p*(1-S.rep.carav*0.01))),ps=Math.round(p*(1+S.rep.carav*0.01));
@@ -747,13 +840,13 @@ if(d.pers.includes('market')){ // the trade board: spot prices with the regional
    +'<span class="gp '+(tr=='▼'?'lo':tr=='▲'?'hi':'')+'">'+tr+' '+p+'</span>'
    +'<button class="tbtn" data-g="'+g+'" data-tact="buy" '+((S.scrap>=pb&&cargoUsed()<cargoCap())?'':'disabled')+'>Buy '+pb+'</button>'
    +'<button class="tbtn" data-g="'+g+'" data-tact="sell" '+(held?'':'disabled')+'>Sell '+ps+'</button></div>'})}
-{h+='<div class="mkthd">DISPATCHER BOARD · '+S.contracts.length+'/2 inked'+(S.rep.disp?' · rep '+'★'.repeat(S.rep.disp):'')+'</div>';
+if(S.depotView=='board'){h+='<div class="mkthd">DISPATCHER BOARD · '+S.contracts.length+'/2 inked'+(S.rep.disp?' · rep '+'★'.repeat(S.rep.disp):'')+'</div>';
  S.contracts.forEach((c,i)=>{const dl=c.k=='haul'&&c.reg==S.nav.reg&&d.key!=c.src&&(S.cargo[c.g]||0)>=c.n;
   h+='<div class="mrow crow"><span class="gn">'+cLabel(c)+'</span><span class="gp">'+(c.k=='escort'?c.left+' to go':(S.cargo[c.g]||0)+'/'+c.n+' held')+'</span>'
    +(dl?'<button class="tbtn hot" data-cact="deliver" data-ci="'+i+'">Deliver · +'+c.pay+'</button>':'<span class="gp">'+c.pay+' scrap</span>')+'</div>'});
  d.board.forEach((c,i)=>{if(S.contracts.length>=2)return;
   h+='<div class="mrow crow"><span class="gn">'+cLabel(c)+'</span><span class="gp">'+c.pay+' scrap</span><button class="tbtn" data-cact="accept" data-ci="'+i+'">Ink it</button></div>'})}
-h+='<button class="leave" data-k="-1">Press on without stopping</button>';
+if(S.depotView=='services')h+='<button class="leave" data-k="-1">Press on without stopping</button>';
 el.innerHTML=h;el.className='show';
 }
 document.getElementById('depot').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||!S.depot)return;
@@ -768,8 +861,9 @@ if(b.dataset.cact){const ci=+b.dataset.ci; // contracts keep it open too
  else if(b.dataset.cact=='deliver'){const c=S.contracts[ci];if(c&&c.k=='haul'&&(S.cargo[c.g]||0)>=c.n){S.cargo[c.g]-=c.n;const pay=Math.round(c.pay*(1+S.rep.disp*0.02));S.scrap+=pay;S.rep.disp=Math.min(10,S.rep.disp+1);S.contracts.splice(ci,1);log('Delivered '+c.n+' '+GOODS[c.g].nm+' — the Dispatcher counts out '+pay+' scrap.')}}
  renderDepot();upd();save();return}
 const k=+b.dataset.k;
-if(k==-2){S.depotMin=true;renderDepot();upd();return} // step away — the stop stays open behind the ✕
-if(k>=0)S.depot.offers[k].act();S.depot=null;S.depotMin=false;S.mode='idle';if(S.stop)stopDepart();renderDepot();cards();save();showView('travel')});
+if(k==-3){const fo=offerObj('fuel',S.depot.idx);if(fo.can()){fo.act();renderDepot();upd();save()}return}
+if(k==-2){S.depotView=null;renderDepot();upd();return} // ✕ = back to the platform; the stop stays open, the chips stay lit
+if(k>=0)S.depot.offers[k].act();S.depot=null;S.depotMin=false;S.depotView=null;S.mode='idle';if(S.stop)stopDepart();renderDepot();cards();save();showView('travel')});
 /* ---- view router: persistent shell + swappable content ---- */
 function showView(v){S.view=v;
 for(const id of ['travel','train','crew','map','log'])document.getElementById('v-'+id).hidden=(id!=v);
@@ -779,6 +873,7 @@ if(v=='train')cards();if(v=='crew')renderCrew();if(v=='map')renderMap();if(v=='l
 document.getElementById('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b)showView(b.dataset.v)});
 // choosing the fork: the labeled Depart buttons and the map's lit nodes are the same choice (ratified decision 3)
 document.getElementById('nextdepot').addEventListener('click',e=>{const b=e.target.closest('.routecard');if(!b)return;S.sel=+b.dataset.e;document.getElementById('nextdepot')._h=null;upd()});
+document.getElementById('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;S.depotView=b.dataset.cv;S.depotMin=false;renderDepot()});
 document.getElementById('maplist').addEventListener('click',e=>{const g=e.target.closest('.mapsel');if(!g)return;S.sel=+g.getAttribute('data-e');document.getElementById('nextdepot')._h=null;renderMap();upd()});
 function applyLayout(){const land=S.layout=='landscape';appEl.classList.toggle('land',land);document.getElementById('lt').textContent=land?'▢ Mobile':'⛶ Desktop'}
 function autoLayout(){if(S.layoutManual)return false;const want=(window.innerWidth>=820||window.innerWidth>window.innerHeight*1.3)?'landscape':'portrait';if(want!=S.layout){S.layout=want;return true}return false}
@@ -869,7 +964,7 @@ cv.addEventListener('pointercancel',()=>{_pd=false;_pdrag=false;});
 function upd(){
 document.getElementById('s-scrap').textContent=Math.floor(S.scrap);
 document.getElementById('s-food').textContent=Math.floor(S.food);
-document.getElementById('s-fuel').textContent=Math.floor(S.fuel);
+document.getElementById('s-fuel').textContent=Math.floor(S.fuel)+'/'+tankCap();
 document.getElementById('s-hull').textContent=Math.max(0,Math.round(S.hull))+'/'+maxHull();
 document.getElementById('hullbox').className='st'+(S.hull<maxHull()*0.35?' warn':'');
 const b=document.getElementById('go'),nd=document.getElementById('nextdepot'),docked=S.mode=='depot';
@@ -878,7 +973,7 @@ const _edges=(!docked&&S.mode!='run')?nodeEdges(S.nav.reg,S.nav.col,S.nav.row):n
 if(docked){b.disabled=false;b.textContent=S.view=='travel'?'At '+S.depot.name:'\u25b8 Open '+S.depot.name}
 else if(S.mode=='run'){b.disabled=true;b.textContent='Crossing the rail ocean...'}
 else if(atEnd){b.disabled=true;b.textContent='The end of the line'}
-else{b.disabled=S.fuel<fuelC();const _s=_edges[Math.min(S.sel,_edges.length-1)];b.textContent='Depart \u25b8 '+nodeName(_s.reg,_s.col,_s.row)+' \u00b7 '+fuelC()+' fuel'}
+else{const _s=_edges[Math.min(S.sel,_edges.length-1)],_c=legCost(_s);b.disabled=S.fuel<_c;b.textContent='Depart \u25b8 '+nodeName(_s.reg,_s.col,_s.row)+' \u00b7 '+_c+' fuel'}
 {const km='<span style="color:#cdb894">'+Math.floor(S.dist)+' km</span>';let h;
  if(docked)h=km+' \u00b7 docked at '+S.depot.name;
  else if(S.mode=='run'){const t=S.navT&&S.navT.to;h=km+' \u00b7 crossing to <span style="color:#cdb894">'+(t?nodeName(t.reg,t.col,t.row):'the far shore')+'</span>\u2026'}
@@ -888,13 +983,15 @@ else{b.disabled=S.fuel<fuelC();const _s=_edges[Math.min(S.sel,_edges.length-1)];
    +_edges.map((e,i)=>{const t=nodeType(e.reg,e.col,e.row),sel=i==S.sel,cross=e.reg!=S.nav.reg;
     const rt=cross?(e.reg<S.nav.reg?'the loop home \u00b7 '+REGIONS[e.reg].name:'across the border \u00b7 '+REGIONS[e.reg].name)
      :t=='S'?'station \u00b7 trade &amp; repair':t=='E'?'event \u00b7 unknown':t=='H'?'hazard \u00b7 heavy raids':t=='B'?'BLOCKADE \u00b7 elite warband':'GATE \u00b7 warlord crossing';
-    return '<button class="routecard'+(sel?' sel':'')+'" data-e="'+i+'"><span class="rg">'+(t=='S'?'\u25c9':t=='E'?'?':t=='H'?'~':t=='B'?'\u2715':'\u265c')+'</span><span class="rn">'+nodeName(e.reg,e.col,e.row)+'</span><span class="rt">'+rt+'</span></button>'}).join('')
+    const pr=edgeProfile(S.nav,e);
+    return '<button class="routecard'+(sel?' sel':'')+'" data-e="'+i+'"><span class="rg">'+(t=='S'?'\u25c9':t=='E'?'?':t=='H'?'~':t=='B'?'\u2715':'\u265c')+'</span><span class="rn">'+nodeName(e.reg,e.col,e.row)+'</span><span class="rt">'+rt+'<br><b class="rfuel">'+legCost(e)+' fuel \u00b7 '+'\u2757'.repeat(pr.danger)+(pr.dry?' \u00b7 dry rail':'')+'</b></span></button>'}).join('')
    +'<div class="rbkm">'+km+(fork?' \u00b7 tap a card, then Depart':'')+(S.discount?' \u00b7 <span style="color:#e0a33a">\u00bd upgrade ready</span>':'')+'</div>'}
  if(nd._h!==h){nd._h=h;nd.innerHTML=h}}
 document.querySelector('#tabs .tab[data-v="travel"]').classList.toggle('alert',docked);
 {let cr=false;for(const s of S.slots){if(s){const c=activeCrew(s);if(c.rank<MAXRANK&&S.scrap>=crewRankCost(c.rank)){cr=true;break}}}if(S.heroes.length)cr=true;
 document.querySelector('#tabs .tab[data-v="crew"]').classList.toggle('alert',cr&&S.view!='crew');}
 appEl.classList.toggle('vopen',S.view!='travel'||docked);
+if(S.mode!='depot'){const ch=document.getElementById('chips');if(ch&&ch.style.display!='none'){ch.style.display='none';ch.innerHTML=''}}
 renderTravelStatus();
 if(S.view=='map')renderMap();
 }
@@ -2001,6 +2098,7 @@ for(const rr of [lseg,lseg+1]){if(hash(rr*97+9)<0.45){const sx=(rr+0.3)*BIOME_LE
 // (foreground wreck-tire retired — its car-sized scale broke the world's proportions; trackside debris lives in the deb cells)
 ambientLife(cur);
 if(S.origin)drawRailhead(S.stationX==null?STATION_HOME:S.stationX);
+else if(S.place)drawSettlement(S.stationX==null?STATION_HOME:S.stationX,S.place);
 }
 function storyAt(x,v){
 if(v==0){ctx.save();ctx.translate(x,0);ctx.rotate(-0.08);
@@ -2029,9 +2127,14 @@ function stopDepart(){const vis=!!(S.stop&&S.stop.vis);S.stop={ph:'departing',t:
 // THE RAILHEAD — the origin depot, drawn PROCEDURALLY in the backdrop layer so the live world
 // (dnLight + haze + drawOverlays) lights it. sx = platform's left edge: animatable later (slides in
 // from the right, settles at STATION_HOME). This is the reusable grammar every future node-stop reuses.
-const RH_FONT={ // 3x5 micro-glyphs for the hand-painted name-board (row bits: 4=left,2=mid,1=right)
- 'T':[7,2,2,2,2],'H':[5,5,7,5,5],'E':[7,4,7,4,7],'R':[6,5,6,5,5],'A':[2,5,7,5,5],
- 'I':[7,2,2,2,7],'L':[4,4,4,4,7],'D':[6,5,5,5,6],' ':[0,0,0,0,0]};
+const RH_FONT={ // 3x5 micro-glyphs, FULL SET (wave 0, v1.6): name-boards, liveries, chart labels, "GO BACK" (row bits: 4=left,2=mid,1=right)
+ 'A':[2,5,7,5,5],'B':[6,5,6,5,6],'C':[3,4,4,4,3],'D':[6,5,5,5,6],'E':[7,4,7,4,7],'F':[7,4,6,4,4],'G':[3,4,5,5,3],
+ 'H':[5,5,7,5,5],'I':[7,2,2,2,7],'J':[1,1,1,5,2],'K':[5,5,6,5,5],'L':[4,4,4,4,7],'M':[5,7,7,5,5],'N':[5,7,7,7,5],
+ 'O':[2,5,5,5,2],'P':[6,5,6,4,4],'Q':[2,5,5,7,3],'R':[6,5,6,5,5],'S':[3,4,2,1,6],'T':[7,2,2,2,2],'U':[5,5,5,5,7],
+ 'V':[5,5,5,5,2],'W':[5,5,7,7,5],'X':[5,5,2,5,5],'Y':[5,5,2,2,2],'Z':[7,1,2,4,7],
+ '0':[2,5,5,5,2],'1':[2,6,2,2,7],'2':[6,1,2,4,7],'3':[6,1,2,1,6],'4':[5,5,7,1,1],'5':[7,4,6,1,6],'6':[3,4,6,5,2],
+ '7':[7,1,2,2,2],'8':[2,5,2,5,2],'9':[2,5,3,1,6],
+ '-':[0,0,7,0,0],'.':[0,0,0,0,2],'\u00b7':[0,0,2,0,0],'\u2019':[2,2,0,0,0],"'":[2,2,0,0,0],'!':[2,2,2,0,2],' ':[0,0,0,0,0]};
 function rhText(str,x,y,col){let cx=x;for(const ch of str){const g=RH_FONT[ch]||RH_FONT[' '];for(let r=0;r<5;r++)for(let c=0;c<3;c++)if(g[r]&(4>>c))px(cx+c,y+r,1,1,col);cx+=4}}
 function rhFig(x,fy,kind){ // a station figure, feet at fy (reused on the platform AND the shed catwalk)
  if(kind=='kid'){ // sitting on the platform edge, legs dangling over the front (a lazy swing)
@@ -2210,6 +2313,75 @@ function bWindpump(x){const hy=66,cxx=x+5;                         // wind pump 
  px(cxx,hy,1,1,BSTL[4]);                                             // hub glint
  px(cxx+2,hy,4,1,BSTL[1]);px(cxx+6,hy-1,2,3,BSTL[2]);                // tail vane
 }
+/* ---- v1.6 WAVE 1: the settlement ladder's new recipes (same parts, same laws) ---- */
+function bOilPump(x){const y=94;                                   // OIL PUMP — the resupply island: tank, hose gantry, drum row
+ bFoot(x,26);bWall(x,y,14,BIRON,1);
+ cyl(x+1,y-9,12,8,BIRON);px(x+2,y-10,10,1,BIRON[3]);               // horizontal fuel tank on the roof
+ px(x+16,y-4,2,RHGY-y+4-2,BSTL[1]);px(x+16,y-4,2,1,BSTL[3]);       // pump post
+ px(x+15,y-7,5,4,BSTL[2]);px(x+16,y-6,1,1,'#e07b2a');              // pump head + live gauge
+ ctx.strokeStyle='rgba(20,14,10,0.8)';ctx.beginPath();ctx.moveTo(x+18,y-2);ctx.quadraticCurveTo(x+24,y+5,x+22,RHGY-2);ctx.stroke(); // the hose
+ drum(x+22,RHGY,'#5a4632');drum(x+27,RHGY,'#6a5438');
+ pxa(x+4,y-2,2,1,'rgba(240,150,60,'+(0.4+0.4*bGlow())+')')}        // spill glow at the valve
+function bStalls(x){const w=30,y=100;                              // MARKET stalls — awning row + counters (the trade reads)
+ bFoot(x,w);
+ for(let s=0;s<3;s++){const sx2=x+s*10;px(sx2,y,8,RHGY-y,BWOOD[1]);px(sx2,y,8,1,BWOOD[3]);
+  px(sx2-1,y-3,10,2,s%2?'#8a3a28':'#5a5f52');px(sx2-1,y-2,10,1,'rgba(10,8,6,0.4)');  // striped awnings
+  px(sx2+1,y+4,6,2,BWOOD[0]);px(sx2+2,y+3,4,1,'#c9a15a')}          // counter + goods
+ pxa(x+3,y-1,1,1,'rgba(242,182,92,'+(0.5*bGlow())+')')}
+function bWatchpost(x){const y=84;                                 // OUTPOST watchpost — leggy tower + hooded lamp
+ px(x+1,y+8,2,RHGY-y-8,BWOOD[0]);px(x+7,y+8,2,RHGY-y-8,BWOOD[0]);bBraceX(x+1,y+14,8,6,BWOOD[2]);
+ box(x,y,10,8,BIRON[1]);px(x+1,y+1,8,1,BIRON[3]);px(x+2,y+3,3,3,'#16242a');
+ px(x+4,y-3,2,3,BSTL[1]);px(x+3,y-4,4,1,'#241a12');pxa(x+4,y-2,2,1,'rgba(240,150,60,'+(0.5*bGlow())+')')}
+function bBellShack(x){const w=18,y=99;                            // CHAPEL of the open rail — lantern shack + bell + yard of markers
+ bFoot(x,w);bWall(x,y,w,BWOOD,1);bGable(x,y,w,BWOOD);bDoor(x+7,y+4);
+ px(x+8,y-9,2,5,'#241a12');px(x+7,y-11,4,3,'#3a342e');px(x+8,y-9,2,2,'#caa23a');   // the bell
+ for(let g=0;g<4;g++)px(x+w+3+g*4,RHGY-3-(g%2),1,3+(g%2),'#463f37');               // the yard of markers, facing west
+ pxa(x+3,y+2,1,1,'rgba(242,182,92,'+(0.6*bGlow())+')')}
+function bPalisade(x1,x2){for(let p=x1;p<x2;p+=3){const ln=Math.floor(hash(p*1.7)*3);px(p,RHGY-10-ln,2,10+ln,'#3a2f24');px(p,RHGY-10-ln,1,1,'#5a4a38')} // CAPITAL scrap palisade
+ px(x1,RHGY-7,x2-x1,1,'rgba(20,14,10,0.5)')}
+function bWatchtower(x){const y=70;                                // capital wall tower — tall, manned, lit
+ px(x+1,y+10,2,RHGY-y-10,BIRON[0]);px(x+7,y+10,2,RHGY-y-10,BIRON[0]);bBraceX(x+1,y+18,8,7,BIRON[2]);
+ box(x-1,y,12,10,BIRON[1]);px(x,y+1,10,1,BIRON[3]);px(x+2,y+3,3,3,'#16242a');px(x+7,y+3,2,3,'#16242a');
+ px(x+3,y-4,4,4,BSTL[2]);pxa(x+4,y-3,2,2,'rgba(240,150,60,'+(0.55*bGlow())+')')}
+function bRailGate(x){                                             // THE RAIL GATE — the wall opens for the line (arrival beat)
+ bWatchtower(x-14);bWatchtower(x+16);
+ px(x-3,RHGY-26,2,26,BSTL[0]);px(x+11,RHGY-26,2,26,BSTL[0]);
+ px(x-3,RHGY-26,16,3,BIRON[1]);px(x-3,RHGY-26,16,1,BIRON[3]);
+ rhText('GATE',x-6,RHGY-23,'#e6cfa0')}
+function bTrainShed(x){const w=74,y=72;                            // the GRAND TRAIN-SHED — a capital's anchor: arched roof over a stub track
+ bFoot(x,w);
+ for(let i=0;i<w;i++){const t=(i-w/2)/(w/2),top=y+Math.round(10*t*t);px(x+i,top,1,RHGY-top,i%9==0?BIRON[0]:BIRON[1]);if(i%9==1)px(x+i,top,1,RHGY-top,BIRON[2]);px(x+i,top,1,1,BIRON[3])}
+ px(x+6,y+16,w-12,10,'#100b07');                                    // the dark mouth
+ for(let a=0;a<3;a++)px(x+10+a*22,y+18,3,3,'rgba(242,182,92,'+(0.3+0.4*bGlow())+')'); // lamps inside
+ px(x+2,RHGY-7,w-4,1,'rgba(20,14,10,0.5)');
+ bClock(x+w/2,y+2)}
+/* the settlement COMPOSER: tier + personality + seed -> a building list (the origin keeps its own hand-set list) */
+function settleTier(reg,col,row){if(reg==0&&col==0)return 'origin';
+ if(col==2&&row==0)return 'capital';
+ return hash(S.nav.seed+reg*777+col*37+row*7+31)<0.4?'halt':'station'}
+function settleSpec(reg,col,row){const tier=settleTier(reg,col,row),k=reg*1000+col*37+row*7,pers=stationPers(reg,col,row),B=[];
+ const pick=(f,dx,rank)=>B.push({f,dx,rank});
+ if(tier=='halt'){const v=Math.floor(hash(S.nav.seed+k*3+9)*4);
+  if(v==0){pick(bWaterTower,20);pick(bShed,50)}
+  else if(v==1){pick(bOilPump,10);pick(bShack,48)}
+  else if(v==2){pick(bSignal,14);pick(bShed,34)}
+  else{pick(bWindpump,12);pick(bShack,36)}
+  return{tier,pers,pump:v==1,B,figs:1}}
+ if(tier=='capital'){
+  pick(bWatchtower,-46,2);pick(bFreight,-30,2);pick(bSilo,14,2);pick(bShack,34,2);pick(bWaterTower,58,2); // the rear rank: mass behind the wall
+  pick(bRailGate,-34);pick(bTrainShed,-6);
+  pick(pers.includes('market')?bStalls:pers.includes('outpost')?bWatchpost:pers.includes('chapel')?bBellShack:bFreight,84);
+  pick(bWindpump,124);pick(bShack,148);pick(bSignal,176);
+  return{tier,pers,pal:[-60,-38],pal2:[74,196],B,figs:5}}
+ // station — a true settlement: personality anchor + cluster + homes
+ pick(bShack,-34);pick(bWaterTower,-6);
+ pick(bStation,22);
+ if(pers.includes('market'))pick(bStalls,94);
+ if(pers.includes('yard'))pick(bFreight,126);
+ if(pers.includes('outpost'))pick(bWatchpost,100);
+ if(pers.includes('chapel'))pick(bBellShack,118);
+ pick(bSilo,160);pick(bWindpump,184);
+ return{tier,pers,pump:false,B,figs:2+Math.floor(hash(S.nav.seed+k*5+3)*3)}}
 // the railhead settlement, as a list of building entities (offsets from the station anchor):
 // homes quarter west (shack · water tower · shed), the STATION as anchor, working quarter east
 // (freight house · silo · signal · wind pump) — two quarters flanking the anchor, tied by the wire.
@@ -2223,11 +2395,39 @@ function drawRailhead(sx){
  bPole(sx-14,34);bPole(sx+248,36);
  bWire(0,74,sx-13,78,2);bWire(sx-13,78,sx+249,76,4);bWire(sx+249,76,320,74,1);
  bFence(sx-11,sx+5);bFence(sx+176,sx+187);                                              // scrappy fence runs stitching the quarters
- for(const b of RH_BUILDINGS)b.f(sx+b.dx);                                              // draw each building entity
+ {const r2=RH_BUILDINGS.filter(b=>b.rank==2),r1=RH_BUILDINGS.filter(b=>!b.rank||b.rank==1);
+  if(r2.length){ctx.save();ctx.translate(0,-6);for(const b of r2)b.f(sx+b.dx);ctx.restore();     // the rear rank: stepped up, drawn first
+   const H2=h2(BIOMES[curIdx].haze);ctx.fillStyle='rgba('+H2[0]+','+H2[1]+','+H2[2]+',0.26)';ctx.fillRect(0,56,320,RHGY-4-56)} // inter-rank veil — the rear rank recedes
+  for(const b of r1)b.f(sx+b.dx)}                                                                // the front rank owns the ground line
  // aerial-perspective haze veil — dims the cluster toward the far rail so it recedes behind the train
  {const a=0.4*(0.45+0.55*dnLight),hz=ctx.createLinearGradient(0,76,0,RHGY+2);
   hz.addColorStop(0,'rgba(228,170,96,0)');hz.addColorStop(1,'rgba(228,170,96,'+a+')');
   ctx.fillStyle=hz;ctx.fillRect(0,76,320,RHGY+2-76);}
+}
+/* v1.6 WAVE 1 — any staged settlement, band 4: the composer's list through the railhead's own pipeline */
+function drawSettlement(sx,pl){
+ for(let i=0;i<6;i++)pxa(sx-14-i*8,137,5,1,'rgba(46,34,24,'+Math.max(0,0.5-i*0.08)+')');
+ bPole(sx-14,34);bPole(sx+200,36);
+ bWire(0,74,sx-13,78,2);bWire(sx-13,78,sx+201,76,4);bWire(sx+201,76,320,74,1);
+ if(pl.pal){bPalisade(sx+pl.pal[0],sx+pl.pal[1]);bPalisade(sx+pl.pal2[0],sx+pl.pal2[1])}  // the capital's wall, opened by the gate
+ {const r2=pl.B.filter(b=>b.rank==2),r1=pl.B.filter(b=>!b.rank||b.rank==1);
+  if(r2.length){ctx.save();ctx.translate(0,-6);for(const b of r2)b.f(sx+b.dx);ctx.restore();
+   const H2=h2(BIOMES[curIdx].haze);ctx.fillStyle='rgba('+H2[0]+','+H2[1]+','+H2[2]+',0.26)';ctx.fillRect(0,56,320,RHGY-4-56)}
+  for(const b of r1)b.f(sx+b.dx)}
+ {const a=0.4*(0.45+0.55*dnLight),hz=ctx.createLinearGradient(0,76,0,RHGY+2);
+  hz.addColorStop(0,'rgba(228,170,96,0)');hz.addColorStop(1,'rgba(228,170,96,'+a+')');
+  ctx.fillStyle=hz;ctx.fillRect(0,76,320,RHGY+2-76)}}
+function drawPlaceFront(sx,pl){ // band 6: a working platform sized to the tier — people, lanterns, freight (never Noodle; he keeps the origin)
+ const SW=200,cx=sx+SW/2,glow=Math.max(0.34,1.08-dnLight),deck=170;
+ const pW=pl.tier=='capital'?110:pl.tier=='halt'?46:80,pL=Math.round(cx-pW/2),pR=Math.round(cx+pW/2);
+ {const aL=pL-12,aR=pR+16,g1=lerpCol(BIOMES[curIdx].ground[1],BIOMES[nextIdx].ground[1],blendT);ctx.fillStyle=g1;
+  for(let ax=aL;ax<aR;ax++){const ed=Math.min(ax-aL,aR-1-ax),top=146+(ed<6?Math.floor(hash(ax*7.3)*(6-ed)):Math.floor(hash(ax*7.3)*2));ctx.fillRect(ax,top,1,166-top)}}
+ for(let p=pL+6;p<pR;p+=20)box(p,deck+4,3,8,'#46382a');
+ box(pL,deck,pR-pL,8,'#5a4128');px(pL,deck,pR-pL,1,'#a07c4e');px(pL,deck+1,pR-pL,1,'#8c6a3e');
+ rhLantern(pL+8,150,deck,glow,true);if(pW>60)rhLantern(pR-8,150,deck,glow,true);
+ const kinds=['worker','disp','worker','disp','worker','worker','disp','worker'];
+ for(let f=0;f<Math.min(pl.figs,8);f++)rhFig(pL+14+f*Math.max(14,Math.floor((pW-24)/Math.max(1,pl.figs))),deck,kinds[f]);
+ if(pl.tier!='halt'){px(pR-20,deck-6,6,6,'#6e5a44');px(pR-20,deck-6,6,1,'#8a7458')}          // waiting freight
 }
 // THE RAILHEAD — BAND 6 (foreground, IN FRONT of the rail): a thin near platform + the people of the stop.
 // Kept low (apron level) so nothing crosses the train's silhouette.
@@ -2258,13 +2458,14 @@ function drawRailheadFront(sx){
 }
 // THE RAILHEAD — BAND 9 (UI): the place-name as a banner at the top of frame. Off the rail, always legible,
 // scales to every future depot regardless of how the rig is composed.
-function drawRailheadBanner(){
- const w=86,bx=Math.round(160-w/2),by=4,tw=12*4-1;
+function drawRailheadBanner(nm){
+ nm=(nm||'THE RAILHEAD').toUpperCase().slice(0,18);
+ const tw=nm.length*4-1,w=Math.max(86,tw+14),bx=Math.round(160-w/2),by=4;
  pxa(bx-1,by+2,w+2,12,'rgba(18,11,7,0.4)');                                                    // drop shadow
  box(bx,by,w,12,'#3a2c1c');                                                                     // frame
  px(bx+1,by+1,w-2,10,'#f0ddb0');px(bx+1,by+1,w-2,1,'#f6e7c4');px(bx+1,by+10,w-2,1,'#cdb48a');   // cream plaque, top-lit
  px(bx+2,by+2,1,1,'#8a6a3e');px(bx+w-3,by+2,1,1,'#8a6a3e');px(bx+2,by+9,1,1,'#8a6a3e');px(bx+w-3,by+9,1,1,'#8a6a3e'); // corner rivets
- rhText('THE RAILHEAD',Math.round(160-tw/2),by+4,'#7a3322');
+ rhText(nm,Math.round(160-tw/2),by+4,'#7a3322');
 }
 const REGTINT=[null,'rgba(120,110,70,0.05)','rgba(210,200,175,0.05)','rgba(200,80,40,0.07)']; // rust flats = baseline · sallow city · pale reef · ember seam
 function drawOverlays(){
@@ -2287,6 +2488,7 @@ ctx.fillStyle='rgba(24,12,6,0.22)';ctx.fillRect(16,139,294,4);
 drawTrain();
 lane(166);
 if(S.origin)drawRailheadFront(S.stationX==null?STATION_HOME:S.stationX);
+else if(S.place)drawPlaceFront(S.stationX==null?STATION_HOME:S.stationX,S.place);
 if(S.mode=='idle'){
 const tw=S.tw;
 px(tw.x,160+Math.round(Math.abs(Math.sin(S.T*7))*-4),5,5,'#a8773e');
@@ -2312,7 +2514,7 @@ if(S.mark){const pu=0.5+0.5*Math.sin(S.T*6);let mx=null,my=0;
  px(bx,58,w,5,'#241a12');px(bx+1,59,w-2,3,'#3a2020');px(bx+1,59,Math.round((w-2)*p.board),3,p.board>0.7?'#d23a2a':'#e07b2a');
  if(p.board>0.4){for(let gl=0;gl<2;gl++){const gx=bx+10+gl*22;ctx.strokeStyle='rgba(200,190,170,0.7)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(gx,104);ctx.lineTo(gx+16+Math.sin(S.T*9+gl)*2,146);ctx.stroke()}}}}
 drawOverlays();
-if(S.origin&&(S.immersive||S.layout!='landscape'))drawRailheadBanner(); // canvas banner only where the DOM chrome isn't announcing the place (portrait / immersive); landscape's status pill carries it
+if((S.origin||S.place)&&(S.immersive||S.layout!='landscape'))drawRailheadBanner(S.origin?'THE RAILHEAD':S.place.name); // canvas banner only where the DOM chrome isn't announcing the place (portrait / immersive); landscape's status pill carries it
 drawPanHint();
 if(S.mode=='run'){const bf=S.boss&&!S.boss.dead,eD=S.ptrain&&S.ptrain.elite&&!S.ptrain.dead&&S.ptrain.state!='out',bc=(bf||eD)?'#d23a2a':'#e0a33a',prog=bf?(1-Math.max(0,S.boss.hp)/S.boss.max):eD?(1-Math.max(0,S.ptrain.hp)/S.ptrain.max):(S.jt/S.dur);px(14,174,292,4,'#5a4632');px(14,174,Math.round(292*prog),4,bc);px(14,174,Math.round(292*prog),1,'#f2c560')}
 }
@@ -2337,11 +2539,11 @@ if(S.stop){const st=S.stop;st.t+=dt;
   spd=st.v0*(1-u);                                                        // the world eases to rest
   if(st.vis)S.stationX=STATION_HOME+st.v0*st.T*0.5*(1-u)*(1-u);           // exact integral of the decel — she settles as the world stops
   S.lampK=u<0.8?0:(u<0.97?((Math.sin(S.T*34)>-0.2?1:0.3)*(u-0.8)/0.17):1);// the lanterns flicker up as she settles
-  if(u>=1){st.ph='docked';spd=0;S.lampK=1;if(st.vis)S.stationX=STATION_HOME}}
+  if(u>=1){st.ph='docked';spd=0;S.lampK=1;if(st.vis)S.stationX=STATION_HOME;if(S.mode=='depot')renderChips()}}
  else if(st.ph=='docked'){spd=0;if(st.auto&&st.t>2.4)stopDepart()} // an auto stop (event/rest halt) breathes, then rolls on her own
  else if(st.ph=='departing'){const u=Math.min(1,st.t/st.T),vt=S.mode=='run'?((S.boss&&S.boss.set&&!S.boss.dead)?0:110):14;
   spd=vt*u*u;                                                             // she leans into the run
-  if(st.vis){S.stationX-=spd*dt;if(S.stationX<-300){S.origin=false;S.stop=null;S.lampK=1}}
+  if(st.vis){S.stationX-=spd*dt;if(S.stationX<-300){S.origin=false;S.place=null;S.stop=null;S.lampK=1}}
   else if(u>=1)S.stop=null;}
 }
 S.off+=spd*dt;
@@ -2354,7 +2556,7 @@ S.off+=spd*dt;
  S.pan=Math.max(0,Math.min(S.maxPan,S.pan));
  if(S.panHintT>0)S.panHintT-=dt;}
 S.food+=farm()*dt;
-S.fuel+=oilProd()*dt;
+S.fuel=Math.min(tankCap(),S.fuel+oilProd()*dt); // regen fills to the tanks the rig actually carries
 {const hr=crewBuffs().hullRegen;if(hr>0&&S.hull<maxHull())S.hull=Math.min(maxHull(),S.hull+hr*dt);}
 if(S.mode=='idle'&&S.hull<maxHull())S.hull=Math.min(maxHull(),S.hull+1.3*dt);
 S.smT-=dt;
@@ -2411,7 +2613,7 @@ else if(pt.state=='pace'){pt.x+=Math.sin(S.T*1.5)*5*dt;
 if(pt.kind=='trader'){if(!pt.gave&&pt.t>0.9){pt.gave=true;S.booms.push({x:pt.x+18,y:132,t:0.1});if(Math.random()<0.22+(S.rep?S.rep.carav*0.012:0)){log('A wanderer rides the trader car across to your rig...');recruitHero('wander')}else{const sc=Math.round(20+eff()*12),fd=4+Math.floor(Math.random()*4);S.scrap+=sc;S.food+=fd;log('The traders toss across supplies — +'+sc+' scrap, +'+fd+' food. They wave and pull ahead.')}}if(pt.t>2.6)pt.state='out'}
 else if(pt.kind=='ghost'){if(pt.t>2.4){pt.state='out';if(cargoUsed()<cargoCap()){S.cargo.relic=(S.cargo.relic||0)+1;log('The GHOST HAULER fades ahead of you. A relic rests on your rear coupling, rimed with frost.');if(Math.random()<0.35)grantHero('lanternkeeper','A figure steps off the pale train as it fades \u2014 lantern first, then the rest of them.')}else log('The GHOST HAULER fades into the haze. Your holds were full; whatever it left returns to the dark.')}}
 else{const dps=gunVs(pt.elite?'armored':'light')*markMult('ptrain')+troops()*1.5;pt.hp-=dps*dt*0.85;if(dps>0&&S.flash<0.3)S.flash=0.3;
-if(pt.boarder){pt.board=Math.max(0,Math.min(1,pt.board+dt*(0.085+eff()*0.003)-dt*troops()*0.011)); // the boarding meter: their grapples vs your manpower
+if(pt.boarder){pt.board=Math.max(0,Math.min(1,pt.board+dt*(0.085+eff()*0.003)-dt*(troops()*0.011+rgGarrison()*0.004))); // the boarding meter: their grapples vs your manpower
  if(pt.board>0.5&&!pt.bLog){pt.bLog=1;log('Grapples bite the hull \u2014 REPEL BOARDERS! (troops hold the meter down)')}
  if(pt.board>=1){const steal=Math.round(base()*0.4);S.scrap=Math.max(0,S.scrap-steal);hurt(8+eff());pt.dead=false;pt.state='out';S.flash=1.4;log('BOARDED! They cut a hold open and swing away with '+steal+' scrap.');cards();save()}}
 pt.atkT-=dt;if(pt.atkT<=0){pt.atkT=pt.elite?(pt.boarder?1.6:1.1):1.4;pt.muzzle=0.18;const dmg=pt.elite?Math.max(2,Math.round((6+eff()*1.5-troops()*0.4)*(1+(pt.guns||0)*0.2)*(pt.boarder?0.5:1))):Math.max(1,Math.round(4+eff()-troops()*0.4));hurt(dmg);S.flash=1.0;S.booms.push({x:165,y:126,t:0.08});if(S.hull<=0){const r=Math.round(base()*0.25);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.ptrain=null;S.mode='idle';S.raiders=[];S.tracers=[];navFail();log((pt.elite?'The elite warband raked your rig apart':'The raider train shot your boiler out')+' — you limp home with '+r+' scrap.');cards();save()}}
