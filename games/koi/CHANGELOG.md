@@ -1,6 +1,27 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-03 — C.6: skin-reactive chrome + per-skin signatures (§10 polish round toward mature MVP)
+DECIDED (human): "a tightening pass for the visuals of the ui across the different filters… add details for each theme that make them unique visually… high end polish round as we get close to a more mature mvp." Engine v3.4.5 → **v3.5**.
+
+CHANGED — the UI answers the pond it floats over (one `data-skin` attribute on `<body>` swaps CSS tokens; every control reads them, so **a skin can never restyle another skin's chrome** — isolation by construction):
+- **Natural** keeps the canonical dark-glass chips (amber accent, blossom-pink glyph) — the reference look.
+- **Metal**: chips take a warm bronze cast with brass hairline borders; the serenity glyph goes cool silver (the v0.5 temperature split, now in the chrome too).
+- **Ink**: near-black chips with paper-white hairlines; the accent is **vermilion** — unlock buttons and armed chips stamp like seal ink.
+- **Rain**: cool slate-glass chips with misted blue hairlines and a rain-cool accent.
+- **Tightening**: consistent border tokens, slow cross-fade on theme change, and **visible `:focus-visible` rings** on every control (accessibility promise honored, styled per skin).
+
+CHANGED — one signature detail per skin (all featherlight: baked once or stateless; ≤1 gradient + a few sprite draws per frame):
+- **Natural — daylight pollen**: warm motes adrift over the water in day hours, gone by dusk; stateless (position derives from time), capped at 12, reduced-motion slows the drift.
+- **Metal — the showroom sweep**: one faint cool band slowly crossing the mirror (~30s period), the reflection of something passing over polished metal. Skipped under reduced-motion.
+- **Ink — the print is signed**: laid-paper grain over the whole frame (baked 192px pattern, one fill) and a **vermilion hanko seal** (鯉) in the corner — the pond as a sumi-e print.
+- **Rain — the breathed-on pane**: mist gathers at the pane's edges while the center stays wiped clearer (baked radial punch through the fog) — the glass reads touched, lived-with.
+
+TRIED / VERIFIED: new C.6 gate suite (9/9 — chrome dataset tracks the skin from boot and through switches; 9 interleaved skin switches render with zero warnings; ink paper+seal bake exactly once; night + reduced-motion cycle clean). All prior suites green (**134/134 total**). REAL-BROWSER: all four skins screenshotted with chrome awake — each theme reads distinct, all controls legible everywhere. Screenshots shared.
+
+OPEN: pollen and the sweep are motion details a still can't judge — human's eye on the live build; the hanko seal's size/corner is a taste dial; pill active-state stays neutral white in all skins for legibility (deliberate).
+
+
 ## 2026-07-03 — C.5.3: rain-on-glass fixed (§10 micro-loop, human's live read)
 DECIDED (human): "rain on glass is broken." Engine v3.4.4 → **v3.4.5**. TRIAGE: reproduced in real Chromium — at noon rain looked plausible, but at **dusk/night the whole pane turned muddy khaki / flat blue milk**. Root cause: rain is a `full` skin, so the Phase-C day/night grade (`dayTint`) was applied to the **final composite — fog sheet, droplets and all**. Multiply-tinting the pale fog reads as milk; the pond behind the glass vanished. (Latent since Phase C's day cycle; surfaced now that testing happens at night.)
 
