@@ -43,6 +43,10 @@ canvas{width:100%;display:block;image-rendering:pixelated;background:#d9a05e}
 .routecard.sel{border-color:#e0a33a;background:#2c2014;box-shadow:0 0 0 1px #8a5a1a inset}
 .routecard.sel .rg{color:#f2c560}
 .routecard.sel .rt{color:#cdb894}
+#chips{position:absolute;left:0;right:0;bottom:6px;z-index:12;display:none;pointer-events:none;height:0}
+#chips .chip{position:absolute;bottom:0;transform:translateX(-50%);pointer-events:auto;font:inherit;font-size:14px;letter-spacing:1px;color:#efe3cc;background:rgba(28,20,12,0.88);border:2px solid #8a5a1a;border-bottom-width:3px;padding:3px 9px;white-space:nowrap;text-transform:uppercase}
+#chips .chip:active{transform:translateX(-50%) translateY(1px)}
+#chips .chip .cg{color:#f2c560;margin-right:4px}
 #depot{display:none;position:absolute;z-index:40;left:0;right:0;bottom:0;top:auto;max-height:62dvh;overflow-y:auto;background:rgba(18,14,10,0.97);border-top:3px solid #8a5a1a;padding:10px 12px 12px;box-shadow:0 -8px 26px rgba(0,0,0,0.55);scrollbar-width:thin;scrollbar-color:#6b4a2e #1a1410}
 #depot.show{display:block;animation:sheetup 0.22s ease}
 @keyframes sheetup{from{transform:translateY(26px);opacity:0.3}to{transform:none;opacity:1}}
@@ -215,7 +219,7 @@ button{font-family:'VT323',monospace;cursor:pointer;border:none}
 <button id="im" title="Immersive mode (hide all UI)">◹ Immerse</button>
 </div>
 </div>
-<div class="frame"><div class="cvwrap"><canvas id="cv" width="640" height="360" aria-label="Side view of your armored battle train rolling through a ruined desert wasteland on a multi-lane rail ocean"></canvas><div id="region"></div></div></div>
+<div class="frame"><div class="cvwrap"><div id="chips"></div><canvas id="cv" width="640" height="360" aria-label="Side view of your armored battle train rolling through a ruined desert wasteland on a multi-lane rail ocean"></canvas><div id="region"></div></div></div>
 <div id="ticker">The wastes are quiet. Upgrade your rig, then depart.</div>
 <div id="content">
 <div class="view" id="v-travel">
@@ -256,7 +260,7 @@ const KEY='battle-train-save';
 const S={scrap:120,food:20,fuel:30,heroes:[],crewSel:-1,journeys:0,engine:1,caboose:1,maxSlots:3,
 slots:[{type:'oil',lvl:1},{type:'gun',wpn:'cannon',port:'auto',lvl:1},null],
 mode:'idle',jt:0,dur:14,waves:[],wi:0,hull:0,off:0,flash:0,raiders:[],smoke:[],booms:[],tracers:[],smT:0,saveT:0,resetArm:0,T:0,dt:0.016,ex:216,stackX:286,pan:0,maxPan:0,panHintT:0,tw:{x:360,r:0},turr:{},boss:null,crate:null,crateAt:-1,lastRegion:-1,lastWx:-1,ptrain:null,ptrainAt:-1,ptrainKind:'trader',ptrainElite:false,dist:0,depot:null,discount:false,view:'travel',logHist:[],layout:'',layoutManual:false,immersive:false,engineSkin:null,fortressUnlocked:false,origin:false,stationX:null,stop:null,lampK:1,
-nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null,cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0},linebroken:false,prow:{lvl:1,fit:'ram'},leak:null,crippled:[],prizes:[],place:null};
+nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null,cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0},linebroken:false,prow:{lvl:1,fit:'ram'},leak:null,crippled:[],prizes:[],place:null,fam:{},depotView:null};
 const gun=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='gun'?s.lvl*wpow(s.wpn||'cannon',s.port||'auto'):0),0)*crewBuffs().gunMult;
 const troops=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='troop'?s.lvl*4:0),0);
 const farm=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='farm'?s.lvl*0.5:0),0)*crewBuffs().foodMult;
@@ -444,7 +448,7 @@ function migrate(d){
   d.v=6;
  }
  if(d.v==6){                                // v6 -> v7: THE OCEAN — bow fitting, tank integrity, wound & prize ledgers. The caboose converts 1:1 into the Rearguard.
-  d.prow={lvl:1,fit:'ram'};d.leak=null;d.crippled=[];d.prizes=[];
+  d.prow={lvl:1,fit:'ram'};d.leak=null;d.crippled=[];d.prizes=[];d.fam={};
   d.v=7;
  }
  // future steps append here, in order: if(d.v==7){ ... d.v=8 }
@@ -455,7 +459,7 @@ let saveTimer=null;
 async function save(){
 if(!canSave){setSaveMsg('Saving unavailable here');return}
 try{
-const d={v:SAVE_V,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0,nav:S.nav,visited:S.visited,cargo:S.cargo,pax:S.pax,contracts:S.contracts,rep:S.rep,linebroken:S.linebroken?1:0,prow:S.prow,leak:S.leak,crippled:S.crippled,prizes:S.prizes};
+const d={v:SAVE_V,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0,nav:S.nav,visited:S.visited,cargo:S.cargo,pax:S.pax,contracts:S.contracts,rep:S.rep,linebroken:S.linebroken?1:0,prow:S.prow,leak:S.leak,crippled:S.crippled,prizes:S.prizes,fam:S.fam};
 const r=await window.storage.set(KEY,JSON.stringify(d));
 if(r){setSaveMsg('Progress saved');clearTimeout(saveTimer);saveTimer=setTimeout(()=>setSaveMsg(''),2500)}
 }catch(e){canSave=false;setSaveMsg('Saving unavailable here')}
@@ -475,7 +479,7 @@ S.sel=0;S.navT=null;
 S.cargo=(d.cargo&&typeof d.cargo=='object')?d.cargo:{};S.pax=Array.isArray(d.pax)?d.pax:[];S.contracts=Array.isArray(d.contracts)?d.contracts:[];S.rep=(d.rep&&typeof d.rep=='object')?{disp:d.rep.disp|0,carav:d.rep.carav|0,tr:d.rep.tr|0}:{disp:0,carav:0,tr:0};S.linebroken=!!d.linebroken;
 S.prow=(d.prow&&typeof d.prow=='object')?{lvl:Math.max(1,d.prow.lvl|0),fit:d.prow.fit=='shield'?'shield':'ram'}:{lvl:1,fit:'ram'};
 S.leak=(d.leak&&typeof d.leak=='object')?{rate:+d.leak.rate||0,t:+d.leak.t||0}:null;
-S.crippled=Array.isArray(d.crippled)?d.crippled:[];S.prizes=Array.isArray(d.prizes)?d.prizes:[];
+S.crippled=Array.isArray(d.crippled)?d.crippled:[];S.prizes=Array.isArray(d.prizes)?d.prizes:[];S.fam=(d.fam&&typeof d.fam=='object')?d.fam:{};
 if(d.origin&&S.nav.reg==0&&S.nav.col==0){S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1} // saved while docked at the origin — wake up there
 else{S.origin=false;S.stop=null;S.stationX=null;S.lampK=1}S.place=null;                          // ...otherwise the load is authoritative: mid-journey, no stop (staged places are session-only)
 return true}
@@ -568,7 +572,7 @@ else return;
 renderCrew();cards();save();
 });
 document.getElementById('go').addEventListener('click',()=>{
-if(S.mode=='depot'){S.depotMin=false;renderDepot();showView('travel');return} // re-open the stop's popup
+if(S.mode=='depot'){S.depotView='services';S.depotMin=false;renderDepot();showView('travel');return} // the Depart button doubles as the Services bell while docked
 if(S.mode=='run')return;
 if(S.stop&&S.stop.ph=='arriving')return;                     // she's still rolling in — let her settle first
 const edges=nodeEdges(S.nav.reg,S.nav.col,S.nav.row);
@@ -589,7 +593,7 @@ if(!S.resetArm){S.resetArm=1;b.textContent='Tap again to confirm';setTimeout(()=
 S.resetArm=0;b.innerHTML='Scuttle &amp; restart';
 S.scrap=120;S.food=20;S.fuel=30;S.heroes=[];S.crewSel=-1;S.journeys=0;S.engine=1;S.caboose=1;S.maxSlots=3;
 S.slots=[{type:'oil',lvl:1},{type:'gun',wpn:'cannon',port:'auto',lvl:1},null];S.slots.forEach(s=>crewOf(s));
-S.prow={lvl:1,fit:'ram'};S.leak=null;S.crippled=[];S.prizes=[];S.place=null;
+S.prow={lvl:1,fit:'ram'};S.leak=null;S.crippled=[];S.prizes=[];S.place=null;S.fam={};S.depotView=null;
 S.hull=maxHull();S.mode='idle';S.raiders=[];S.booms=[];S.tracers=[];S.boss=null;S.crate=null;S.dist=0;S.depot=null;S.discount=false;renderDepot();
 S.nav={seed:1+Math.floor(Math.random()*99999),reg:0,col:0,row:0};S.visited=['0:0:0'];S.sel=0;S.navT=null;
 S.cargo={};S.pax=[];S.contracts=[];S.rep={disp:0,carav:0,tr:0};S.linebroken=false;
@@ -666,8 +670,9 @@ const GKEYS=Object.keys(GOODS);
 const GMKT={ // per-region price multiplier: <1 they sell cheap (supply) · >1 they pay dear (demand). The Seam makes everything dear.
  ore:[0.6,1.2,1.1,1.4],parts:[1.2,0.6,1.1,1.3],med:[1.3,1.1,0.7,1.5],grain:[0.8,1.5,1.2,1.6],relic:[1.2,0.8,0.6,1.1]};
 const navK=()=>S.nav.reg*1000+S.nav.col*37+S.nav.row*7;
-function gPrice(g){return Math.max(2,Math.round(GOODS[g].base*GMKT[g][S.nav.reg]*(0.85+0.3*hash(S.nav.seed+navK()*11+GKEYS.indexOf(g)*29+13))))}
-const gTrend=g=>GMKT[g][S.nav.reg]<0.95?'▼':GMKT[g][S.nav.reg]>1.15?'▲':'·'; // the visible spread: ▼ cheap here, ▲ dear here
+function gPrice(g){return Math.max(2,Math.round(GOODS[g].base*GMKT[g][S.nav.reg]*needMult(g)*(0.85+0.3*hash(S.nav.seed+navK()*11+GKEYS.indexOf(g)*29+13))))}
+const gTrend=g=>GMKT[g][S.nav.reg]<0.95?'▼':GMKT[g][S.nav.reg]>1.15?'▲':'·';
+const needMult=g=>(S.depot&&S.depot.need===g)?1.4:1; // the pulse: what this stop NEEDS, it pays dear for
 const cargoUsed=()=>GKEYS.reduce((a,g)=>a+(S.cargo[g]||0),0);
 const PERS={yard:'YARD',market:'MARKET',outpost:'OUTPOST',chapel:'CHAPEL'};
 function stationPers(reg,col,row){if(reg==0&&col==0)return['yard','market']; // the Railhead teaches the trade
@@ -679,6 +684,7 @@ function mkBoard(){ // the Dispatcher board: 2 contracts per visit, refreshed by
   if(h<0.6){const g=GKEYS[Math.floor(h2*GKEYS.length)],n=2+Math.floor(hash(S.nav.seed+k*47+i*83+S.journeys*7+1)*4),tr=Math.min(REGIONS.length-1,S.nav.reg+(h2>0.5?1:0));
    out.push({k:'haul',g,n,reg:tr,src:navVK(S.nav.reg,S.nav.col,S.nav.row),pay:Math.round(GOODS[g].base*GMKT[g][tr]*1.7*n)})}
   else{const legs=2+Math.floor(h2*3);out.push({k:'escort',legs,left:legs,pay:Math.round((26+eff()*10)*legs)})}}
+ if(!out.some(c=>c.k=='escort'))out[1]={k:'escort',legs:2,left:2,pay:Math.round((26+eff()*10)*2)}; // the work-back path: one no-hold contract, always (law 7)
  return out}
 /* ---- WAVE 0 (v1.6): THE OCEAN'S MATH — profiles, range, integrity, severity, THE PROW ---- */
 // ROUTE PROFILES: one book for every edge — the chart may never lie (laws 5/6)
@@ -712,6 +718,14 @@ const PROW_REFIT=30;
 // THE REARGUARD: the caboose grows a garrison and, in time, becomes a keep on wheels (ladder art lands wave 5)
 const RGT=['Red Caboose','Plated Rearguard','Keep-on-Wheels','Keep-on-Wheels'];
 const rgGarrison=()=>S.caboose*2;
+const CAPNM=['THE JUNCTION','OLD EXCHANGE','THE RIBYARD','SLAGSIDE'];
+const KEEPERS=[{nm:'THE YARDMASTER',line:'"Every rig that ever mattered came through my yard. Most left."'},
+ {nm:'THE AUCTIONEER',line:'"Everything sells, engineer. The only variable is when."'},
+ {nm:'THE CURATE',line:'"The Reef keeps what it is given. Give carefully."'},
+ {nm:'THE FORGEMASTER',line:'"Bring me a bow worth sharpening and I will make the ocean flinch."'}];
+function stationNeed(reg,col,row){const k=reg*1000+col*37+row*7,vk=navVK(reg,col,row),v=(S.fam[vk]|0);
+ return GKEYS[Math.floor(hash(S.nav.seed+k*29+v*7+41)*GKEYS.length)]}
+function famGreet(nm,v){return v<=1?'You pull into '+nm+'.':v<4?'They remember the rig at '+nm+'. Nods from the platform.':'Lamps swing a welcome at '+nm+' \u2014 they know this engine by sound now.'}
 const PAXN=['The Cartographer','A Quiet Bride','The Bone-Doctor','A Debt-Runner','The Lantern Widow','The Deaf Surveyor'];
 function paxBoard(){ // seats fill at stations; specials pay 5x and carry a name
  let on=0;const free=seats()-S.pax.length;
@@ -764,12 +778,14 @@ if(type=='recruit'){const c=Math.round(70+idx*22);return{label:'Wandering specia
 if(type=='scrap'){const c=Math.round(12+idx*4),g=Math.round(40+idx*14);return{label:'Scrap broker',desc:'−'+c+' food · +'+g+' scrap',can:()=>S.food>=c,act:()=>{S.food-=c;S.scrap+=g;log('Sold rations for '+g+' scrap.')}}}
 if(type=='scavenge'){return{label:'Pick the wreck-stacks',desc:'free · gamble',can:()=>true,act:()=>{const r=Math.random();if(r<0.5){const g=Math.round(35+idx*13);S.scrap+=g;log('Scavenging paid off — +'+g+' scrap.')}else if(r<0.8){const g=Math.round(12+idx*5);S.food+=g;log('Found a food cache — +'+g+' food.')}else log('The stacks were already picked clean. Nothing here.')}}}
 if(type=='cache'){const g=Math.round(24+idx*10);return{label:'Supply cache',desc:'free · +'+g+' scrap',can:()=>true,act:()=>{S.scrap+=g;log('Cracked a supply cache — +'+g+' scrap.')}}}
+if(type=='patch'){const c=Math.round(20+idx*5);return{label:'Patch the breached tank',desc:'\u2212'+c+' scrap \u00b7 the leak stops',can:()=>!!S.leak&&S.scrap>=c,act:()=>{S.scrap-=c;S.leak=null;log('The yard crew sweats the tank seams tight. The leak is DONE weeping.')}}}
+if(type=='uncripple'){const c=Math.round(45+idx*12);return{label:'Repair a crippled car',desc:'\u2212'+c+' scrap \u00b7 back in the line',can:()=>S.crippled.length>0&&S.scrap>=c,act:()=>{const i=S.crippled.shift();S.scrap-=c;log('The yard raises the charred car and makes it a CAR again. She rejoins the line.')}}}
 if(type=='guard'){return{label:'Walk the walls',desc:'free · troops earn their keep',can:()=>troops()>0,act:()=>{const g=Math.round(troops()*(6+eff()));S.scrap+=g;log('Your troops walk the walls for a night — +'+g+' scrap earned.')}}}
 if(type=='blessing'){const heal=Math.round(maxHull()*0.2);return{label:'Chapel of the Open Rail',desc:'free · the crew breathes',can:()=>true,act:()=>{S.hull=Math.min(maxHull(),S.hull+heal);S.food+=4;log('Lamp-smoke and quiet in the chapel car. The crew breathes — +'+heal+' hull, +4 food.')}}}
 return{label:'Black-market fixer',desc:'free · next upgrade ½ price',can:()=>!S.discount,act:()=>{S.discount=true;log('A fixer marks down your next upgrade to half price.')}}}
 function depotOffers(idx,pers){ // personalities pin their trade first (YARD repairs, OUTPOST recruits, CHAPEL blesses); the rest rolls from the pool
 const pool=['repair','food','scrap','fuel','recruit','scavenge','cache','discount'],pick=[],used={};
-if(pers&&pers.includes('yard')){used.repair=1;pick.push('repair')}
+if(pers&&pers.includes('yard')){used.repair=1;used.patch=1;used.uncripple=1;pick.push('repair');if(S.leak)pick.push('patch');if(S.crippled&&S.crippled.length)pick.push('uncripple')}
 if(pers&&pers.includes('outpost')){used.recruit=1;used.guard=1;pick.push('recruit');pick.push('guard')}
 if(pers&&pers.includes('chapel')){used.blessing=1;pick.push('blessing')}
 let k=0;while(pick.length<3&&k<20){const t=pool[Math.floor(hash(idx*13+k*7+9)*pool.length)];if(!used[t]){used[t]=1;pick.push(t)}k++}
@@ -778,17 +794,45 @@ return pick.map(t=>offerObj(t,idx))}
 function openDepot(nm){const idx=eff(),pers=stationPers(S.nav.reg,S.nav.col,S.nav.row);S.depotMin=false;
 S.depot={idx,name:nm,pers,key:navVK(S.nav.reg,S.nav.col,S.nav.row),offers:depotOffers(idx,pers),board:mkBoard()};
 if(S.place&&S.place.pump)S.depot.offers.unshift(offerObj('fuel',idx)); // an OIL PUMP sells fuel before anything else
-S.mode='depot';if(S.place&&!S.origin){const _o=S.origin;stopArrive(true);S.origin=_o}else stopArrive(false);log('You pull into '+nm+'. '+depotFlavor(idx));
+S.depot.need=stationNeed(S.nav.reg,S.nav.col,S.nav.row);
+if(S.place&&S.place.tier=='capital'){const rg2=S.nav.reg;
+ const SIG=[{label:'THE JUNCTION\u2019s scrapworks',desc:'free \u00b7 next weld/upgrade \u00bd price',can:()=>!S.discount,act:()=>{S.discount=true;log('The scrapworks marks your manifest \u2014 next work at half price.')}},
+ {label:'OLD EXCHANGE auction',desc:'sell the hold \u00b7 +15% over spot',can:()=>cargoUsed()>0,act:()=>{let t=0;GKEYS.forEach(g=>{const n=S.cargo[g]||0;if(n){t+=Math.round(gPrice(g)*1.15)*n;S.cargo[g]=0}});S.scrap+=t;log('The Auctioneer clears your hold \u2014 +'+t+' scrap, gavel down.')}},
+ {label:'THE RIBYARD\u2019s bone-choir',desc:'free \u00b7 the choir sings the hull whole',can:()=>S.hull<maxHull(),act:()=>{S.hull=maxHull();S.food+=6;log('The bone-choir sings. The hull forgets its wounds \u2014 and the crew eats well tonight.')}},
+ {label:'SLAGSIDE\u2019s forge',desc:'free \u00b7 next prow/weapon refit \u00bd price',can:()=>!S.discount,act:()=>{S.discount=true;log('The Forgemaster grins at your bow. Next refit at half price.')}}][rg2];
+ if(SIG)S.depot.offers.push(SIG);
+ S.depot.name=CAPNM[rg2]||nm;if(S.place)S.place.name=S.depot.name}
+S.mode='depot';if(S.place&&!S.origin){const _o=S.origin;stopArrive(true);S.origin=_o}else stopArrive(false);
+{const vk=navVK(S.nav.reg,S.nav.col,S.nav.row);S.fam[vk]=(S.fam[vk]|0)+1;log(famGreet(nm,S.fam[vk])+' '+depotFlavor(idx))}
+S.depotView=null; // the sheet never opens itself — the chips carry the stop (law 1)
 {const cand=[];S.heroes.forEach(h=>{if(h.rank<MAXRANK)cand.push(h)});S.slots.forEach(s=>{if(s&&s.hero&&s.hero.rank<MAXRANK)cand.push(s.hero)});
  if(cand.length&&Math.random()<0.35){const h=cand[Math.floor(Math.random()*cand.length)],cost=Math.round(crewRankCost(h.rank)*0.6);
  S.depot.offers.push({label:CREW[h.kind].nm+'\u2019s favor',desc:'\u2212'+cost+' scrap \u00b7 they train to '+RNK[h.rank+1],can:()=>S.scrap>=cost,act:()=>{S.scrap-=cost;h.rank++;log(CREW[h.kind].nm+' repays the favor in skill \u2014 rank '+RNK[h.rank]+'.')}})}}
 if(S.linebroken){if(Math.random()<0.2)log('They speak your name at the gates now, engineer.')}
 else if(Math.random()<0.35){const rl=RUMORS[S.nav.reg];log('Rumor — '+rl[Math.floor(Math.random()*rl.length)])}
 renderDepot();showView('travel')}
-function renderDepot(){const d=S.depot,el=document.getElementById('depot');if(!d||S.depotMin){el.className='';if(!d)el.innerHTML='';return}
-let h='<button class="dstep" data-k="-2" title="Step away (the stop stays open)">\u2715</button><h3>'+d.name+'</h3><div class="flav"><span class="pers">'+d.pers.map(p=>PERS[p]).join(' + ')+'</span> — '+depotFlavor(d.idx)+'</div>';
-d.offers.forEach((o,k)=>{h+='<button class="opt" data-k="'+k+'" '+(o.can()?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'});
-if(d.pers.includes('market')){ // the trade board: spot prices with the regional spread visible
+function renderChips(){const el=document.getElementById('chips');if(!el)return;
+if(S.mode!='depot'||!S.depot||!(S.stop&&S.stop.ph=='docked')){el.style.display='none';el.innerHTML='';return} // the chips light when the wheels stop
+const sx=(S.stationX==null?STATION_HOME:S.stationX),ax=dx=>Math.max(5,Math.min(92,Math.round((sx+dx)/320*100)))+'%';
+const pl=S.place,tier=pl?pl.tier:'station',caps=tier=='capital';
+const at=k=>{const b=pl&&pl.B.find(b=>b.f===k);return b?b.dx+10:40};
+const items=[{cv:'services',g:'\u2699',t:'Services',x:at(bStation)||30}];
+if(tier!='halt'||pl&&pl.pump)items.push({cv:'fuel',g:'\u26fd',t:'Fuel',x:pl&&pl.pump?at(bOilPump):at(bWaterTower)});
+if(tier!='halt'&&(S.depot.pers.includes('market')||caps))items.push({cv:'market',g:'\u2696',t:'Market',x:at(bStalls)||70});
+if(tier!='halt')items.push({cv:'board',g:'\u270e',t:'Board',x:at(bStation)+44});
+if(caps)items.push({cv:'keeper',g:'\u265a',t:KEEPERS[S.nav.reg].nm.split(' ').pop(),x:at(bTrainShed)+20});
+items.forEach(it=>it.p=Math.max(6,Math.min(92,Math.round((sx+it.x)/320*100))));
+items.sort((a,b)=>a.p-b.p);                                                     // anchored to meaning, but never on top of each other
+let last=-99,row=0;items.forEach(it=>{if(it.p-last<15){row=1-row;if(row===0)it.p=Math.min(92,last+15)}else row=0;it.row=row;last=it.p});
+el.innerHTML=items.map(it=>'<button class="chip" data-cv="'+it.cv+'" style="left:'+it.p+'%;bottom:'+(it.row?34:0)+'px"><span class="cg">'+it.g+'</span>'+it.t+'</button>').join('');
+el.style.display='block'}
+function renderDepot(){const d=S.depot,el=document.getElementById('depot');renderChips();
+if(!d||S.depotMin||!S.depotView){el.className='';if(!d)el.innerHTML='';else el.innerHTML='';return}
+if(S.depotView=='keeper'){log(KEEPERS[S.nav.reg].nm+': '+KEEPERS[S.nav.reg].line+' \u2014 "'+CAPTAINS[Math.min(3,S.nav.reg)].nm+' holds the gate east. Mind the tolls where the clans grew bold."');S.depotView=null;el.className='';return}
+let h='<button class="dstep" data-k="-2" title="Back to the platform">\u2715</button><h3>'+d.name+'</h3><div class="flav"><span class="pers">'+d.pers.map(p=>PERS[p]).join(' + ')+'</span> — needs <b style="color:#e0a33a">'+GOODS[d.need||'grain'].nm+'</b></div>';
+if(S.depotView=='services'){d.offers.forEach((o,k)=>{h+='<button class="opt" data-k="'+k+'" '+(o.can()?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'})}
+if(S.depotView=='fuel'){const fo=offerObj('fuel',d.idx);h+='<button class="opt" data-k="-3" '+(fo.can()?'':'disabled')+'><span>'+fo.label+'</span><span class="od">'+fo.desc+'</span></button>';h+='<div class="flav">tank '+Math.floor(S.fuel)+' / '+tankCap()+'</div>'}
+if(S.depotView=='market'&&(d.pers.includes('market')||(S.place&&S.place.tier=='capital'))){ // the trade board: spot prices with the regional spread visible
  h+='<div class="mkthd">MARKET · hold '+cargoUsed()+'/'+cargoCap()+(cargoCap()?'':' — weld a Cargo car to trade')+(S.rep.carav?' · Caravaneers '+'★'.repeat(S.rep.carav):'')+'</div>';
  GKEYS.forEach(g=>{const p=gPrice(g),held=S.cargo[g]||0,tr=gTrend(g);
   const pb=Math.max(2,Math.round(p*(1-S.rep.carav*0.01))),ps=Math.round(p*(1+S.rep.carav*0.01));
@@ -796,13 +840,13 @@ if(d.pers.includes('market')){ // the trade board: spot prices with the regional
    +'<span class="gp '+(tr=='▼'?'lo':tr=='▲'?'hi':'')+'">'+tr+' '+p+'</span>'
    +'<button class="tbtn" data-g="'+g+'" data-tact="buy" '+((S.scrap>=pb&&cargoUsed()<cargoCap())?'':'disabled')+'>Buy '+pb+'</button>'
    +'<button class="tbtn" data-g="'+g+'" data-tact="sell" '+(held?'':'disabled')+'>Sell '+ps+'</button></div>'})}
-{h+='<div class="mkthd">DISPATCHER BOARD · '+S.contracts.length+'/2 inked'+(S.rep.disp?' · rep '+'★'.repeat(S.rep.disp):'')+'</div>';
+if(S.depotView=='board'){h+='<div class="mkthd">DISPATCHER BOARD · '+S.contracts.length+'/2 inked'+(S.rep.disp?' · rep '+'★'.repeat(S.rep.disp):'')+'</div>';
  S.contracts.forEach((c,i)=>{const dl=c.k=='haul'&&c.reg==S.nav.reg&&d.key!=c.src&&(S.cargo[c.g]||0)>=c.n;
   h+='<div class="mrow crow"><span class="gn">'+cLabel(c)+'</span><span class="gp">'+(c.k=='escort'?c.left+' to go':(S.cargo[c.g]||0)+'/'+c.n+' held')+'</span>'
    +(dl?'<button class="tbtn hot" data-cact="deliver" data-ci="'+i+'">Deliver · +'+c.pay+'</button>':'<span class="gp">'+c.pay+' scrap</span>')+'</div>'});
  d.board.forEach((c,i)=>{if(S.contracts.length>=2)return;
   h+='<div class="mrow crow"><span class="gn">'+cLabel(c)+'</span><span class="gp">'+c.pay+' scrap</span><button class="tbtn" data-cact="accept" data-ci="'+i+'">Ink it</button></div>'})}
-h+='<button class="leave" data-k="-1">Press on without stopping</button>';
+if(S.depotView=='services')h+='<button class="leave" data-k="-1">Press on without stopping</button>';
 el.innerHTML=h;el.className='show';
 }
 document.getElementById('depot').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||!S.depot)return;
@@ -817,8 +861,9 @@ if(b.dataset.cact){const ci=+b.dataset.ci; // contracts keep it open too
  else if(b.dataset.cact=='deliver'){const c=S.contracts[ci];if(c&&c.k=='haul'&&(S.cargo[c.g]||0)>=c.n){S.cargo[c.g]-=c.n;const pay=Math.round(c.pay*(1+S.rep.disp*0.02));S.scrap+=pay;S.rep.disp=Math.min(10,S.rep.disp+1);S.contracts.splice(ci,1);log('Delivered '+c.n+' '+GOODS[c.g].nm+' — the Dispatcher counts out '+pay+' scrap.')}}
  renderDepot();upd();save();return}
 const k=+b.dataset.k;
-if(k==-2){S.depotMin=true;renderDepot();upd();return} // step away — the stop stays open behind the ✕
-if(k>=0)S.depot.offers[k].act();S.depot=null;S.depotMin=false;S.mode='idle';if(S.stop)stopDepart();renderDepot();cards();save();showView('travel')});
+if(k==-3){const fo=offerObj('fuel',S.depot.idx);if(fo.can()){fo.act();renderDepot();upd();save()}return}
+if(k==-2){S.depotView=null;renderDepot();upd();return} // ✕ = back to the platform; the stop stays open, the chips stay lit
+if(k>=0)S.depot.offers[k].act();S.depot=null;S.depotMin=false;S.depotView=null;S.mode='idle';if(S.stop)stopDepart();renderDepot();cards();save();showView('travel')});
 /* ---- view router: persistent shell + swappable content ---- */
 function showView(v){S.view=v;
 for(const id of ['travel','train','crew','map','log'])document.getElementById('v-'+id).hidden=(id!=v);
@@ -828,6 +873,7 @@ if(v=='train')cards();if(v=='crew')renderCrew();if(v=='map')renderMap();if(v=='l
 document.getElementById('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b)showView(b.dataset.v)});
 // choosing the fork: the labeled Depart buttons and the map's lit nodes are the same choice (ratified decision 3)
 document.getElementById('nextdepot').addEventListener('click',e=>{const b=e.target.closest('.routecard');if(!b)return;S.sel=+b.dataset.e;document.getElementById('nextdepot')._h=null;upd()});
+document.getElementById('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;S.depotView=b.dataset.cv;S.depotMin=false;renderDepot()});
 document.getElementById('maplist').addEventListener('click',e=>{const g=e.target.closest('.mapsel');if(!g)return;S.sel=+g.getAttribute('data-e');document.getElementById('nextdepot')._h=null;renderMap();upd()});
 function applyLayout(){const land=S.layout=='landscape';appEl.classList.toggle('land',land);document.getElementById('lt').textContent=land?'▢ Mobile':'⛶ Desktop'}
 function autoLayout(){if(S.layoutManual)return false;const want=(window.innerWidth>=820||window.innerWidth>window.innerHeight*1.3)?'landscape':'portrait';if(want!=S.layout){S.layout=want;return true}return false}
@@ -945,6 +991,7 @@ document.querySelector('#tabs .tab[data-v="travel"]').classList.toggle('alert',d
 {let cr=false;for(const s of S.slots){if(s){const c=activeCrew(s);if(c.rank<MAXRANK&&S.scrap>=crewRankCost(c.rank)){cr=true;break}}}if(S.heroes.length)cr=true;
 document.querySelector('#tabs .tab[data-v="crew"]').classList.toggle('alert',cr&&S.view!='crew');}
 appEl.classList.toggle('vopen',S.view!='travel'||docked);
+if(S.mode!='depot'){const ch=document.getElementById('chips');if(ch&&ch.style.display!='none'){ch.style.display='none';ch.innerHTML=''}}
 renderTravelStatus();
 if(S.view=='map')renderMap();
 }
@@ -2492,7 +2539,7 @@ if(S.stop){const st=S.stop;st.t+=dt;
   spd=st.v0*(1-u);                                                        // the world eases to rest
   if(st.vis)S.stationX=STATION_HOME+st.v0*st.T*0.5*(1-u)*(1-u);           // exact integral of the decel — she settles as the world stops
   S.lampK=u<0.8?0:(u<0.97?((Math.sin(S.T*34)>-0.2?1:0.3)*(u-0.8)/0.17):1);// the lanterns flicker up as she settles
-  if(u>=1){st.ph='docked';spd=0;S.lampK=1;if(st.vis)S.stationX=STATION_HOME}}
+  if(u>=1){st.ph='docked';spd=0;S.lampK=1;if(st.vis)S.stationX=STATION_HOME;if(S.mode=='depot')renderChips()}}
  else if(st.ph=='docked'){spd=0;if(st.auto&&st.t>2.4)stopDepart()} // an auto stop (event/rest halt) breathes, then rolls on her own
  else if(st.ph=='departing'){const u=Math.min(1,st.t/st.T),vt=S.mode=='run'?((S.boss&&S.boss.set&&!S.boss.dead)?0:110):14;
   spd=vt*u*u;                                                             // she leans into the run

@@ -11,11 +11,11 @@ global.document={getElementById:()=>anyElCache,querySelector:()=>anyElCache,quer
 global.Image=class{set src(v){}};
 global.requestAnimationFrame=()=>{};
 const script=fs.readFileSync(__dirname+'/battle-train-hd.html','utf8').match(/<script>([\s\S]*)<\/script>/)[1]
- +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec};';
+ +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet};';
 eval(script);
 (async()=>{
 await new Promise(r=>setTimeout(r,20)); // let the async boot IIFE settle
-const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec}=globalThis.__T;
+const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet}=globalThis.__T;
 let t=0,fails=0;const maxHullSafe=()=>60+S.engine*30;const step=n=>{for(let i=0;i<n;i++){t+=16;tick(t)}};
 const ok=(name,cond)=>{console.log((cond?'PASS':'FAIL')+'  '+name);if(!cond)fails++};
 
@@ -319,6 +319,14 @@ ok('ladder: the capital sits at the region anchor', settleTier(1,2,0)==='capital
 {let pump=false;for(let c=1;c<6&&!pump;c++)for(let r=0;r<3;r++){try{const t=settleTier(1,c,r);if(t==='halt'&&settleSpec(1,c,r).pump)pump=true}catch(e){}}
  ok('ladder: oil pumps exist among the halts (resupply islands)', pump||true);} // presence is seed-dependent; the variant itself is asserted below
 ok('ladder: the pump variant is a first-class halt', (()=>{S.nav={seed:3,reg:0,col:1,row:0};for(let s=1;s<40;s++){S.nav.seed=s;const t=settleTier(0,1,0);if(t==='halt'&&settleSpec(0,1,0).pump)return true}return false})());
+
+// ===== STATION LIFE (v1.6 Wave 2) =====
+S.nav={seed:7,reg:0,col:1,row:0};S.fam={};
+ok('pulse: every station names a need', GKEYS.includes(stationNeed(0,1,0)));
+S.fam['0:1:0']=5;
+ok('memory: familiarity changes the greeting', famGreet('X',5)!==famGreet('X',1));
+ok('work-back: every board keeps a no-hold contract', (()=>{for(let s=1;s<30;s++){S.nav.seed=s;if(!mkBoard().some(c=>c.k==='escort'))return false}return true})());
+S.fam={};
 
 // 21 · the ledger survives a save
 S.cargo={ore:3,relic:1};S.contracts=[{k:'haul',g:'grain',n:2,reg:1,src:'0:1:0',pay:60}];S.pax=[{special:true,nm:'X',fare:99,legs:2}];

@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-07-03 · session 14 (cont.) — v1.6 Wave 2 · STATION LIFE: the chips light when the wheels stop
+DECIDED: The world is the interface (law 1). Docked, the screen IS the station: 2–5 CHIPS anchored to their meaning in the drawn scene (Services at the anchor, Fuel at the pump/tower, Market at the stalls, Board by the door, the KEEPER under the capital's shed) — two-lane spacing so anchors never stack, and they light only when the wheels stop. One chip = one compact panel (the auto-opening sheet RETIRES; ✕ returns to the platform, the stop stays open). Services by tier: halts pin fuel; YARDs patch breached tanks and repair crippled cars; capitals carry signature services (scrapworks ½-price · the auction clears your hold +15% · the bone-choir sings the hull whole · SLAGSIDE's forge) and their named KEEPERS speak gate intel. STATIONS REMEMBER (fam ledger in v7, greetings warm with visits) and HAVE A PULSE (a seeded NEED that pays +40% and heads the panel). Every board keeps one no-hold work-back contract (law 7's road home).
+TRIED: Playwright caught two real UX bugs before the human could: chips anchored to a still-arriving settlement (now gated on docked) and Market/Board stacking (now two-lane).
+PARKED: Keeper figures drawn in-scene (chips carry them for now); car market beyond the weld discount.
+CHANGED: renderChips + view-gated renderDepot; openDepot counts visits + names the need; gPrice×needMult; SAVE_V still 7 (fam folded into the unshipped step); harness 105 -> 108.
+OPEN: Wave 3 next — the space between: choice cards, THE LEAK live, ADRIFT, THE OVERRUN (the pity scrap dies).
+FEELING: You don't open a menu anymore. You walk up to the stalls, and the stalls answer.
+
 ## 2026-07-03 · session 14 (cont.) — v1.6 Wave 1 · THE SETTLEMENT LADDER: every stop becomes a place
 DECIDED: Stations are DRAWN now, everywhere. The composer (settleTier/settleSpec) grades every S-node — HALT (1–2 structures: water stop, signal box, windpump well, or the OIL PUMP resupply island that pins a fuel offer) · STATION (a true settlement: bStation anchor + personality clusters — stalls for markets, watchpost for outposts, bell-shack + marker yard for chapels — plus homes and infrastructure) · CAPITAL (one per region at the mid anchor BY LAW: scrap palisade, watchtowers, THE RAIL GATE with its name in the new micro-font, the grand arched TRAIN-SHED with a lamp-lit mouth, and the second building rank engaged for walled-town mass). Arrival stages the full vis choreography at every station — the settlement glides in on the decel integral, exactly like home. The origin stays singular and byte-identical; nothing out-homes it.
 TRIED: Proof stills per tier (halt/station/capital) — the capital reads as a walled town from the window; the flag collision between --tier (car tier) and the settlement kind cost one render (now --kind).
