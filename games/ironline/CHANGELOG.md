@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-07-03 · session 14 (cont.) — v1.6 Wave 5 · THE LAWS ENFORCED: ladders drawn, the sprint closes
+DECIDED: The bow and the stern read as the rig's hard ends (law 5). THE PROW'S LADDER: level 1 IS the classic cowcatcher untouched (pixels honored — the byte-identity check caught one stray tooth and it was removed); RAM PLOW grows teeth + a reinforcing wale + an amber crown by level; SHIELD PLATE stands a riveted gunmetal wall on the leading face. THE REARGUARD'S FORTRESS LADDER: red caboose → plated (strips + iron rails) → KEEP-ON-WHEELS (crenellated parapet, gun slits, the garrison lamp kept burning) — the human's ratified ask, delivered. Balance: the laws hold in tests, not prose — deep = two-oil by construction (law 6), prow capped at 66% with four bypass classes (law 8), the overrun floor + work-back contracts (law 7), deep EV pays through far-node reward tables (law 4). Targets live in the DESIGN.md gazetteer; fine-tuning belongs to the human's playtest.
+TRIED: 121 harness assertions green end-to-end; THE RAILHEAD byte-identical through all six waves of the sprint.
+PARKED (playtest-gated): tier-3 TAKEN frequency; clan boldness; adrift/overrun exporter frames; a third prow fit (explicitly parked by the brief).
+CHANGED: plow + caboose draw blocks grow their ladders; BRIEF status -> built.
+OPEN: BRIEF v1.6 is BUILT end-to-end. Human QA owed on: range feel (does the ocean threaten?), overrun sting vs recovery, chip flow at capitals, the Far Light. No deploy until the human calls it.
+FEELING: Six waves ago the ocean was a word in a brief. Tonight it has depth, dark water, legends at the far ends — and a rig with a bow, a stern, and scars that remember.
+
 ## 2026-07-03 · session 14 (cont.) — v1.6 Wave 4 · THE CONTINENT: dark water, far legends, marked prizes
 DECIDED: The generator grows DEEP BRANCHES — one per region, hanging off column 3 into row-9 dark water: dead-ends that always pay, always return, and are TWO-OIL COUNTRY by profile construction (the route card says so before you commit: "DARK WATER · a legend · TWO-OIL"). At their ends, THE FOUR FAR NODES as choice-card legends: THE MOTHBALL YARDS (salvage epic or a generation's story) · THE FIRST ENGINE (the First Lantern, one quiet truth: THE LINE DID NOT BREAK. IT WAS BROKEN.) · THE FAR LIGHT (THE PERMANENT CHOICE — take THE KEEPER, a unique hero, and the light dies forever; S.farlight persists and the harness proves it) · THE WELLHEAD (raid or deal; either way the Terminus thins). MARKED PRIZES close their loop: arrive where your colors fly and RECLAIM BY FORCE — reclaimed cars wear a permanent SCAR, rescued heroes return with a line. The Map tab gains the CHART STRIP: the continent W→E in sepia, progress per region, the Terminus a black mark.
 TRIED: The deep node renders below the spine (dashed, always named — a legend, not a secret); the old spine law updated honestly (1–3 edges, row-9 targets legal).
