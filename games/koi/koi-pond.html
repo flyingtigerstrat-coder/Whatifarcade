@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v3.4.4 (living pond, C.5.2: shadows hug their forms, moss lies in the grain) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.6 (living pond, C.7: composer update — clearer tend UI, caps 64/28, horsetail · hyacinth · bamboo spout · stepping stones, one-size lantern) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
@@ -29,39 +29,59 @@
 <title>Koi — a pond to keep</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
+  /* skin-reactive chrome (v3.5): the UI answers the pond it floats over. One dataset
+     attribute on <body> swaps these tokens; every control reads them, so a skin can
+     never restyle another skin's chrome. */
+  body{--ui-bg:rgba(10,16,14,.42);--ui-bg2:rgba(10,16,14,.55);--ui-line:rgba(255,255,255,.08);
+    --ui-accent:#f0cf86;--ui-on-accent:#1a120a;--ui-accent-soft:rgba(240,207,134,.22);
+    --ui-accent-line:rgba(240,207,134,.4);--ui-glyph:#f0b9cf}
+  body[data-skin="metal"]{--ui-bg:rgba(19,13,6,.5);--ui-bg2:rgba(19,13,6,.62);--ui-line:rgba(243,216,134,.17);
+    --ui-accent:#f3d886;--ui-on-accent:#221505;--ui-accent-soft:rgba(243,216,134,.18);
+    --ui-accent-line:rgba(243,216,134,.42);--ui-glyph:#dce8ff}
+  body[data-skin="ink"]{--ui-bg:rgba(11,11,13,.55);--ui-bg2:rgba(11,11,13,.68);--ui-line:rgba(238,234,224,.15);
+    --ui-accent:#c73e2e;--ui-on-accent:#f5f1e6;--ui-accent-soft:rgba(199,62,46,.2);
+    --ui-accent-line:rgba(199,62,46,.5);--ui-glyph:#c73e2e}
+  body[data-skin="rain"]{--ui-bg:rgba(21,30,35,.52);--ui-bg2:rgba(21,30,35,.64);--ui-line:rgba(180,205,215,.15);
+    --ui-accent:#a9c9d6;--ui-on-accent:#101c22;--ui-accent-soft:rgba(169,201,214,.18);
+    --ui-accent-line:rgba(169,201,214,.42);--ui-glyph:#a9c9d6}
   html,body{height:100%;background:#0c1512;overflow:hidden;cursor:crosshair}
+  .buy:focus-visible,.chip:focus-visible,.pill:focus-visible,#kcSwim:focus-visible,#kcX:focus-visible,
+  #nav button:focus-visible,.cx .ul:focus-visible,#codex .x:focus-visible{outline:2px solid var(--ui-accent);outline-offset:2px}
   #c{display:block;width:100vw;height:100vh;touch-action:none}
   .chrome{font-family:ui-sans-serif,-apple-system,"Segoe UI",Inter,sans-serif;
     transition:opacity .7s ease, transform .7s ease;z-index:10;user-select:none}
   .chrome.hide{opacity:0;pointer-events:none;transform:translateY(10px)}
   #pond{position:fixed;left:20px;top:18px;display:flex;flex-direction:column;align-items:flex-start;gap:10px;z-index:10}
   #ser{display:inline-flex;align-items:center;gap:8px;color:rgba(240,238,230,.92);font-size:13px;letter-spacing:.06em;
-    padding:8px 15px;border-radius:999px;background:rgba(10,16,14,.4);
-    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08)}
-  #ser .glyph{color:#f0b9cf;font-size:12px}
+    padding:8px 15px;border-radius:999px;background:var(--ui-bg);transition:background .5s,border-color .5s;
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--ui-line)}
+  #ser .glyph{color:var(--ui-glyph);font-size:12px;transition:color .5s}
   #ser b{font-weight:600;font-variant-numeric:tabular-nums}
   #ser .lbl{opacity:.5;text-transform:lowercase;letter-spacing:.12em;font-size:11px}
   #tend{display:flex;gap:8px}
   .buy{appearance:none;border:0;cursor:pointer;border-radius:999px;padding:8px 14px;font-size:12px;
-    letter-spacing:.04em;color:rgba(238,240,234,.92);background:rgba(10,16,14,.4);white-space:nowrap;
-    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid rgba(255,255,255,.08);
-    display:inline-flex;align-items:center;gap:7px;transition:background .3s,opacity .3s,border-color .3s}
+    letter-spacing:.04em;color:rgba(238,240,234,.92);background:var(--ui-bg);white-space:nowrap;
+    backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border:1px solid var(--ui-line);
+    display:inline-flex;align-items:center;gap:7px;transition:background .5s,opacity .3s,border-color .5s}
   .buy:hover{background:rgba(255,255,255,.12);border-color:rgba(255,255,255,.16)}
   .buy:disabled{opacity:.32;cursor:default}
   .buy .cost{display:inline-flex;align-items:center;gap:3px;opacity:.72;font-variant-numeric:tabular-nums}
-  .buy .cost::before{content:'❀';color:#f0b9cf;opacity:.9}
+  .buy .cost::before{content:'❀';color:var(--ui-glyph);opacity:.9;transition:color .5s}
   #tray{display:flex;flex-wrap:wrap;gap:6px;max-width:min(520px,92vw)}
   #tray.hide{display:none}
   .chip{appearance:none;border:0;cursor:pointer;border-radius:999px;padding:6px 12px;font-size:11.5px;
-    letter-spacing:.03em;color:rgba(238,240,234,.88);background:rgba(10,16,14,.42);white-space:nowrap;
-    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid rgba(255,255,255,.08);
-    display:inline-flex;align-items:center;gap:6px;transition:background .25s,opacity .25s}
+    letter-spacing:.03em;color:rgba(238,240,234,.88);background:var(--ui-bg);white-space:nowrap;
+    backdrop-filter:blur(10px);-webkit-backdrop-filter:blur(10px);border:1px solid var(--ui-line);
+    display:inline-flex;align-items:center;gap:6px;transition:background .5s,opacity .25s,border-color .5s}
   .chip:hover{background:rgba(255,255,255,.12)}
   .chip:disabled{opacity:.32;cursor:default}
-  .chip.arm{background:rgba(240,207,134,.22);border-color:rgba(240,207,134,.4)}
-  .chip .c{opacity:.7;font-variant-numeric:tabular-nums}.chip .c::before{content:'❀ ';color:#f0b9cf}
+  .chip.arm{background:var(--ui-accent-soft);border-color:var(--ui-accent-line)}
+  .chip .c{opacity:.7;font-variant-numeric:tabular-nums}
+  .buy.open{background:var(--ui-accent-soft);border-color:var(--ui-accent-line)}
+  .traycap{display:inline-flex;align-items:center;padding:6px 11px;font-size:10.5px;letter-spacing:.1em;
+    color:rgba(238,240,234,.45);border:1px dashed var(--ui-line);border-radius:999px;font-variant-numeric:tabular-nums}.chip .c::before{content:'❀ ';color:var(--ui-glyph);transition:color .5s}
   #koicard{position:fixed;left:20px;bottom:24px;z-index:20;width:230px;padding:13px 15px;border-radius:14px;
-    color:rgba(240,238,230,.92);background:rgba(10,16,14,.55);border:1px solid rgba(255,255,255,.1);
+    color:rgba(240,238,230,.92);background:var(--ui-bg2);border:1px solid var(--ui-line);
     backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-size:12.5px;line-height:1.5}
   #koicard.hide{display:none}
   #koicard b{font-size:13.5px}#koicard .jp{color:#9bc4b4;font-size:11px;margin-left:6px}
@@ -70,13 +90,13 @@
   #kcSwim{flex:1;appearance:none;cursor:pointer;border-radius:9px;padding:7px 10px;font-size:11.5px;
     color:#e8ecdf;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);transition:background .25s}
   #kcSwim:hover{background:rgba(255,255,255,.14)}
-  #kcSwim.confirm{color:#1a120a;background:#f0cf86;border-color:#f0cf86;font-weight:600}
+  #kcSwim.confirm{color:var(--ui-on-accent);background:var(--ui-accent);border-color:var(--ui-accent);font-weight:600}
   #kcX{appearance:none;cursor:pointer;border-radius:9px;padding:7px 10px;font-size:11.5px;color:rgba(238,240,234,.6);
     background:transparent;border:1px solid rgba(255,255,255,.1)}
   #devtray{position:fixed;right:16px;bottom:24px;z-index:30;display:flex;gap:5px;flex-wrap:wrap;max-width:300px;justify-content:flex-end}
   #skins{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);display:flex;gap:4px;align-items:center;
-    padding:5px;border-radius:999px;background:rgba(10,16,14,.42);box-shadow:0 8px 40px rgba(0,0,0,.4);
-    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid rgba(255,255,255,.10);z-index:10}
+    padding:5px;border-radius:999px;background:var(--ui-bg);box-shadow:0 8px 40px rgba(0,0,0,.4);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);border:1px solid var(--ui-line);z-index:10;transition:background .5s,border-color .5s}
   #skins.hide{transform:translateX(-50%) translateY(12px)}
   .pill{appearance:none;border:0;cursor:pointer;color:rgba(238,240,234,.6);background:transparent;
     border-radius:999px;padding:8px 16px;font-size:12px;letter-spacing:.12em;text-transform:lowercase;
@@ -88,7 +108,7 @@
     text-transform:lowercase;color:rgba(238,240,234,.4);transition:opacity 1s;z-index:10;pointer-events:none}
   #veil{position:fixed;inset:0;background:#0c1512;opacity:0;pointer-events:none;transition:opacity .42s;z-index:5}
   #nav{position:fixed;top:18px;right:16px;z-index:30;display:flex;gap:8px}
-  #nav button{font:600 12px Inter,system-ui,sans-serif;color:#dfeee6;background:rgba(20,40,33,.55);border:1px solid rgba(255,255,255,.12);
+  #nav button{font:600 12px Inter,system-ui,sans-serif;color:#dfeee6;background:var(--ui-bg2);border:1px solid var(--ui-line);transition:background .5s,border-color .5s;
     -webkit-backdrop-filter:blur(6px);backdrop-filter:blur(6px);border-radius:10px;padding:8px 12px;cursor:pointer;transition:background .2s}
   #nav button:hover{background:rgba(30,55,46,.72)}
   #codex{position:fixed;top:0;right:0;height:100%;width:min(384px,93vw);z-index:40;
@@ -108,7 +128,7 @@
   .cx .ds{font-size:11px;color:#cfe3d8;opacity:.82;line-height:1.42;margin-top:3px}
   .cx .act{margin-top:7px}
   .cx .own{font-size:10.5px;color:#9bc4b4}
-  .cx .ul{font:600 10.5px Inter,system-ui,sans-serif;color:#1a120a;background:#f0cf86;border:none;border-radius:99px;padding:5px 11px;cursor:pointer}
+  .cx .ul{font:600 10.5px Inter,system-ui,sans-serif;color:var(--ui-on-accent);background:var(--ui-accent);border:none;border-radius:99px;padding:5px 11px;cursor:pointer}
   .cx .ul:disabled{background:rgba(240,207,134,.22);color:#b39a64;cursor:default}
 </style>
 </head>
@@ -119,8 +139,8 @@
   <div id="ser"><span class="glyph">❀</span><b id="serN">0</b><span class="lbl">serenity</span></div>
   <div id="tend" class="chrome">
     <button class="buy" id="buyKoi">release koi <span class="cost"><span id="cKoi">5</span></span></button>
-    <button class="buy" id="openPlant">plant &#9662;</button>
-    <button class="buy" id="openPlace">place &#9662;</button>
+    <button class="buy" id="openPlant">plants &#9662;</button>
+    <button class="buy" id="openPlace">stones &#9662;</button>
   </div>
   <div id="tray" class="chrome hide"></div>
 </div>
@@ -206,7 +226,7 @@ const Pond={koi:[],plants:[],food:[],ripples:[],petals:[],sparkles:[],sun:{x:0,y
 
 // capacity ledger (BRIEF v1.1 Phase A, human-ratified 2026-07-02): generous, bounded
 // by worst-case frame budget + on-screen legibility. Departure (Phase B) is the release valve.
-const CAPS={koi:18,plants:36,rocks:12,school:20,fireflies:10};
+const CAPS={koi:18,plants:64,rocks:28,school:20,fireflies:10};   // plants/rocks raised (human, C.7): room to really compose
 
 // blended growth (returning v0.1 work): koi grow slowly with TIME, faster when FED.
 // Size stops at adult (age 1); age keeps accruing quietly beyond it, so ELDER is
@@ -250,12 +270,19 @@ function makeDuckweed(x,y,sd){sd=sd??(Math.random()*1e4|0);const rnd=srand(sd);
   return {type:'duckweed',vr:'classic',sd,x,y,grow:.6,bloom:0,n:4+(rnd()*5|0),hue:(rnd()-.5)*16,bp:rnd()*TAU,rot:rnd()*TAU,amp:3+rnd()*1.5,dx:0,dy:0,vx:0,vy:0,rv:(rnd()-.5)*.12};}
 function makeGrass(x,y,sd){sd=sd??(Math.random()*1e4|0);const rnd=srand(sd);
   return {type:'grass',vr:'classic',sd,x,y,grow:0,bloom:0,n:6+(rnd()*5|0),spread:4.2+rnd()*1.8,hue:(rnd()-.5)*10,bp:rnd()*TAU,rot:0,amp:1,dx:0,dy:0,vx:0,vy:0,rv:0};}
-const PLANT_MAKE={pad:makePad,lotus:makeLotus,reed:makeReed,iris:makeIris,duckweed:makeDuckweed,grass:makeGrass};
+// C.7 flora — sold FULLY MATURE (grow 1): instant beauty for composers
+function makeHorsetail(x,y,sd){sd=sd??(Math.random()*1e4|0);const rnd=srand(sd);
+  return {type:'horsetail',vr:'classic',sd,x,y,grow:1,bloom:0,n:4+(rnd()*3|0),spread:5+rnd()*2,hue:(rnd()-.5)*12,bp:rnd()*TAU,rot:0,amp:1,dx:0,dy:0,vx:0,vy:0,rv:0};}
+function makeHyacinth(x,y,sd){sd=sd??(Math.random()*1e4|0);const rnd=srand(sd);
+  return {type:'hyacinth',vr:'classic',sd,x,y,size:.34+rnd()*.14,grow:1,bloom:1,hue:(rnd()-.5)*14,rot:rnd()*TAU,bp:rnd()*TAU,amp:2+rnd()*1.4,dx:0,dy:0,vx:0,vy:0,rv:(rnd()-.5)*.07};}
+const PLANT_MAKE={pad:makePad,lotus:makeLotus,reed:makeReed,iris:makeIris,duckweed:makeDuckweed,grass:makeGrass,horsetail:makeHorsetail,hyacinth:makeHyacinth};
 const BELOW_TYPES={grass:1};                       // BELOW-plane flora renders under the koi
 // hardscape: heavy, mossing, persistent (decor AND habitat — Principle 3)
 function makeRock(form,x,y,sd){sd=sd??(Math.random()*1e4|0);const rnd=srand(sd);
-  return {form,sd,x,y,size:.75+rnd()*.5,rot:rnd()*TAU,grow:0};}
-function rockR(r){return (r.form==='boulder'?34:r.form==='slate'?30:r.form==='driftwood'?40:r.form==='lantern'?22:24)*r.size;}
+  // the lantern (and the spout) are BUILT things — one consistent size; nature varies
+  const size=(form==='lantern'||form==='spout')?1:.75+rnd()*.5;
+  return {form,sd,x,y,size,rot:(form==='lantern'||form==='spout')?0:rnd()*TAU,grow:0};}
+function rockR(r){return (r.form==='boulder'?34:r.form==='slate'?30:r.form==='driftwood'?40:r.form==='lantern'?22:r.form==='spout'?24:r.form==='steps'?30:24)*r.size;}
 
 // dev lifecycle harness (?dev=1): drives the WHOLE player journey on demand.
 // Warps call the REAL idleReturn() path with the cap lifted — testing exercises
@@ -273,7 +300,8 @@ function restore(s){
   Pond.koi=(s.koi||[]).map(k=>makeKoi(k.variety,k.x*W,k.y*H,k.age,k.seed,k.parents||null));
   Pond.plants=(s.plants||[]).map(p=>{const mk=PLANT_MAKE[p.type]||makePad;
     const pl=p.type==='pad'?makePad(p.x*W,p.y*H,p.size,p.vr,p.sd):mk(p.x*W,p.y*H,p.sd);
-    return Object.assign(pl,{grow:p.grow??pl.grow,bloom:p.bloom||0,vr:p.vr||'classic'});});
+    Object.assign(pl,{grow:p.grow??pl.grow,bloom:p.bloom||0,vr:p.vr||'classic'});
+    if(p.size!=null)pl.size=p.size;return pl;});
   Pond.rocks=(s.rocks||[]).map(r=>Object.assign(makeRock(r.form,r.x*W,r.y*H,r.sd),{size:r.size||1,rot:r.rot||0,grow:r.grow||0}));
   Pond.frog=s.frog||null; Pond.departed=s.departed||[]; Pond.seen=s.seen||{};
   Pond.eco=s.eco||{lastSeen:Date.now()};
@@ -394,7 +422,7 @@ function drawFrog(c){const F=Fauna.frogRt;if(!F||!F.pad||F.mode!=='sit')return;
 function updateDragonfly(dt){const D=Fauna.dragonfly;if(!D)return;
   D.t+=dt;D.life-=dt;
   if(D.life<=0){Fauna.dragonfly=null;return;}
-  const perches=Pond.plants.filter(p=>p.type==='reed').concat(Pond.rocks.filter(r=>r.form==='driftwood'));
+  const perches=Pond.plants.filter(p=>p.type==='reed'||p.type==='horsetail').concat(Pond.rocks.filter(r=>r.form==='driftwood'));
   if(REDUCE&&perches.length){const p=perches[0];D.x=p.x;D.y=p.y-(p.type==='reed'?46:10);D.mode='perch';return;}
   if(D.mode==='perch'){if(D.t>4){D.mode='fly';D.t=0;D.tx=null;}return;}
   if(D.tx==null||D.t>1.2){D.t=0;D.landing=0;D.tx=rand(W*.15,W*.85);D.ty=rand(H*.15,H*.6);
@@ -423,7 +451,7 @@ function updateFireflies(dt){const m=dayMix(),duskish=(m.dusk+m.night)>.4;
   const want=(duskish&&grown&&Eco.calm()>.3)?Math.min(10,CAPS.fireflies):0;
   const F=Fauna.fireflies;
   if(!want){F.length=0;return;}
-  while(F.length<want){const anchors=Pond.plants.filter(p=>p.type==='reed').concat(Pond.rocks.filter(r=>r.form==='lantern'));
+  while(F.length<want){const anchors=Pond.plants.filter(p=>p.type==='reed'||p.type==='horsetail').concat(Pond.rocks.filter(r=>r.form==='lantern'));
     const a=anchors.length?anchors[(Math.random()*anchors.length)|0]:{x:rand(W*.2,W*.8),y:rand(H*.3,H*.7)};
     F.push({x:a.x+rand(-60,60),y:a.y+rand(-55,5),ph:rand(0,TAU),sp:rand(.3,.8)});
     if(F.length===1)firstSeen('firefly',2);}
@@ -492,10 +520,15 @@ function bodyPath2(k,sp){const P=new Path2D(),wd=ewd(k),C=sp.length;
   for(let i=C-1;i>=0;i--){const w=wd*widthAt(sp[i].t);P.lineTo(sp[i].x-sp[i].nx*w,sp[i].y-sp[i].ny*w);}P.closePath();return P;}
 function tailFin(c,k,sp){const e=sp[sp.length-1],p=sp[sp.length-2];let tx=e.x-p.x,ty=e.y-p.y;const l=Math.hypot(tx,ty)||1;tx/=l;ty/=l;
   const nx=-ty,ny=tx,fl=elen(k)*.32*(1+.7*eldF(k)),fw=ewd(k)*1.45*(1+.18*eldF(k)),sw=Math.sin(k.phase+.5)*fw*.65;   // elder: long flowing trailing fins (prestige, not decline)
-  c.beginPath();c.moveTo(e.x,e.y);
+  // the fin GROWS OUT of the caudal peduncle at its width (base spans pw both sides,
+  // hidden under the body) — anchoring at a single point read as a hinged leaf once
+  // metal's bright fin edge made the outline visible
+  const pw=ewd(k)*.24;
+  c.beginPath();c.moveTo(e.x+nx*pw,e.y+ny*pw);
   c.quadraticCurveTo(e.x+tx*fl*.6+nx*(fw+sw),e.y+ty*fl*.6+ny*(fw+sw),e.x+tx*fl+nx*sw,e.y+ty*fl+ny*sw);
   c.quadraticCurveTo(e.x+tx*fl*.7,e.y+ty*fl*.7,e.x+tx*fl-nx*sw,e.y+ty*fl-ny*sw);
-  c.quadraticCurveTo(e.x+tx*fl*.6-nx*(fw-sw),e.y+ty*fl*.6-ny*(fw-sw),e.x,e.y);c.closePath();}
+  c.quadraticCurveTo(e.x+tx*fl*.6-nx*(fw-sw),e.y+ty*fl*.6-ny*(fw-sw),e.x-nx*pw,e.y-ny*pw);
+  c.closePath();}
 function pecFins(c,k,sp){const i=Math.round(sp.length*.26),p=sp[i],fw=elen(k)*.15,sw=Math.sin(k.finph)*.5,dx=Math.cos(k.ang),dy=Math.sin(k.ang),wd=ewd(k);
   for(const s of[1,-1]){const bx=p.x+p.nx*wd*widthAt(p.t)*s,by=p.y+p.ny*wd*widthAt(p.t)*s,ax=p.nx*s,ay=p.ny*s;
     c.beginPath();c.moveTo(bx,by);
@@ -604,7 +637,7 @@ function drawSparkles(c){if(!Pond.sparkles.length)return;c.save();c.globalCompos
   for(const s of Pond.sparkles){const tw=Math.sin(s.age/s.life*Math.PI), a=tw*tw*s.mag; if(a<=0)continue;
     const r=2+tw*3*s.mag;
     c.globalAlpha=a*.7;c.drawImage(softSprite,s.x-r,s.y-r,r*2,r*2);
-    if(s.mag>.72){c.globalAlpha=a;c.strokeStyle='rgba(255,255,255,1)';c.lineWidth=.8;const L=r*2.4;
+    if(s.mag>.72){c.globalAlpha=a;c.strokeStyle=skin==='metal'?'rgba(220,232,255,1)':'rgba(255,255,255,1)';c.lineWidth=.8;const L=r*2.4;
       c.beginPath();c.moveTo(s.x-L,s.y);c.lineTo(s.x+L,s.y);c.moveTo(s.x,s.y-L);c.lineTo(s.x,s.y+L);c.stroke();}}
   c.globalAlpha=1;c.restore();}
 // perf: one pre-tinted radial sprite per caustic color — drawImage per blob instead of
@@ -732,13 +765,44 @@ function drawGrass(c,p){const RL=ROLES(),g=p.grow??0,h=14+30*g,sw=REDUCE?.3:1,t=
     const hh=h*(.6+.4*Math.sin(ph*1.7));
     c.beginPath();c.moveTo(bx,3);c.quadraticCurveTo(bx+lean*.5,-hh*.5,bx+lean,-hh);c.stroke();}
   c.globalAlpha=1;c.restore();}
+// horsetail — vertical SEGMENTED stems with node rings + a dark strobilus tip; the
+// pond's most architectural plant (emergent, sways, perch-worthy)
+function drawHorsetail(c,p){const RL=ROLES(),g=p.grow??1,h=40+56*g,sw=REDUCE?.3:1,t=Pond._t,hm=1+(p.hue||0)*.008;
+  drawShadow(c,p.rx??p.x,p.ry??p.y,14,5.5,0,.5);
+  c.save();c.translate(p.rx??p.x,p.ry??p.y);c.lineCap='round';
+  for(let i=0;i<p.n;i++){const bx=(i-(p.n-1)/2)*p.spread,ph=p.bp+i*1.1,lean=Math.sin(t*.4+ph)*3*sw;
+    const hh=h*(.72+.28*Math.sin(ph*2.3)),c1=bx+lean*.5,y1=-hh*.55,c2x=bx+lean;
+    c.strokeStyle=shade(RL.foliage[1],hm*(0.92+.12*((i*1.7)%1)));c.lineWidth=2.6;
+    c.beginPath();c.moveTo(bx,2);c.quadraticCurveTo(c1,y1,c2x,-hh);c.stroke();
+    c.strokeStyle=shade(RL.foliage[0],hm*1.18);c.lineWidth=1.1;      // segment node rings
+    for(let sg2=1;sg2<=4;sg2++){const f=sg2/5,u=1-f;
+      const qx=u*u*bx+2*u*f*c1+f*f*c2x, qy=u*u*2+2*u*f*y1+f*f*(-hh);
+      c.beginPath();c.moveTo(qx-2,qy);c.lineTo(qx+2,qy);c.stroke();}
+    c.fillStyle=shade(RL.wood[0],1.1);c.beginPath();c.ellipse(c2x,-hh-2,1.7,3.2,lean*.02,0,TAU);c.fill();}  // strobilus tip
+  c.restore();}
+// water hyacinth — a floating rosette of glossy leaves around a bulbous float,
+// crowned with a lavender bloom (reads through bloomAlt roles; feeds Eco.bloom)
+function drawHyacinth(c,p){const RL=ROLES(),g=p.grow??1,R=10+(p.size??.4)*42*g,hm=1+(p.hue||0)*.008;
+  drawShadow(c,p.rx??p.x,p.ry??p.y,R*1.02,R*.74,p.rrot??p.rot,.4);
+  c.save();c.translate(p.rx??p.x,p.ry??p.y);c.rotate(p.rrot??p.rot);
+  for(let i=0;i<6;i++){const a=i/6*TAU+(p.bp||0)*.3;c.save();c.rotate(a);
+    c.fillStyle=shade(RL.foliage[i%2?1:0],hm);c.beginPath();c.ellipse(R*.55,0,R*.4,R*.28,0,0,TAU);c.fill();
+    c.strokeStyle=hexA(RL.foliageRim||'#9ab89f',.25);c.lineWidth=1;c.stroke();c.restore();}
+  c.fillStyle=shade(RL.foliage[2],hm*1.06);c.beginPath();c.ellipse(0,0,R*.32,R*.28,0,0,TAU);c.fill();   // the buoyant float
+  if(p.bloom>0){const BA=RL.bloomAlt||RL.bloom;
+    for(let i=0;i<3;i++){const a=i/3*TAU+.6;c.fillStyle=i?BA.top:BA.bot;
+      c.beginPath();c.ellipse(Math.cos(a)*R*.15,Math.sin(a)*R*.15-R*.08,R*.15,R*.11,a,0,TAU);c.fill();}
+    c.fillStyle=RL.bloom.center;c.beginPath();c.arc(0,-R*.08,R*.06+.8,0,TAU);c.fill();}
+  c.restore();}
 function drawPlant(c,p,pal,opts){switch(p.type){
   case 'lotus':drawLotus(c,p,pal,opts);break;
   case 'pad':drawPadV(c,p,pal,opts);break;
   case 'reed':drawReed(c,p);break;
   case 'iris':drawIris(c,p);break;
   case 'duckweed':drawDuckweed(c,p);break;
-  case 'grass':drawGrass(c,p);break;}}
+  case 'grass':drawGrass(c,p);break;
+  case 'horsetail':drawHorsetail(c,p);break;
+  case 'hyacinth':drawHyacinth(c,p);break;}}
 // hardscape — heavy forms that moss over grow (metal: oxidizing ore, via roles)
 function drawRockVec(c,r){const RL=ROLES(),R=rockR(r),rnd=srand(r.sd||0);   // seeded: every rock is its own individual
   c.save();c.translate(r.x,r.y);
@@ -810,6 +874,29 @@ function drawRockVec(c,r){const RL=ROLES(),R=rockR(r),rnd=srand(r.sd||0);   // s
     const cx0=-R*(.05+rnd()*.3);
     c.beginPath();c.moveTo(cx0,-R*(.45+rnd()*.25));c.lineTo(cx0+R*(.08+rnd()*.16),-R*.15);c.lineTo(cx0-R*.1,R*(.12+rnd()*.22));c.stroke();
     if(rnd()<.72){c.beginPath();c.moveTo(R*(.3+rnd()*.25),-R*.1);c.lineTo(R*(.08+rnd()*.16),R*(.18+rnd()*.2));c.stroke();}
+  }else if(r.form==='spout'){
+    // shishi-odoshi STAND (baked): basin stone + upright bamboo. The tipping arm draws
+    // LIVE in drawRock — a built thing, kept one consistent size (like the lantern)
+    const s2=r.size,bam=RL.wood;
+    c.fillStyle=RL.stone[1];c.beginPath();c.ellipse(0,12*s2,13*s2,5*s2,0,0,TAU);c.fill();          // basin
+    c.fillStyle=shade(RL.stone[0],1.05);c.beginPath();c.ellipse(0,11*s2,9*s2,3.4*s2,0,0,TAU);c.fill();
+    c.fillStyle='rgba(130,185,195,.32)';c.beginPath();c.ellipse(0,11*s2,7*s2,2.5*s2,0,0,TAU);c.fill(); // held water
+    const g4=c.createLinearGradient(-2.6*s2,0,2.6*s2,0);
+    g4.addColorStop(0,shade(bam[1],1.2));g4.addColorStop(.45,shade(bam[0],1.35));g4.addColorStop(1,bam[2]);
+    c.fillStyle=g4;c.fillRect(-2.6*s2,-22*s2,5.2*s2,32*s2);                                        // upright culm
+    c.strokeStyle=hexA(bam[2],.8);c.lineWidth=1;
+    for(const ny of[-15,-5,5]){c.beginPath();c.moveTo(-2.6*s2,ny*s2);c.lineTo(2.6*s2,ny*s2);c.stroke();}  // culm nodes
+    c.strokeStyle='rgba(255,255,255,.14)';c.beginPath();c.moveTo(-1.6*s2,-21*s2);c.lineTo(-1.6*s2,9*s2);c.stroke(); // wet sheen
+  }else if(r.form==='steps'){c.rotate(r.rot);
+    // stepping stones — three worn flats in a short seeded arc, an invitation across the water
+    for(let i=0;i<3;i++){const a2=(i-1)*.45+(rnd()-.5)*.24,d=R*.62*(i-1)+(rnd()-.5)*R*.12;
+      const sy=(rnd()-.5)*R*.3,rr2=R*(.28+rnd()*.09),tn2=.95+rnd()*.14;
+      c.save();c.translate(d,sy);c.rotate(a2);
+      c.fillStyle=shade(RL.stone[2],tn2);c.beginPath();c.ellipse(1,1.6,rr2,rr2*.72,0,0,TAU);c.fill();     // riser side
+      c.fillStyle=shade(RL.stone[1],tn2);c.beginPath();c.ellipse(0,0,rr2,rr2*.72,0,0,TAU);c.fill();
+      c.fillStyle=shade(RL.stone[0],tn2);c.beginPath();c.ellipse(-rr2*.08,-rr2*.12,rr2*.8,rr2*.52,0,0,TAU);c.fill(); // worn top
+      c.strokeStyle='rgba(255,255,255,.12)';c.lineWidth=1;c.beginPath();c.ellipse(0,0,rr2,rr2*.72,0,0,TAU);c.stroke();
+      c.restore();}
   }else{c.rotate(r.rot);
     // river stone: smooth worn pebble — SEEDED elongation, outline wobble, tone, band placement
     const el=.6+rnd()*.24,wob=rnd()*TAU,tn=.92+rnd()*.16;
@@ -824,7 +911,7 @@ function drawRockVec(c,r){const RL=ROLES(),R=rockR(r),rnd=srand(r.sd||0);   // s
     c.fillStyle='rgba(255,255,255,.09)';c.beginPath();c.ellipse(0,-R*(.02+rnd()*.14),R,R*(.09+rnd()*.08),-.12+(rnd()-.5)*.5,0,TAU);c.fill();   // sediment band
     c.fillStyle='rgba(255,255,255,.13)';c.beginPath();c.ellipse(-R*.3,-R*.28,R*.34,R*.2,.6,0,TAU);c.fill(); // wet sheen
     c.restore();}
-  if(r.grow>0.05){c.globalAlpha=.36*r.grow;c.fillStyle=RL.moss;                              // moss creeps with age — hugging the FORM
+  if(r.grow>0.05&&r.form!=='spout'){c.globalAlpha=.36*r.grow;c.fillStyle=RL.moss;            // moss creeps with age — hugging the FORM (bamboo stays clean)
     const rn=srand((r.sd||0)+7);
     if(r.form==='driftwood'){const L=R,Wd=R*.24;                  // moss lies ALONG the grain, inside the wood silhouette
       for(let i=0;i<3;i++){const mx=(rn()-.5)*L*1.1,my=(rn()-.5)*Wd*.7;
@@ -834,6 +921,27 @@ function drawRockVec(c,r){const RL=ROLES(),R=rockR(r),rnd=srand(r.sd||0);   // s
     c.globalAlpha=1;}
   c.restore();}
 
+// shishi-odoshi cycle — PURE function of time+seed (stateless, fps-independent):
+// the arm slowly rises as it "fills", tips once per period (~12-16s), returns.
+function spoutPhase(r){const T=(12+((r.sd||0)%5))*(REDUCE?1.7:1),tt=((Pond._t+(r.sd||0))%T)/T;
+  const pulse=(tt>.78&&tt<.97)?Math.sin((tt-.78)/.19*Math.PI):0;
+  return {a:-.2+.06*Math.min(1,tt/.78)+.95*pulse*pulse,pulse,cyc:Math.floor((Pond._t+(r.sd||0))/T)};}
+function updateSpout(r){const sp=spoutPhase(r);                       // sim side: the SPILL (once per cycle)
+  if(sp.pulse>.8&&r._tipC!==sp.cyc){r._tipC=sp.cyc;
+    const mx=r.x+Math.cos(sp.a)*16*r.size,my=r.y-14*r.size+Math.sin(sp.a)*16*r.size;
+    Pond.ripples.push({x:mx,y:Math.max(my,r.y+6*r.size),r:2,max:46,age:0,life:1.2,s:1});
+    Pond.sparkles.push({x:mx,y:my,age:0,life:.4,mag:.7});Pond.sparkles.push({x:mx+2,y:my+4,age:0,life:.35,mag:.55});}}
+function drawSpoutArm(c,r){const RL=ROLES(),s2=r.size,sp=spoutPhase(r),bam=RL.wood;
+  c.save();c.translate(r.x,r.y-14*s2);c.rotate(sp.a);
+  const g5=c.createLinearGradient(0,-2*s2,0,2*s2);
+  g5.addColorStop(0,shade(bam[0],1.35));g5.addColorStop(.5,shade(bam[1],1.2));g5.addColorStop(1,bam[2]);
+  c.fillStyle=g5;c.fillRect(-6*s2,-2*s2,22*s2,4*s2);                  // the tipping tube
+  c.strokeStyle=hexA(bam[2],.85);c.lineWidth=1;
+  c.beginPath();c.moveTo(4*s2,-2*s2);c.lineTo(4*s2,2*s2);c.stroke();  // node ring
+  c.fillStyle='rgba(10,14,12,.75)';c.beginPath();c.ellipse(16*s2,0,1.6*s2,2*s2,0,0,TAU);c.fill();   // open mouth
+  if(sp.pulse>.5){c.strokeStyle='rgba(190,225,230,.5)';c.lineWidth=1.2;   // the pour
+    c.beginPath();c.moveTo(16*s2,2*s2);c.lineTo(17.5*s2,9*s2);c.stroke();}
+  c.restore();}
 // ---------- static-art sprites: per-entity slots + a bake budget (perf) ----------
 // Gradient-heavy QUASI-STATIC art (pads, lotus, hardscape) bakes into a small offscreen
 // canvas owned by the ENTITY, and re-bakes IN PLACE only when its look-key changes
@@ -869,11 +977,14 @@ function drawRock(c,r){                                  // rocks are static exc
   if(r.form==='driftwood'){rx=R*.95;ry=R*.2;ro=r.rot;sa=.5;}     // a log shades a tight sliver hugging its own axis
   else if(r.form==='slate'){rx=R*.92;ry=R*.42;ro=r.rot;sa=.5;}   // flat plates sit low — tight, thin
   else if(r.form==='lantern'){rx=R*.72;ry=R*.34;sa=.5;}          // only the base touches the water
+  else if(r.form==='spout'){rx=R*.6;ry=R*.3;sa=.5;}              // basin footprint only
+  else if(r.form==='steps'){rx=R*1.08;ry=R*.46;ro=r.rot;sa=.45;} // a low flat run
   drawShadow(c,r.x,r.y,rx,ry,ro,sa);
-  const half=r.form==='driftwood'?58:r.form==='lantern'?62:52;
+  const half=r.form==='driftwood'?58:(r.form==='lantern'||r.form==='spout')?62:52;
   const key=`${skin}|${bkt(r.grow,10)}`;
   const s=entitySprite(r,key,half,g=>drawRockVec(g,{...r,x:0,y:0}));
-  c.drawImage(s,r.x-half,r.y-half,half*2,half*2);}
+  c.drawImage(s,r.x-half,r.y-half,half*2,half*2);
+  if(r.form==='spout')drawSpoutArm(c,r);}                        // the arm moves — drawn live over the baked stand
 
 // =================================================================
 // SKIN REGISTRY
@@ -961,6 +1072,15 @@ SKINS.natural={
     c.globalCompositeOperation='source-over';
     // drifting petals (life)
     c.fillStyle='rgba(245,210,224,.5)';for(const pt of Pond.petals){c.save();c.translate(pt.x,pt.y);c.rotate(pt.r);c.beginPath();c.ellipse(0,0,3.2,1.6,0,0,TAU);c.fill();c.restore();}
+    // signature (v3.5): daylight POLLEN — warm motes adrift over the water, gone by dusk.
+    // stateless (position derives from time), capped, day-gated, reduced-motion slows it.
+    {const dm2=dayMix(),dayA=Math.max(0,1-dm2.dusk-dm2.night-dm2.dawn);
+     if(dayA>.05){c.globalCompositeOperation='screen';const n=REDUCE?6:12,sp2=REDUCE?.35:1;
+       for(let i=0;i<n;i++){const ph=i*2.399963;
+         const x=(((W*.13*i + t*sp2*(6+(i%4)*3) + Math.sin(t*.21*sp2+ph)*40)%W)+W)%W;
+         const y=(((H*.11*i + Math.sin(t*.13*sp2+ph*1.7)*26 + t*sp2*2)%H)+H)%H;
+         c.globalAlpha=dayA*(.09+.07*Math.sin(t*.9+ph));c.drawImage(softSprite,x-2.2,y-2.2,4.4,4.4);}
+       c.globalAlpha=1;c.globalCompositeOperation='source-over';}}
     // depth — cooler, deeper darkening framing the pond
     const g=c.createRadialGradient(W/2,H*.46,Math.min(W,H)*.3,W/2,H*.54,Math.max(W,H)*.74);
     g.addColorStop(0,'transparent');g.addColorStop(1,'rgba(2,14,14,.55)');c.fillStyle=g;c.fillRect(0,0,W,H);}
@@ -1020,11 +1140,15 @@ SKINS.metal={
     c.globalCompositeOperation='source-over';drawWakes(c);},
   // --- warm wet-metal koi (the real pattern, cast in metal), one cool silver focal ---
   koi(c,k,sp,dim){const m=koiMetal(k.V),vm={...k.V,base:m.base,accent:m.accent,sumi:m.sumi,shiro:m.shiro},bp=bodyPath2(k,sp);
-    // fins under the body
-    c.fillStyle=hexA(m.base,.24*dim);tailFin(c,k,sp);c.fill();pecFins(c,k,sp);
+    const cool=m.cool?'#ffffff':METAL_COOL;                            // platinum gets the whitest/brightest highlight
+    // fins under the body — thin polished FOIL, not wedges: the dark base fill read as
+    // solid dark blobs against the bright mirror. Pale translucent shiro lets the water
+    // show through, and a bright cool edge catches the sky the way a fin edge would.
+    c.fillStyle=hexA(m.shiro,.16*dim);tailFin(c,k,sp);c.fill();
+    c.strokeStyle=hexA(cool,.32*dim);c.lineWidth=1;c.stroke();
+    c.fillStyle=hexA(m.shiro,.14*dim);pecFins(c,k,sp);
     // body: warm metal flanks, a COOL specular band, genuinely dark edges (cool-on-warm, high contrast)
     const mid=sp[sp.length>>1],wd=ewd(k)*2.1;
-    const cool=m.cool?'#ffffff':METAL_COOL;                            // platinum gets the whitest/brightest highlight
     const tb=clamp(.5+.24*Math.sin(Pond._t*.9+k.phase*1.3),.2,.8);     // the cool reflection SLIDES across the flank (chrome flow)
     const bg=c.createLinearGradient(mid.x-mid.nx*wd,mid.y-mid.ny*wd,mid.x+mid.nx*wd,mid.y+mid.ny*wd);
     bg.addColorStop(0,shade(m.sumi,dim*.7));
@@ -1064,7 +1188,14 @@ SKINS.metal={
   overlay(c,t){c.globalCompositeOperation='screen';                    // a cool dusk sky reflected on the mirror (cool highlights)
     const shx=W*(.5-.3*Math.sin(Pond._t*.04)),shy=H*.3,sh=c.createRadialGradient(shx,shy,0,shx,shy,Math.max(W,H)*.6);
     sh.addColorStop(0,`rgba(198,214,255,${.07+.025*Math.sin(t*.3)})`);sh.addColorStop(1,'transparent');
-    c.fillStyle=sh;c.fillRect(0,0,W,H);c.globalCompositeOperation='source-over';
+    c.fillStyle=sh;c.fillRect(0,0,W,H);
+    // signature (v3.5): a slow SHOWROOM SWEEP — one faint cool band crossing the mirror
+    // (~30s period), the reflection of something passing over polished metal
+    if(!REDUCE){const sp3=((t*.033)%1.3)-.15,x0=sp3*(W+H*.4);
+      const sg2=c.createLinearGradient(x0,0,x0+H*.42,H);
+      sg2.addColorStop(.34,'transparent');sg2.addColorStop(.5,'rgba(220,232,255,.05)');sg2.addColorStop(.66,'transparent');
+      c.fillStyle=sg2;c.fillRect(0,0,W,H);}
+    c.globalCompositeOperation='source-over';
     const g=c.createRadialGradient(W/2,H/2,Math.min(W,H)*.28,W/2,H/2,Math.max(W,H)*.74);
     g.addColorStop(0,'transparent');g.addColorStop(1,'rgba(0,0,0,.62)');c.fillStyle=g;c.fillRect(0,0,W,H);}    // deeper vignette boosts mirror contrast
 };
@@ -1091,7 +1222,23 @@ SKINS.ink={
       if(q.type==='lotus')drawLotus(g,q,{pad:['#39393e','#26262b','#17171a'],petalTop:'#efe9da',petalBot:'#9a958a',center:'#d8d2c4'});
       else drawPadV(g,q,['#39393e','#26262b','#17171a']);});
     else drawPlant(c,p);c.restore();},
-  overlay(c,t){const g=c.createRadialGradient(W/2,H/2,Math.min(W,H)*.3,W/2,H/2,Math.max(W,H)*.72);g.addColorStop(0,'transparent');g.addColorStop(1,'rgba(0,0,0,.6)');c.fillStyle=g;c.fillRect(0,0,W,H);}
+  overlay(c,t){const g=c.createRadialGradient(W/2,H/2,Math.min(W,H)*.3,W/2,H/2,Math.max(W,H)*.72);g.addColorStop(0,'transparent');g.addColorStop(1,'rgba(0,0,0,.6)');c.fillStyle=g;c.fillRect(0,0,W,H);
+    // signature (v3.5): the pond as a PRINT — laid-paper grain over everything,
+    // and a vermilion hanko seal in the corner. Both baked once; two draws per frame.
+    if(!SKINS.ink._paper){const sp=document.createElement('canvas');sp.width=sp.height=192;const g2=sp.getContext('2d');
+      for(let i=0;i<520;i++){g2.fillStyle=Math.random()<.5?'rgba(255,255,255,.05)':'rgba(0,0,0,.055)';
+        g2.fillRect(Math.random()*192|0,Math.random()*192|0,1+(Math.random()*2|0),1);}
+      for(let yy=0;yy<192;yy+=4){g2.fillStyle='rgba(255,255,255,.016)';g2.fillRect(0,yy,192,1);}   // laid lines
+      SKINS.ink._paper=sp;SKINS.ink._pat=c.createPattern?c.createPattern(sp,'repeat'):null;}
+    if(SKINS.ink._pat){c.globalAlpha=.5;c.fillStyle=SKINS.ink._pat;c.fillRect(0,0,W,H);c.globalAlpha=1;}
+    if(!SKINS.ink._seal){const sl=document.createElement('canvas');sl.width=sl.height=96;const g3=sl.getContext('2d');
+      g3.fillStyle='#c73e2e';const rr=(x,y,w,h,r)=>{g3.beginPath();g3.moveTo(x+r,y);g3.arcTo(x+w,y,x+w,y+h,r);
+        g3.arcTo(x+w,y+h,x,y+h,r);g3.arcTo(x,y+h,x,y,r);g3.arcTo(x,y,x+w,y,r);g3.closePath();};
+      rr(4,4,88,88,14);g3.fill();
+      g3.strokeStyle='rgba(245,241,230,.85)';g3.lineWidth=3;rr(12,12,72,72,9);g3.stroke();
+      g3.fillStyle='#f5f1e6';g3.font='600 52px "Hiragino Mincho ProN","Yu Mincho",serif';
+      g3.textAlign='center';g3.textBaseline='middle';g3.fillText('鯉',48,52);SKINS.ink._seal=sl;}
+    c.globalAlpha=.78;c.drawImage(SKINS.ink._seal,W-62,H-62,42,42);c.globalAlpha=1;}
 };
 
 // ---- RAIN ON GLASS (renders the NATURAL pond into a blurred buffer, then fogs + droplets) ----
@@ -1100,10 +1247,15 @@ const dropSprite=(function(){const s=document.createElement('canvas');s.width=50
   const hg=g.createRadialGradient(15,22,0,25,32,32);hg.addColorStop(0,'rgba(255,255,255,.5)');hg.addColorStop(.6,'rgba(255,255,255,.06)');hg.addColorStop(1,'rgba(0,0,0,.1)');
   g.fillStyle=hg;g.beginPath();g.ellipse(25,32,25,32,0,0,TAU);g.fill();return s;})();
 let pond=null,pondCtx=null,fog=null,fogCtx=null,drops=[],PS=.5;
+let paneClear=null;   // rain signature (v3.5): baked center-wipe — mist gathers at the pane's edges
 function buildBuffers(){if(!W)return;pond=document.createElement('canvas');pond.width=Math.max(2,W*PS|0);pond.height=Math.max(2,H*PS|0);pondCtx=pond.getContext('2d');
-  fog=document.createElement('canvas');fog.width=W;fog.height=H;fogCtx=fog.getContext('2d');drops=[];for(let i=0;i<70;i++)drops.push({x:rand(0,W),y:rand(-H,H),r:rand(2.5,8),vy:0,trail:rand(.4,1)});}
+  fog=document.createElement('canvas');fog.width=W;fog.height=H;fogCtx=fog.getContext('2d');drops=[];for(let i=0;i<70;i++)drops.push({x:rand(0,W),y:rand(-H,H),r:rand(2.5,8),vy:0,trail:rand(.4,1)});
+  paneClear=document.createElement('canvas');paneClear.width=Math.max(2,W);paneClear.height=Math.max(2,H);
+  const pc=paneClear.getContext('2d'),rg=pc.createRadialGradient(W/2,H*.46,0,W/2,H*.5,Math.max(W,H)*.6);
+  rg.addColorStop(0,'rgba(255,255,255,.5)');rg.addColorStop(.65,'rgba(255,255,255,.16)');rg.addColorStop(1,'rgba(255,255,255,0)');
+  pc.fillStyle=rg;pc.fillRect(0,0,W,H);}
 SKINS.rain={
-  full:true, // draws everything itself
+  full:true, selfTint:true, // draws everything itself; grades its pond INSIDE the buffer (tinting the fog reads as milk)
   render(c,t){const w=pond.width,h=pond.height;pondCtx.save();pondCtx.clearRect(0,0,w,h);
     pondCtx.scale(PS,PS);SKINS.natural.water(pondCtx,t);
     for(const p of Pond.plants)if(BELOW_TYPES[p.type])SKINS.natural.plant(pondCtx,p);
@@ -1114,16 +1266,19 @@ SKINS.rain={
     for(const p of Pond.plants)if(!BELOW_TYPES[p.type])SKINS.natural.plant(pondCtx,p);
     drawFrog(pondCtx);drawDragonfly(pondCtx);drawFireflies(pondCtx);
     for(const f of Pond.food){if(f.r<=0)continue;pondCtx.fillStyle='#c39a5e';pondCtx.beginPath();pondCtx.ellipse(f.x,f.y,f.r,f.r*.84,0,0,TAU);pondCtx.fill();}
+    dayTint(pondCtx);                    // grade the POND behind the glass — never the fog sheet
     pondCtx.restore();
     c.imageSmoothingEnabled=true;c.filter='blur(2px)';c.drawImage(pond,0,0,W,H);c.filter='none';
     c.fillStyle='rgba(40,30,20,.12)';c.fillRect(0,0,W,H);
     fogCtx.clearRect(0,0,W,H);fogCtx.fillStyle='rgba(205,212,210,.5)';fogCtx.fillRect(0,0,W,H);fogCtx.globalCompositeOperation='destination-out';
+    if(paneClear)fogCtx.drawImage(paneClear,0,0);   // breathed-on pane: clearer center, mistier edges
     for(const d of drops){fogCtx.beginPath();fogCtx.ellipse(d.x,d.y,d.r*.7,d.r,0,0,TAU);fogCtx.fill();if(d.vy>4)fogCtx.fillRect(d.x-d.r*.4*d.trail,d.y-d.vy*.5,d.r*.8*d.trail,d.vy*.5);}
     fogCtx.globalCompositeOperation='source-over';c.drawImage(fog,0,0);
     for(const d of drops)c.drawImage(dropSprite,d.x-d.r*.78,d.y-d.r,d.r*1.56,d.r*2);   // perf: baked highlight (was a radial gradient per drop per frame)
     for(const d of drops){d.r+=(Math.random()<.02?rand(0,1.2):0);if(d.r>6||Math.random()<.01)d.vy+=.5;d.vy*=.96;d.y+=d.vy;if(d.vy>1)d.r*=.992;
       if(d.y>H+10||d.r<1.6)Object.assign(d,{x:rand(0,W),y:rand(-40,-5),r:rand(2.5,8),vy:0,trail:rand(.4,1)});}
-    for(const r of Pond.ripples)if(r.age<.05&&r.s>1)for(let i=0;i<3;i++)drops.push({x:r.x+rand(-12,12),y:r.y+rand(-12,12),r:rand(3,7),vy:0,trail:rand(.4,1)});}
+    for(const r of Pond.ripples)if(r.age<.05&&r.s>1)for(let i=0;i<3;i++)drops.push({x:r.x+rand(-12,12),y:r.y+rand(-12,12),r:rand(3,7),vy:0,trail:rand(.4,1)});
+    if(drops.length>130)drops.splice(0,drops.length-130);}   // frenzy slurps spawn drops too — cap the pane
 };
 
 // the gulp (C.3): a feeding koi works its mouth — the classic top-down "O" cycling
@@ -1213,7 +1368,7 @@ function updateKoi(k,dt){
   for(const r of Pond.rocks){const dx=k.x-r.x,dy=k.y-r.y,d=Math.hypot(dx,dy),rr=rockR(r)+34;   // koi steer around stone
     if(d<rr){const a=Math.atan2(dy,dx);let da=((a-k.ang+Math.PI*3)%TAU)-Math.PI;desired+=da*(1-d/rr)*1.6;}}
   for(const p of Pond.plants){
-    if(p.type==='reed'||p.type==='iris'){const dx=k.x-p.x,dy=k.y-p.y,d=Math.hypot(dx,dy);     // ...and emergent stems
+    if(p.type==='reed'||p.type==='iris'||p.type==='horsetail'){const dx=k.x-p.x,dy=k.y-p.y,d=Math.hypot(dx,dy);     // ...and emergent stems
       if(d<46){const a=Math.atan2(dy,dx);let da=((a-k.ang+Math.PI*3)%TAU)-Math.PI;desired+=da*(1-d/46)*1.2;}}
     else if(p.type==='duckweed'){const d2=(p.x-k.x)**2+(p.y-k.y)**2;                          // ambient nibble: the pond feeds itself a little
       if(d2<28*28){k.wellfed=Math.max(k.wellfed,1.5);k.age=Math.min(AGE_MAX,k.age+dt*.002);p.grow=Math.max(.35,p.grow-dt*.05);}}}
@@ -1330,7 +1485,8 @@ function step(dt){Pond._t+=dt;
     if((p.type==='lotus'||p.type==='iris')&&p.grow>.9)p.bloom=Math.min(1,p.bloom+dt*.05*(.4+th));
     if(p.type==='pad'&&p.vr!=='cluster'&&p.grow>.85)p.bloom=Math.min(1,(p.bloom||0)+dt*.012*(.4+th));   // old pads open a water-lily
     floatPlant(p,dt);}
-  for(const r of Pond.rocks)r.grow=Math.min(1,r.grow+dt*.0015*(.4+th));             // moss creeps — things that persist wear their time
+  for(const r of Pond.rocks){r.grow=Math.min(1,r.grow+dt*.0015*(.4+th));             // moss creeps — things that persist wear their time
+    if(r.form==='spout')updateSpout(r);}                                              // the shishi-odoshi keeps its own slow time
   // petals drift from blooming lotuses
   if(Math.random()<dt*.5){const lo=Pond.plants.find(p=>p.type==='lotus'&&p.bloom>.5);if(lo&&Pond.petals.length<40)Pond.petals.push({x:lo.x,y:lo.y,vx:rand(-6,6),vy:rand(4,12),r:rand(0,TAU),vr:rand(-1,1),life:rand(6,12)});}
   for(const pt of Pond.petals){pt.x+=pt.vx*dt;pt.y+=pt.vy*dt;pt.r+=pt.vr*dt;pt.life-=dt;}
@@ -1400,7 +1556,7 @@ function render(t){
   ctx.filter='none';ctx.globalCompositeOperation='source-over';ctx.globalAlpha=1;ctx.shadowBlur=0;ctx.shadowColor='transparent';
   const S=SKINS[skin];ctx.save();
   try{
-    if(S.full){S.render(ctx,t);dayTint(ctx);}
+    if(S.full){S.render(ctx,t);if(!S.selfTint)dayTint(ctx);}
     else{
       wctx.setTransform(WS,0,0,WS,0,0);S.water(wctx,t);            // soft water at reduced res
       ctx.imageSmoothingEnabled=true;ctx.drawImage(wbuf,0,0,W,H);  // upscale — glow doesn't mind
@@ -1426,7 +1582,7 @@ function render(t){
 // =================================================================
 const P={x:-999,y:-999,px:0,py:0};let lastMove=0, drag=null, sel=null, placing=null;
 function plantAt(x,y){for(let i=Pond.plants.length-1;i>=0;i--){const p=Pond.plants[i];
-  const R=(p.type==='lotus'?46:p.type==='pad'?18+p.size*46*p.grow:p.type==='duckweed'?18:p.type==='grass'?26:30)+10;
+  const R=(p.type==='lotus'?46:p.type==='pad'?18+p.size*46*p.grow:p.type==='duckweed'?18:p.type==='grass'?26:p.type==='hyacinth'?30:30)+10;
   if((x-p.x)**2+(y-p.y)**2<R*R)return p;}return null;}
 function rockAt(x,y){for(let i=Pond.rocks.length-1;i>=0;i--){const r=Pond.rocks[i];
   const R=rockR(r)+8;if((x-r.x)**2+(y-r.y)**2<R*R)return r;}return null;}
@@ -1459,8 +1615,11 @@ function tryHideUI(){ // never fade the chrome mid-task — open tray, armed chi
 function showUI(){[skinsBar,tendBar].forEach(e=>e.classList.remove('hide'));hint.style.opacity='1';clearTimeout(uiTimer);
   uiTimer=setTimeout(tryHideUI,3000);}
 showUI();setTimeout(()=>hint.style.opacity='0',5500);
+function applySkinChrome(){try{document.body.dataset.skin=skin;}catch(e){}
+  document.querySelectorAll('.pill').forEach(q=>q.classList.toggle('on',q.dataset.skin===skin));}
 document.querySelectorAll('.pill').forEach(p=>p.addEventListener('click',()=>{const s=p.dataset.skin;if(s===skin)return;
-  veil.style.opacity='1';setTimeout(()=>{skin=s;document.querySelectorAll('.pill').forEach(q=>q.classList.toggle('on',q.dataset.skin===s));veil.style.opacity='0';},220);}));
+  veil.style.opacity='1';setTimeout(()=>{skin=s;applySkinChrome();veil.style.opacity='0';},220);}));
+applySkinChrome();
 // ---- tend tray (release / plant / place) — the player's palette; everything is decor AND habitat ----
 const cKoi=document.getElementById('cKoi'),bKoi=document.getElementById('buyKoi');
 const openPlant=document.getElementById('openPlant'),openPlace=document.getElementById('openPlace'),trayEl=document.getElementById('tray');
@@ -1468,21 +1627,27 @@ function koiCost(){return 5+Pond.koi.length*4;}
 const CATALOG={                                            // placeholder prices, gentle curve — real numbers in Phase D rebalance
  plant:[{t:'pad',vr:'classic',label:'pad',cost:6},{t:'pad',vr:'copper',label:'copper pad',cost:9},{t:'pad',vr:'cluster',label:'pad cluster',cost:10},
         {t:'lotus',label:'lotus',cost:8},{t:'reed',label:'reeds',cost:10},{t:'iris',label:'iris',cost:12},
-        {t:'duckweed',label:'duckweed',cost:5},{t:'grass',label:'water grass',cost:8}],
+        {t:'duckweed',label:'duckweed',cost:5},{t:'grass',label:'water grass',cost:8},
+        {t:'horsetail',label:'horsetail',cost:11},{t:'hyacinth',label:'water hyacinth',cost:14}],
  place:[{t:'stone',label:'river stone',cost:15},{t:'boulder',label:'boulder',cost:22},{t:'slate',label:'slate',cost:15},
-        {t:'driftwood',label:'driftwood',cost:20},{t:'lantern',label:'stone lantern',cost:30}]};
+        {t:'driftwood',label:'driftwood',cost:20},{t:'steps',label:'stepping stones',cost:26},
+        {t:'spout',label:'bamboo spout',cost:34},{t:'lantern',label:'stone lantern',cost:30}]};
 let trayMode=null;
 function buildTray(){trayEl.innerHTML='';if(!trayMode)return;
   CATALOG[trayMode].forEach((it,i)=>{const b=document.createElement('button');b.className='chip';
     b.innerHTML=`${it.label} <span class="c">${it.cost}</span>`;b.dataset.i=i;
-    b.addEventListener('click',()=>armChip(it,b));trayEl.appendChild(b);});refreshTray();}
+    b.addEventListener('click',()=>armChip(it,b));trayEl.appendChild(b);});
+  const cap=document.createElement('span');cap.className='traycap';cap.id='traycap';trayEl.appendChild(cap);   // quiet capacity readout
+  refreshTray();}
 function refreshTray(){const s=Pond.econ.serenity;
+  const used=trayMode==='plant'?Pond.plants.length:Pond.rocks.length;
+  const max=trayMode==='plant'?CAPS.plants:CAPS.rocks;
   trayEl.querySelectorAll('.chip').forEach(b=>{const it=CATALOG[trayMode][+b.dataset.i];
-    const capped=trayMode==='plant'?Pond.plants.length>=CAPS.plants:Pond.rocks.length>=CAPS.rocks;
-    b.disabled=s<it.cost||capped;});}
+    b.disabled=s<it.cost||used>=max;});
+  const capEl=document.getElementById('traycap');if(capEl)capEl.textContent=`${used} of ${max} placed`;}
 function armChip(it,b){if(placing&&placing.it===it){placing=null;trayEl.querySelectorAll('.chip').forEach(q=>q.classList.remove('arm'));return;}
   placing={kind:trayMode,it};trayEl.querySelectorAll('.chip').forEach(q=>q.classList.remove('arm'));b.classList.add('arm');
-  hint.textContent='tap the water to place it';hint.style.opacity='1';}
+  hint.textContent='tap the water to place it · tap the chip again to cancel';hint.style.opacity='1';}
 function placeAt(x,y){const it=placing.it,kind=placing.kind;placing=null;
   trayEl.querySelectorAll('.chip').forEach(q=>q.classList.remove('arm'));hint.textContent='drag to stir · click to feed · tend & grow';
   const capped=kind==='plant'?Pond.plants.length>=CAPS.plants:Pond.rocks.length>=CAPS.rocks;
@@ -1493,7 +1658,7 @@ function placeAt(x,y){const it=placing.it,kind=placing.kind;placing=null;
   Pond.ripples.push({x,y,r:3,max:kind==='place'?100:60,age:0,life:1.8,s:kind==='place'?1.5:1});persist();showUI();}
 function toggleTray(mode){if(trayMode===mode){trayMode=null;placing=null;trayEl.classList.add('hide');}
   else{trayMode=mode;placing=null;trayEl.classList.remove('hide');buildTray();}
-  openPlant.style.opacity=trayMode==='plant'?1:'';openPlace.style.opacity=trayMode==='place'?1:'';showUI();}
+  openPlant.classList.toggle('open',trayMode==='plant');openPlace.classList.toggle('open',trayMode==='place');showUI();}
 openPlant.addEventListener('click',()=>toggleTray('plant'));
 openPlace.addEventListener('click',()=>toggleTray('place'));
 const _ui={s:-1,kc:-1,kd:null};
@@ -1530,7 +1695,7 @@ kcSwim.addEventListener('click',()=>{if(!sel)return;
 function devWarp(days){Pond.eco.lastSeen=Date.now()-days*864e5;idleReturn(true);persist();}
 let devFps=null;
 if(DEV){const dtr=document.getElementById('devtray');dtr.style.display='flex';
-  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.4.4 · … fps';dtr.appendChild(devFps);
+  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.6 · … fps';dtr.appendChild(devFps);
   const acts=[['+1d',()=>devWarp(1)],['+7d',()=>devWarp(7)],['+30d',()=>devWarp(30)],
     ['+200❀',()=>{Pond.econ.serenity+=200;}],
     ['mature flora',()=>{for(const p of Pond.plants){p.grow=1;if(p.type==='lotus'||p.type==='iris'||p.type==='pad')p.bloom=1;}for(const r of Pond.rocks)r.grow=1;persist();}],
@@ -1606,7 +1771,7 @@ function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;retu
   if(_adT>=5){const f=_adN/_adT;_adN=0;_adT=0;
     if(f<22&&_shed<2){_shed++;DPR_CAP=_shed===1?1.5:1;WS=_shed===1?.45:.4;resize();
       try{localStorage.setItem('koipond_q',String(_shed));}catch(e){}}}
-  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.4.4 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
+  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.6 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
   saveT+=dt;if(saveT>5){saveT=0;persist();}}
 addEventListener('beforeunload',persist);
 

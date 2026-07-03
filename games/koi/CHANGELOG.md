@@ -1,6 +1,71 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-03 — C.7: the composer update (§10, human's live read)
+DECIDED (human): a pass at the top UI for intuitiveness; more plant/rock headroom for composers; four new theme-true flora/decorations; the lantern generates at one size. Engine v3.5.1 → **v3.6**.
+
+CHANGED — top UI (intuitive, still calm):
+- Buttons renamed to plain nouns: **plants ▾ / stones ▾** (was plant/place); the open tray's button now holds an **accent open-state** instead of a bare opacity change.
+- **Live capacity readout** in the tray — a quiet dashed chip ("12 of 64 placed") so composers can see their headroom; chips still disable silently at cap (no error states, ever).
+- Armed hint now teaches the exit too: "tap the water to place it · tap the chip again to cancel."
+
+CHANGED — capacity ledger re-ratified (human's call): **plants 36 → 64, rocks 12 → 28.** A/B suite ledger assertions updated to the new constitution.
+
+CHANGED — four new items, all skin-correct via roles (contract v2), all **sold fully mature** (instant beauty):
+- **Horsetail** (flora, 11❀): vertical segmented stems with node rings + dark strobilus tips — the pond's most architectural plant. Dragonflies perch on it, fireflies anchor to it, koi steer around it.
+- **Water hyacinth** (flora, 14❀): a floating rosette of glossy leaves around its buoyant float, crowned with a lavender bloom (reads through `bloomAlt` roles; feeds `Eco.bloom`). Floats and drifts like a pad.
+- **Bamboo spout / shishi-odoshi** (hardscape, 34❀): baked stand (basin + upright culm) with a **live tipping arm** — fills, tips once per ~12–16s (seeded period), pours with a real ripple + sparkles. Stateless cycle (pure function of time+seed, fps-independent); sim-side spill in `step()`, pure draw in render. Slower under reduced-motion. Bamboo never mosses.
+- **Stepping stones** (hardscape, 26❀): three worn flats in a short seeded arc — an invitation across the water. Koi steer around them.
+- **Lantern (and spout) generate at ONE size** — built things are consistent; nature keeps varying.
+
+TRIED / VERIFIED: new C.7 gate suite (16/16 — lanterns/spouts all size 1 while stones still vary; caps 64/28; new items round-trip the save with stable seeds, arrive mature, hyacinth blooms and feeds ecology; the spout spills exactly once per cycle over 3 cycles; all four skins render the full set clean; reduced-motion spout still lives). Full sweep **152/152**. REAL-BROWSER: composed pond caught the spout MID-POUR with its ripple; tray screenshot shows the new buttons, open-state, and capacity readout. Screenshots shared.
+
+OPEN: prices are still Phase-D placeholders; hyacinth leaf tone is a director taste dial; the spout wants its bamboo *clack* when audio arrives (noted for the sound pass).
+
+
+## 2026-07-03 — C.6.1: metal koi tail fins — foil, not wedges (§10 micro-loop, human's live read)
+DECIDED (human, from the C.6 metal screenshot): "ensure there are no bugs with the tails of the koi in that environment." Engine v3.5 → **v3.5.1**. Two layered problems, one cosmetic and one structural:
+
+CHANGED:
+- **Material:** metal fins were filled with the fish's DARK base metal (`m.base` at .24) — solid dark wedges against the bright mirror. Now **thin polished foil**: translucent pale `shiro` fill (the water shows through) with a **bright cool edge stroke** that catches the sky, per the metal grade's cool-specular rule.
+- **Geometry (shared `tailFin`, all skins benefit):** the bright foil edge exposed that the tail fin anchored at a **single point** on the tail tip and ballooned straight to full width — reading as a hinged leaf hanging off the fish. The fin now **grows out of the caudal peduncle at its width** (base spans ±.24 body-width, seam hidden under the body), so it's a continuation of the fish, not an attachment.
+
+TRIED / VERIFIED: all nine suites green (134/134); real-Chromium metal lineup with three ELDERS (longest trailing fins — worst case) mid-swim: fins read as attached translucent foil with forked trailing edges; natural re-shot to confirm the shared geometry change reads clean there too (it improved it). Screenshots shared.
+
+
+## 2026-07-03 — C.6: skin-reactive chrome + per-skin signatures (§10 polish round toward mature MVP)
+DECIDED (human): "a tightening pass for the visuals of the ui across the different filters… add details for each theme that make them unique visually… high end polish round as we get close to a more mature mvp." Engine v3.4.5 → **v3.5**.
+
+CHANGED — the UI answers the pond it floats over (one `data-skin` attribute on `<body>` swaps CSS tokens; every control reads them, so **a skin can never restyle another skin's chrome** — isolation by construction):
+- **Natural** keeps the canonical dark-glass chips (amber accent, blossom-pink glyph) — the reference look.
+- **Metal**: chips take a warm bronze cast with brass hairline borders; the serenity glyph goes cool silver (the v0.5 temperature split, now in the chrome too).
+- **Ink**: near-black chips with paper-white hairlines; the accent is **vermilion** — unlock buttons and armed chips stamp like seal ink.
+- **Rain**: cool slate-glass chips with misted blue hairlines and a rain-cool accent.
+- **Tightening**: consistent border tokens, slow cross-fade on theme change, and **visible `:focus-visible` rings** on every control (accessibility promise honored, styled per skin).
+
+CHANGED — one signature detail per skin (all featherlight: baked once or stateless; ≤1 gradient + a few sprite draws per frame):
+- **Natural — daylight pollen**: warm motes adrift over the water in day hours, gone by dusk; stateless (position derives from time), capped at 12, reduced-motion slows the drift.
+- **Metal — the showroom sweep**: one faint cool band slowly crossing the mirror (~30s period), the reflection of something passing over polished metal. Skipped under reduced-motion.
+- **Ink — the print is signed**: laid-paper grain over the whole frame (baked 192px pattern, one fill) and a **vermilion hanko seal** (鯉) in the corner — the pond as a sumi-e print.
+- **Rain — the breathed-on pane**: mist gathers at the pane's edges while the center stays wiped clearer (baked radial punch through the fog) — the glass reads touched, lived-with.
+
+TRIED / VERIFIED: new C.6 gate suite (9/9 — chrome dataset tracks the skin from boot and through switches; 9 interleaved skin switches render with zero warnings; ink paper+seal bake exactly once; night + reduced-motion cycle clean). All prior suites green (**134/134 total**). REAL-BROWSER: all four skins screenshotted with chrome awake — each theme reads distinct, all controls legible everywhere. Screenshots shared.
+
+OPEN: pollen and the sweep are motion details a still can't judge — human's eye on the live build; the hanko seal's size/corner is a taste dial; pill active-state stays neutral white in all skins for legibility (deliberate).
+
+
+## 2026-07-03 — C.5.3: rain-on-glass fixed (§10 micro-loop, human's live read)
+DECIDED (human): "rain on glass is broken." Engine v3.4.4 → **v3.4.5**. TRIAGE: reproduced in real Chromium — at noon rain looked plausible, but at **dusk/night the whole pane turned muddy khaki / flat blue milk**. Root cause: rain is a `full` skin, so the Phase-C day/night grade (`dayTint`) was applied to the **final composite — fog sheet, droplets and all**. Multiply-tinting the pale fog reads as milk; the pond behind the glass vanished. (Latent since Phase C's day cycle; surfaced now that testing happens at night.)
+
+CHANGED:
+- **The pond is graded BEHIND the glass:** rain now calls `dayTint` on its own pond buffer (before fog/droplets composite) and declares `selfTint:true` so `render()` skips the composite-level tint. The glass stays neutral mist; the pond behind it carries the dusk/night grade — and the lantern's night glow is now correctly blurred by the glass instead of sitting crisp on top of it.
+- **Condensation-drop cap:** frenzy slurp ripples (s>1) spawn pane drops — the array grew unbounded during rainy feedings (a slow leak). Capped at 130, oldest recycled.
+
+TRIED / VERIFIED: all eight suites green (125/125); real-Chromium rain at noon + dusk + night with a feeding mid-rain — pond readable behind neutral glass at every hour, zero page errors. Screenshots shared.
+
+OPEN: overall fog density (`rgba(205,212,210,.5)`) is unchanged — a taste dial if the glass should read clearer; director's eye.
+
+
 ## 2026-07-03 — C.5.2: shadows hug their forms, moss lies in the grain (§10 micro-loop, human's live read)
 DECIDED (human, from a night hardscape screenshot): the driftwood's shadow oval didn't match the log it anchored ("it doesn't match up"), and the moss creep read as unidentifiable green blobs at high quantity — though "the pond is looking beautiful." Engine v3.4.3 → **v3.4.4**.
 
