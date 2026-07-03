@@ -1,6 +1,22 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-03 — C.4: size-led feeding hierarchy (§10 micro-loop, human's live read + koi research)
+DECIDED (human, from watching real ponds): "the biggest koi be most aggressive for food — make it realistic." Researched wild/pond koi behavior first: koi run a **size-led pecking order** — larger, older fish hold higher rank and get priority access to food and prime position; the biggest/boldest reaches the food first and takes the first bite, pushing smaller fish aside. Boldness is a **second, personality axis** (partly genetic — "bold koi rush the surface; shy ones linger for leftovers"). Human ratified: **size-led (60% size / 40% seeded boldness)** + **nudge-and-yield** aggression (dominant holds the spot, subordinate shoved to leftovers, nobody starved). Engine v3.4 → **v3.4.1**.
+
+CHANGED (the frenzy now has a pecking order — realistic, and still kind):
+- **Feeding rank, `domin(k)`:** 60% body size (live `elen`, so a fish that grows up climbs the order) + 40% **boldness**, a stable per-fish temperament derived from the saved seed (`k.bold`, 0=timid..1=bold — persists for the life of the fish, never saved separately, never re-rolled). Two axes, exactly as the research describes.
+- **Dominant fish go first:** they react to the splash harder (higher excitement floor — the timid still stir at .4 but hang back a beat), and **rush faster** toward the food, so they arrive and take the first bites.
+- **Elders LEAD the charge** (resolves C.3's open question): the elder calm-drift brake is **lifted by excitement** — the biggest, oldest koi are a real pond's most aggressive feeders, so they charge at a feeding and only go statelier when calm.
+- **Asymmetric jostle:** the shoulder-to-shoulder shove is now weighted by rank — the subordinate yields, the dominant holds its spot (a big fish pushes smaller ones aside).
+- **The dominant takes the bite:** a dominant fish can snatch a *barely-touched* pellet from a lesser one — but only at the very start of the bite, and handling time still forces gaps, so the timid always get their turn on the next pellet. **No starvation, ever** (the no-fail-state law holds).
+- **Settle-to-eat brake:** fish now decelerate hard in the last ~18px so they *park* on a pellet to mouth it instead of torpedoing through (also fixed fast fish overshooting while nimbler small ones camped the food).
+
+TRIED / VERIFIED: new C.4 gate suite (16/16, deterministic) — boldness is a stable seeded trait that survives reload; `domin` ranks big>small and bold>timid at equal size; the biggest fish reaches equidistant food first; jostle is asymmetric by rank; **elders keep pace with adults at a feeding but drift slower when calm**; over a mixed-size feeding the **big half out-eats the small half (~+42%)** yet **every fish still eats** (no starvation); one splash still excites the whole pond; all four skins render clean. A/B/C/C2/C3 suites re-run green (**110/110 total**; also hardened Phase C's flaky "bare pond" test). REAL-BROWSER: mixed-size feeding renders naturally — fish settle onto the pellets, no overshoot chaos — screenshot shared.
+
+OPEN: per-fish intake is noisy (boldness + ring position scatter on top of size) — that's realistic, not a bug; if the director wants a *stricter* size ladder it's a one-number tune (raise the size weight). Boldness is currently invisible in UI — a future Almanac could surface a fish's temperament.
+
+
 ## 2026-07-03 — C.3: the feeding frenzy (§10 micro-loop, human's live read)
 DECIDED (human): eating should LOOK like eating, and koi should swarm a thrown handful the way a real pond does. Engine v3.3.2 → **v3.4**.
 
@@ -13,7 +29,7 @@ CHANGED (the pond's most alive moment, built honest — excitement, not urgency)
 
 TRIED / VERIFIED: new C.3 gate suite (17/17, 10/10 stable runs — 8 edge-ringed koi ALL excited by one splash, ≥7 of 8 converge <120px from ~300px out vs. control (no feed → no convergence, zero excitement); 3s rush displacement >1.5× base drift; most pellets EATEN not expired; two handfuls feed ≥5 of 8; excitement and mouths fully settle after; nothing transient saved; all four skins render mid-frenzy clean; reduced-motion still gathers). A/B/C/C.2 suites re-run green (76/76). REAL-BROWSER: click-feed → rush frame (all 8 turned in, mid-surge) + crowd frame (tight ring around bobbing pellets, open mouths visible) — screenshots shared.
 
-OPEN: mouth "O" size/alpha is a taste dial for the director; a possible splash SOUND when audio arrives; whether elders should join the rush at all (currently statelier but present).
+OPEN: mouth "O" size/alpha is a taste dial for the director; a possible splash SOUND when audio arrives. *(RESOLVED in C.4: elders lead the rush — the biggest, oldest koi are a pond's most aggressive feeders.)*
 
 
 ## 2026-07-02 — C.2: seeded per-instance variety (§10 micro-loop, human's live read)
