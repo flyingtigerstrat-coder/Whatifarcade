@@ -44,10 +44,13 @@ canvas{width:100%;display:block;image-rendering:pixelated;background:#d9a05e}
 .routecard.sel{border-color:#e0a33a;background:#2c2014;box-shadow:0 0 0 1px #8a5a1a inset}
 .routecard.sel .rg{color:#f2c560}
 .routecard.sel .rt{color:#cdb894}
-#chips{position:absolute;left:0;right:0;bottom:6px;z-index:12;display:none;pointer-events:none;height:0}
-#chips .chip{position:absolute;bottom:0;transform:translateX(-50%);pointer-events:auto;font:inherit;font-size:14px;letter-spacing:1px;color:#efe3cc;background:rgba(28,20,12,0.88);border:2px solid #8a5a1a;border-bottom-width:3px;padding:3px 9px;white-space:nowrap;text-transform:uppercase}
+#chips{position:absolute;inset:0;z-index:12;display:none;pointer-events:none}
+#chips .chip{position:absolute;transform:translateX(-50%);pointer-events:auto;font:inherit;font-size:14px;letter-spacing:1px;color:#efe3cc;background:rgba(28,20,12,0.88);border:2px solid #8a5a1a;border-bottom-width:3px;padding:3px 9px;white-space:nowrap;text-transform:uppercase}
 #chips .chip:active{transform:translateX(-50%) translateY(1px)}
 #chips .chip .cg{color:#f2c560;margin-right:4px}
+#chips .chip.sign{background:rgba(34,24,14,0.92);border-color:#5f4d38;border-top-color:#8a5a1a;box-shadow:0 3px 8px rgba(0,0,0,0.45)}
+#chips .chip.sign::after{content:'';position:absolute;left:50%;top:100%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#8a5a1a}
+#chips .chip.plat{border-color:#6b4a2e}
 #depot{display:none;position:absolute;z-index:40;left:0;right:0;bottom:0;top:auto;max-height:62dvh;overflow-y:auto;background:rgba(18,14,10,0.97);border-top:3px solid #8a5a1a;padding:10px 12px 12px;box-shadow:0 -8px 26px rgba(0,0,0,0.55);scrollbar-width:thin;scrollbar-color:#6b4a2e #1a1410}
 #depot.show{display:block;animation:sheetup 0.22s ease}
 @keyframes sheetup{from{transform:translateY(26px);opacity:0.3}to{transform:none;opacity:1}}
@@ -866,15 +869,15 @@ function navArrive(){ // every completed leg lands here: move the rig on the map
 function offerObj(type,idx){
 if(type=='repair'){const c=Math.round(18+idx*6);return{label:'Repair bay',desc:'−'+c+' scrap · full hull',can:()=>S.scrap>=c&&S.hull<maxHull(),act:()=>{S.scrap-=c;S.hull=maxHull();log('Hull fully welded at the depot.')}}}
 if(type=='food'){const c=Math.round(22+idx*7),g=Math.round(16+idx*5);return{label:'Provisioner',desc:'−'+c+' scrap · +'+g+' food',can:()=>S.scrap>=c,act:()=>{S.scrap-=c;S.food+=g;log('Loaded '+g+' food from the provisioner.')}}}
-if(type=='fuel'){const c=Math.round(14+idx*5),g=Math.round(12+idx*4);return{label:'Fuel depot',desc:'−'+c+' scrap · +'+g+' fuel',can:()=>S.scrap>=c,act:()=>{S.scrap-=c;S.fuel+=g;log('Topped off '+g+' fuel at the depot.')}}}
-if(type=='recruit'){const c=Math.round(70+idx*22);return{label:'Wandering specialist',desc:'\u2212'+c+' scrap · recruit a wanderer',can:()=>S.scrap>=c,act:()=>{S.scrap-=c;recruitHero('wander')}}}
+if(type=='fuel'){const c=Math.round(14+idx*5),g=Math.round(12+idx*4);return{home:'fuel',label:'Fuel depot',desc:'−'+c+' scrap · +'+g+' fuel',can:()=>S.scrap>=c,act:()=>{S.scrap-=c;S.fuel+=g;log('Topped off '+g+' fuel at the depot.')}}}
+if(type=='recruit'){const c=Math.round(70+idx*22);return{home:'outpost',label:'Wandering specialist',desc:'\u2212'+c+' scrap · recruit a wanderer',can:()=>S.scrap>=c,act:()=>{S.scrap-=c;recruitHero('wander')}}}
 if(type=='scrap'){const c=Math.round(12+idx*4),g=Math.round(40+idx*14);return{label:'Scrap broker',desc:'−'+c+' food · +'+g+' scrap',can:()=>S.food>=c,act:()=>{S.food-=c;S.scrap+=g;log('Sold rations for '+g+' scrap.')}}}
 if(type=='scavenge'){return{label:'Pick the wreck-stacks',desc:'free · gamble',can:()=>true,act:()=>{const r=Math.random();if(r<0.5){const g=Math.round(35+idx*13);S.scrap+=g;log('Scavenging paid off — +'+g+' scrap.')}else if(r<0.8){const g=Math.round(12+idx*5);S.food+=g;log('Found a food cache — +'+g+' food.')}else log('The stacks were already picked clean. Nothing here.')}}}
 if(type=='cache'){const g=Math.round(24+idx*10);return{label:'Supply cache',desc:'free · +'+g+' scrap',can:()=>true,act:()=>{S.scrap+=g;log('Cracked a supply cache — +'+g+' scrap.')}}}
 if(type=='patch'){const c=Math.round(20+idx*5);return{label:'Patch the breached tank',desc:'\u2212'+c+' scrap \u00b7 the leak stops',can:()=>!!S.leak&&S.scrap>=c,act:()=>{S.scrap-=c;S.leak=null;log('The yard crew sweats the tank seams tight. The leak is DONE weeping.')}}}
 if(type=='uncripple'){const c=Math.round(45+idx*12);return{label:'Repair a crippled car',desc:'\u2212'+c+' scrap \u00b7 back in the line',can:()=>S.crippled.length>0&&S.scrap>=c,act:()=>{const i=S.crippled.shift();if(S.slots[i])delete S.slots[i].crip;S.scrap-=c;log('The yard raises the charred car and makes it a CAR again. She rejoins the line.')}}}
-if(type=='guard'){return{label:'Walk the walls',desc:'free · troops earn their keep',can:()=>troops()>0,act:()=>{const g=Math.round(troops()*(6+eff()));S.scrap+=g;log('Your troops walk the walls for a night — +'+g+' scrap earned.')}}}
-if(type=='blessing'){const heal=Math.round(maxHull()*0.2);return{label:'Chapel of the Open Rail',desc:'free · the crew breathes',can:()=>true,act:()=>{S.hull=Math.min(maxHull(),S.hull+heal);S.food+=4;log('Lamp-smoke and quiet in the chapel car. The crew breathes — +'+heal+' hull, +4 food.')}}}
+if(type=='guard'){return{home:'outpost',label:'Walk the walls',desc:'free · troops earn their keep',can:()=>troops()>0,act:()=>{const g=Math.round(troops()*(6+eff()));S.scrap+=g;log('Your troops walk the walls for a night — +'+g+' scrap earned.')}}}
+if(type=='blessing'){const heal=Math.round(maxHull()*0.2);return{home:'chapel',label:'Chapel of the Open Rail',desc:'free · the crew breathes',can:()=>true,act:()=>{S.hull=Math.min(maxHull(),S.hull+heal);S.food+=4;log('Lamp-smoke and quiet in the chapel car. The crew breathes — +'+heal+' hull, +4 food.')}}}
 return{label:'Black-market fixer',desc:'free · next upgrade ½ price',can:()=>!S.discount,act:()=>{S.discount=true;log('A fixer marks down your next upgrade to half price.')}}}
 function depotOffers(idx,pers){ // personalities pin their trade first (YARD repairs, OUTPOST recruits, CHAPEL blesses); the rest rolls from the pool
 const pool=['repair','food','scrap','fuel','recruit','scavenge','cache','discount'],pick=[],used={};
@@ -906,27 +909,35 @@ else if(Math.random()<0.35){const rl=RUMORS[S.nav.reg];log('Rumor — '+rl[Math.
 renderDepot();showView('travel')}
 function renderChips(){const el=document.getElementById('chips');if(!el)return;
 if(S.mode!='depot'||!S.depot||!(S.stop&&S.stop.ph=='docked')){el.style.display='none';el.innerHTML='';return} // the chips light when the wheels stop
-const sx=(S.stationX==null?STATION_HOME:S.stationX),ax=dx=>Math.max(5,Math.min(92,Math.round((sx+dx)/320*100)))+'%';
-const pl=S.place,tier=pl?pl.tier:'station',caps=tier=='capital';
-const at=k=>{const b=pl&&pl.B.find(b=>b.f===k);return b?b.dx+10:40};
-const items=[{cv:'services',g:'\u2699',t:'Services',x:at(bStation)||30}];
-if(tier!='halt'||pl&&pl.pump)items.push({cv:'fuel',g:'\u26fd',t:'Fuel',x:pl&&pl.pump?at(bOilPump):at(bWaterTower)});
-if(tier!='halt'&&(S.depot.pers.includes('market')||caps))items.push({cv:'market',g:'\u2696',t:'Market',x:at(bStalls)||70});
-if(tier!='halt')items.push({cv:'board',g:'\u270e',t:'Board',x:at(bStation)+44});
-if(caps)items.push({cv:'keeper',g:'\u265a',t:KEEPERS[S.nav.reg].nm.split(' ').pop(),x:at(bTrainShed)+20});
-const f=_fit(),land=appEl.classList.contains('land'),maxX=land?f.r.width*0.52:f.r.width-24; // stay clear of the landscape side panel
-items.forEach(it=>{it.px=Math.max(28,Math.min(maxX,Math.round(f.ox+((sx+it.x)/320)*f.dw)))});
-items.sort((a,b)=>a.px-b.px);                                                   // anchored to meaning, but never on top of each other
-let last=-999,row=0;items.forEach(it=>{if(it.px-last<86){row=1-row;if(row===0)it.px=Math.min(maxX,last+86)}else row=0;it.row=row;last=it.px});
-const by=Math.max(4,Math.round(f.r.height-(f.oy+f.dh)))+6+(land?96:0);           // canvas' true bottom edge — lifted clear of the landscape bottom bars
-el.innerHTML=items.map(it=>'<button class="chip" data-cv="'+it.cv+'" style="left:'+it.px+'px;bottom:'+(by+(it.row?32:0))+'px"><span class="cg">'+it.g+'</span>'+it.t+'</button>').join('');
+const sx=(S.stationX==null?STATION_HOME:S.stationX),pl=S.place,tier=pl?pl.tier:'station',caps=tier=='capital';
+const at=(k,fb)=>{const b=pl&&pl.B.find(b=>b.f===k);return b?b.dx+(k===bTrainShed?36:k===bStation?30:10):fb}; // the chip hangs over ITS building
+const hasB=k=>!!(pl&&pl.B.find(b=>b.f===k));
+const homes=new Set((S.depot.offers||[]).map(o=>o.home||'services'));
+const items=[{cv:'services',g:'\u2699',t:'Services',x:at(bStation,at(bDepot,30))}];
+if(homes.has('fuel')||tier!='halt')items.push({cv:'fuel',g:'\u26fd',t:'Fuel',x:hasB(bOilPump)?at(bOilPump,64):hasB(bSilo)?at(bSilo,64):at(bWaterTower,64)});
+if(tier!='halt'&&(S.depot.pers.includes('market')||caps))items.push({cv:'market',g:'\u2696',t:'Market',x:at(bStalls,at(bFreight,96))});
+if(homes.has('chapel')&&hasB(bBellShack))items.push({cv:'chapel',g:'\u2626',t:'Chapel',x:at(bBellShack,118)});
+if(homes.has('outpost')&&hasB(bWatchpost))items.push({cv:'outpost',g:'\u265f',t:'Watch',x:at(bWatchpost,100)});
+if(caps)items.push({cv:'keeper',g:'\u265a',t:KEEPERS[S.nav.reg].nm.split(' ').pop(),x:at(bTrainShed,-6)});
+if(tier!='halt')items.push({cv:'board',g:'\u270e',t:'Board',plat:true,x:118}); // the Board lives on the PLATFORM, with the people
+const f=_fit(),land=appEl.classList.contains('land'),maxX=land?f.r.width*0.5:f.r.width-30;
+items.forEach(it=>{it.px=Math.max(30,Math.min(maxX,Math.round(f.ox+((sx+it.x)/320)*f.dw)))});
+items.sort((a,b)=>a.px-b.px);
+let last=-999,row=0;items.forEach(it=>{if(!it.plat&&it.px-last<88){row=1-row;if(row===0)it.px=Math.min(maxX,last+88)}else if(!it.plat)row=0;if(!it.plat)last=it.px;it.row=row});
+const skyY=Math.round(f.oy+(40/180)*f.dh),platB=Math.max(4,Math.round(f.r.height-(f.oy+f.dh)))+6+(land?96:0);
+el.innerHTML=items.map(it=>it.plat
+ ?'<button class="chip plat" data-cv="'+it.cv+'" style="left:'+it.px+'px;bottom:'+platB+'px"><span class="cg">'+it.g+'</span>'+it.t+'</button>'
+ :'<button class="chip sign" data-cv="'+it.cv+'" style="left:'+it.px+'px;top:'+(skyY+it.row*30)+'px"><span class="cg">'+it.g+'</span>'+it.t+'</button>').join('');
 el.style.display='block'}
 function renderDepot(){const d=S.depot,el=document.getElementById('depot');renderChips();
 if(!d||S.depotMin||!S.depotView){el.className='';if(!d)el.innerHTML='';else el.innerHTML='';return}
 if(S.depotView=='keeper'){log(KEEPERS[S.nav.reg].nm+': '+KEEPERS[S.nav.reg].line+' \u2014 "'+CAPTAINS[Math.min(3,S.nav.reg)].nm+' holds the gate east. Mind the tolls where the clans grew bold."');S.depotView=null;el.className='';return}
 let h='<button class="dstep" data-k="-2" title="Back to the platform">\u2715</button><h3>'+d.name+'</h3><div class="flav"><span class="pers">'+d.pers.map(p=>PERS[p]).join(' + ')+'</span> — needs <b style="color:#e0a33a">'+GOODS[d.need||'grain'].nm+'</b></div>';
-if(S.depotView=='services'){d.offers.forEach((o,k)=>{h+='<button class="opt" data-k="'+k+'" '+(o.can()?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'})}
-if(S.depotView=='fuel'){const fo=offerObj('fuel',d.idx);h+='<button class="opt" data-k="-3" '+(fo.can()?'':'disabled')+'><span>'+fo.label+'</span><span class="od">'+fo.desc+'</span></button>';h+='<div class="flav">tank '+Math.floor(S.fuel)+' / '+tankCap()+'</div>'}
+if(S.depotView=='services'||S.depotView=='chapel'||S.depotView=='outpost'){const want=S.depotView;
+ d.offers.forEach((o,k)=>{const hm=o.home||'services';if((want=='services'&&hm!='chapel'&&hm!='outpost'&&hm!='fuel')||hm===want)h+='<button class="opt" data-k="'+k+'" '+(o.can()?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'});
+ if(want=='chapel')h+='<div class="flav">bell-metal and lamp-smoke \u2014 the yard of markers faces west</div>';
+ if(want=='outpost')h+='<div class="flav">the watch sees everything on the flat \u2014 and hires</div>'}
+if(S.depotView=='fuel'){d.offers.forEach((o,k)=>{if((o.home||'')==='fuel')h+='<button class="opt" data-k="'+k+'" '+(o.can()?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'});const fo=offerObj('fuel',d.idx);h+='<button class="opt" data-k="-3" '+(fo.can()?'':'disabled')+'><span>'+fo.label+'</span><span class="od">'+fo.desc+'</span></button>';h+='<div class="flav">tank '+Math.floor(S.fuel)+' / '+tankCap()+'</div>'}
 if(S.depotView=='market'&&(d.pers.includes('market')||(S.place&&S.place.tier=='capital'))){ // the trade board: spot prices with the regional spread visible
  h+='<div class="mkthd">MARKET · hold '+cargoUsed()+'/'+cargoCap()+(cargoCap()?'':' — weld a Cargo car to trade')+(S.rep.carav?' · Caravaneers '+'★'.repeat(S.rep.carav):'')+'</div>';
  GKEYS.forEach(g=>{const p=gPrice(g),held=S.cargo[g]||0,tr=gTrend(g);
