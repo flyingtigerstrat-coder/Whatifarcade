@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v3.3.1 (living pond, C.1: hardscape/flora differentiation + graceful turns) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.3.2 (living pond, C.2: seeded per-instance variety — driftwood forms, rock jitter, flora spread/tone) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
@@ -228,18 +228,27 @@ function makeKoi(variety,x,y,age,seed,parents){
   for(let i=0;i<n;i++)k.trail.push({x:k.x-Math.cos(k.ang)*i*2,y:k.y-Math.sin(k.ang)*i*2});
   return k;
 }
-function makePad(x,y,size,vr){return {type:'pad',vr:vr||'classic',x,y,size:size??rand(.2,.5),rot:rand(0,TAU),grow:size?1:rand(.2,.6),bloom:0,hue:rand(-8,8),bp:rand(0,TAU),amp:rand(2,3.6),dx:0,dy:0,vx:0,vy:0,rv:rand(-.04,.04)};}
-function makeLotus(x,y){return {type:'lotus',vr:'classic',x,y,grow:0,bloom:0,rot:rand(0,TAU),bp:rand(0,TAU),amp:rand(1.6,2.8),dx:0,dy:0,vx:0,vy:0,rv:rand(-.03,.03)};}
-// dream-pond flora (BRIEF v1.1 Phase B). Cosmetic detail (blade counts, phases) is
-// re-rolled on load like pad hue; identity (type/vr/position/grow/bloom) persists.
-function makeReed(x,y){return {type:'reed',vr:'classic',x,y,grow:0,bloom:0,n:5+(Math.random()*4|0),heads:1+(Math.random()*2|0),bp:rand(0,TAU),rot:0,amp:1,dx:0,dy:0,vx:0,vy:0,rv:0};}
-function makeIris(x,y){return {type:'iris',vr:'classic',x,y,grow:0,bloom:0,n:3,bp:rand(0,TAU),rot:0,amp:1,dx:0,dy:0,vx:0,vy:0,rv:0};}
-function makeDuckweed(x,y){return {type:'duckweed',vr:'classic',x,y,grow:.6,bloom:0,n:5+(Math.random()*4|0),bp:rand(0,TAU),rot:rand(0,TAU),amp:rand(3,4.5),dx:0,dy:0,vx:0,vy:0,rv:rand(-.06,.06)};}
-function makeGrass(x,y){return {type:'grass',vr:'classic',x,y,grow:0,bloom:0,n:6+(Math.random()*5|0),bp:rand(0,TAU),rot:0,amp:1,dx:0,dy:0,vx:0,vy:0,rv:0};}
+// Every plant/rock carries a SAVED seed (like the koi): all cosmetic traits — blade
+// counts, hue lean, shape jitter, driftwood form — derive from it deterministically,
+// so each is an individual AND comes back exactly itself on every reload.
+function makePad(x,y,size,vr,sd){sd=sd??(Math.random()*1e4|0);const rnd=srand(sd);
+  return {type:'pad',vr:vr||'classic',sd,x,y,size:size??(.2+rnd()*.3),rot:rnd()*TAU,grow:size?1:.2+rnd()*.4,bloom:0,
+    hue:(rnd()-.5)*18,bp:rnd()*TAU,amp:2+rnd()*1.6,dx:0,dy:0,vx:0,vy:0,rv:(rnd()-.5)*.08};}
+function makeLotus(x,y,sd){sd=sd??(Math.random()*1e4|0);const rnd=srand(sd);
+  return {type:'lotus',vr:'classic',sd,x,y,grow:0,bloom:0,hue:(rnd()-.5)*14,rot:rnd()*TAU,bp:rnd()*TAU,amp:1.6+rnd()*1.2,dx:0,dy:0,vx:0,vy:0,rv:(rnd()-.5)*.06};}
+function makeReed(x,y,sd){sd=sd??(Math.random()*1e4|0);const rnd=srand(sd);
+  return {type:'reed',vr:'classic',sd,x,y,grow:0,bloom:0,n:5+(rnd()*4|0),heads:1+(rnd()*2.4|0),spread:3.8+rnd()*1.6,hue:(rnd()-.5)*14,bp:rnd()*TAU,rot:0,amp:1,dx:0,dy:0,vx:0,vy:0,rv:0};}
+function makeIris(x,y,sd){sd=sd??(Math.random()*1e4|0);const rnd=srand(sd);
+  return {type:'iris',vr:'classic',sd,x,y,grow:0,bloom:0,n:3+(rnd()*1.6|0),pet:5+(rnd()*1.8|0),bsz:.85+rnd()*.35,hue:(rnd()-.5)*12,bp:rnd()*TAU,rot:0,amp:1,dx:0,dy:0,vx:0,vy:0,rv:0};}
+function makeDuckweed(x,y,sd){sd=sd??(Math.random()*1e4|0);const rnd=srand(sd);
+  return {type:'duckweed',vr:'classic',sd,x,y,grow:.6,bloom:0,n:4+(rnd()*5|0),hue:(rnd()-.5)*16,bp:rnd()*TAU,rot:rnd()*TAU,amp:3+rnd()*1.5,dx:0,dy:0,vx:0,vy:0,rv:(rnd()-.5)*.12};}
+function makeGrass(x,y,sd){sd=sd??(Math.random()*1e4|0);const rnd=srand(sd);
+  return {type:'grass',vr:'classic',sd,x,y,grow:0,bloom:0,n:6+(rnd()*5|0),spread:4.2+rnd()*1.8,hue:(rnd()-.5)*10,bp:rnd()*TAU,rot:0,amp:1,dx:0,dy:0,vx:0,vy:0,rv:0};}
 const PLANT_MAKE={pad:makePad,lotus:makeLotus,reed:makeReed,iris:makeIris,duckweed:makeDuckweed,grass:makeGrass};
 const BELOW_TYPES={grass:1};                       // BELOW-plane flora renders under the koi
 // hardscape: heavy, mossing, persistent (decor AND habitat — Principle 3)
-function makeRock(form,x,y){return {form,x,y,size:rand(.75,1.25),rot:rand(0,TAU),grow:0};}
+function makeRock(form,x,y,sd){sd=sd??(Math.random()*1e4|0);const rnd=srand(sd);
+  return {form,sd,x,y,size:.75+rnd()*.5,rot:rnd()*TAU,grow:0};}
 function rockR(r){return (r.form==='boulder'?34:r.form==='slate'?30:r.form==='driftwood'?40:r.form==='lantern'?22:24)*r.size;}
 
 // dev lifecycle harness (?dev=1): drives the WHOLE player journey on demand.
@@ -257,9 +266,9 @@ function restore(s){
   Pond.unlocked=s.unlocked&&s.unlocked.length?s.unlocked:['kohaku','asagi','ogon'];
   Pond.koi=(s.koi||[]).map(k=>makeKoi(k.variety,k.x*W,k.y*H,k.age,k.seed,k.parents||null));
   Pond.plants=(s.plants||[]).map(p=>{const mk=PLANT_MAKE[p.type]||makePad;
-    const pl=p.type==='pad'?makePad(p.x*W,p.y*H,p.size,p.vr):mk(p.x*W,p.y*H);
+    const pl=p.type==='pad'?makePad(p.x*W,p.y*H,p.size,p.vr,p.sd):mk(p.x*W,p.y*H,p.sd);
     return Object.assign(pl,{grow:p.grow??pl.grow,bloom:p.bloom||0,vr:p.vr||'classic'});});
-  Pond.rocks=(s.rocks||[]).map(r=>({form:r.form,x:r.x*W,y:r.y*H,size:r.size||1,rot:r.rot||0,grow:r.grow||0}));
+  Pond.rocks=(s.rocks||[]).map(r=>Object.assign(makeRock(r.form,r.x*W,r.y*H,r.sd),{size:r.size||1,rot:r.rot||0,grow:r.grow||0}));
   Pond.frog=s.frog||null; Pond.departed=s.departed||[]; Pond.seen=s.seen||{};
   Pond.eco=s.eco||{lastSeen:Date.now()};
   if(!Pond.koi.length) seedDefault();
@@ -267,8 +276,8 @@ function restore(s){
 function persist(){
   Store.save({v:3, econ:Pond.econ, unlocked:Pond.unlocked,
     koi:Pond.koi.map(k=>({variety:k.variety,age:k.age,x:k.x/W,y:k.y/H,seed:k.seed,parents:k.parents||null})),
-    plants:Pond.plants.map(p=>({type:p.type,x:p.x/W,y:p.y/H,size:p.size,grow:p.grow,bloom:p.bloom,vr:p.vr||'classic'})),
-    rocks:Pond.rocks.map(r=>({form:r.form,x:r.x/W,y:r.y/H,size:r.size,rot:r.rot,grow:r.grow})),
+    plants:Pond.plants.map(p=>({type:p.type,x:p.x/W,y:p.y/H,size:p.size,grow:p.grow,bloom:p.bloom,vr:p.vr||'classic',sd:p.sd})),
+    rocks:Pond.rocks.map(r=>({form:r.form,x:r.x/W,y:r.y/H,size:r.size,rot:r.rot,grow:r.grow,sd:r.sd})),
     frog:Pond.frog, departed:Pond.departed, seen:Pond.seen,
     eco:{lastSeen:Date.now()}});
 }
@@ -594,12 +603,13 @@ function caustics(c,w,h,t,color,blend){c.globalCompositeOperation=blend;const sp
 
 // ---------- plants (shared natural draw) ----------
 function drawPad(c,p,tint,opts){let R=18+(p.size??.4)*46*(p.grow??1);if(!isFinite(R)||R<2)R=18;const ry=R*.72;const metal=opts&&opts.metal;
+  const hm=1+(p.hue||0)*.008;                        // seeded per-pad tone (C.2) — siblings no longer clone-green
   c.save();c.translate(p.rx??p.x,p.ry??p.y);c.rotate(p.rrot??p.rot);
   // floor shadow
   c.fillStyle='rgba(6,20,16,.22)';c.beginPath();c.ellipse(3,5,R,ry,0,0,TAU);c.fill();
   // pad body
   const g=c.createRadialGradient(-R*.2,-ry*.2,2,0,0,R);
-  g.addColorStop(0, tint? tint[0] : '#3f6e3a');g.addColorStop(.7, tint? tint[1] : '#2d5630');g.addColorStop(1, tint? tint[2] : '#1f3f25');
+  g.addColorStop(0, shade(tint? tint[0] : '#3f6e3a',hm));g.addColorStop(.7, shade(tint? tint[1] : '#2d5630',hm));g.addColorStop(1, shade(tint? tint[2] : '#1f3f25',hm));
   c.fillStyle=g;c.beginPath();c.ellipse(0,0,R,ry,0,0,TAU);c.fill();
   // notch (painted cleft, not an erase — safe on opaque canvas)
   c.fillStyle='rgba(12,28,20,.5)';
@@ -621,7 +631,7 @@ function drawPad(c,p,tint,opts){let R=18+(p.size??.4)*46*(p.grow??1);if(!isFinit
   c.restore();}
 function drawLotus(c,p,pal,opts){const s=p.grow,px=p.rx??p.x,py=p.ry??p.y,pr=p.rrot??p.rot;
   const padTint=pal?pal.pad:null, pTop=pal?pal.petalTop:'#f6dfe8', pBot=pal?pal.petalBot:'#e98fb0', ctr=pal?pal.center:'#f3d27a';
-  drawPad(c,{x:px-16,y:py+6,size:.4,grow:s,rot:pr},padTint,opts);drawPad(c,{x:px+18,y:py-4,size:.34,grow:s,rot:pr+1},padTint,opts);
+  drawPad(c,{x:px-16,y:py+6,size:.4,grow:s,rot:pr,hue:(p.hue||0)},padTint,opts);drawPad(c,{x:px+18,y:py-4,size:.34,grow:s,rot:pr+1,hue:(p.hue||0)-7},padTint,opts);
   if(p.bloom>0){const b=p.bloom,cx=px,cy=py- 6*b, R=10+18*b;c.save();c.translate(cx,cy);
     for(let ring=2;ring>=0;ring--){const rr=R*(.5+ring*.28),pet=6+ring*2;
       for(let i=0;i<pet;i++){const a=i/pet*TAU+ring*.4;c.save();c.rotate(a);
@@ -654,7 +664,7 @@ function drawLily(c,p,R,ry){const b=p.bloom||0;if(b<=0)return;const RL=ROLES();
 function drawPadV(c,p,tint,opts){
   if(p.vr==='cluster'){const s=(p.size??.35);                     // a small colony: five varied pads, not three clones
     for(const o of [[-16,5,0,.6],[13,-8,1.9,.5],[3,14,3.7,.42],[-5,-13,2.6,.36],[17,8,5,.3]])
-      drawPad(c,{x:(p.rx??p.x)+o[0],y:(p.ry??p.y)+o[1],size:s*o[3],grow:p.grow,rot:(p.rrot??p.rot)+o[2]},tint,opts);
+      drawPad(c,{x:(p.rx??p.x)+o[0],y:(p.ry??p.y)+o[1],size:s*o[3],grow:p.grow,rot:(p.rrot??p.rot)+o[2],hue:(p.hue||0)+o[2]*5-12},tint,opts);
     return;}
   const copper=p.vr==='copper'&&!(opts&&opts.metal);
   drawPad(c,p,copper?['#5f7034','#4c5424','#38391a']:tint,opts);  // copper: the whole pad reads warm olive-bronze
@@ -663,45 +673,46 @@ function drawPadV(c,p,tint,opts){
     c.strokeStyle='rgba(200,96,44,.8)';c.lineWidth=3;c.beginPath();c.ellipse(0,0,R-1.8,R*.72-1.8,0,0,TAU);c.stroke();c.restore();}
   if(p.bloom>0){let R=18+(p.size??.4)*46*(p.grow??1);if(!isFinite(R))R=18;drawLily(c,p,R,R*.72);}}
 // reeds/cattails — the pond's first vertical element; gentle sway; perch-to-be
-function drawReed(c,p){const RL=ROLES(),g=p.grow??0,h=(34+64*g),sw=REDUCE?.3:1,t=Pond._t;
+function drawReed(c,p){const RL=ROLES(),g=p.grow??0,h=(34+64*g),sw=REDUCE?.3:1,t=Pond._t,SP=p.spread||4.5,hm=1+(p.hue||0)*.008;
   c.save();c.translate(p.rx??p.x,p.ry??p.y);
   c.fillStyle='rgba(6,20,16,.2)';c.beginPath();c.ellipse(2,3,14,5,0,0,TAU);c.fill();   // waterline
-  const grad=c.createLinearGradient(0,0,0,-h);grad.addColorStop(0,RL.foliage[2]);grad.addColorStop(1,RL.foliage[0]);   // one gradient for all blades
+  const grad=c.createLinearGradient(0,0,0,-h);grad.addColorStop(0,shade(RL.foliage[2],hm));grad.addColorStop(1,shade(RL.foliage[0],hm));   // one gradient for all blades
   c.strokeStyle=grad;c.lineWidth=2.1;
-  for(let i=0;i<p.n;i++){const bx=(i-(p.n-1)/2)*4.5,ph=p.bp+i*1.3,lean=Math.sin(t*.5+ph)*4*sw+Math.sin(ph)*5;
+  for(let i=0;i<p.n;i++){const bx=(i-(p.n-1)/2)*SP,ph=p.bp+i*1.3,lean=Math.sin(t*.5+ph)*4*sw+Math.sin(ph)*5;
     const hh=h*(.7+.3*Math.sin(ph*2.1));
     c.beginPath();c.moveTo(bx,2);c.quadraticCurveTo(bx+lean*.4,-hh*.55,bx+lean,-hh);c.stroke();}
-  for(let i=0;i<p.n;i++){const bx=(i-(p.n-1)/2)*4.5,ph=p.bp+i*1.3,lean=Math.sin(t*.5+ph)*4*sw+Math.sin(ph)*5;
+  for(let i=0;i<p.n;i++){const bx=(i-(p.n-1)/2)*SP,ph=p.bp+i*1.3,lean=Math.sin(t*.5+ph)*4*sw+Math.sin(ph)*5;
     const hh=h*(.7+.3*Math.sin(ph*2.1));
     if(g>.55&&i<p.heads){c.fillStyle=shade(RL.wood[0],1.15);c.beginPath();c.ellipse(bx+lean,-hh+6,3.2,9,lean*.02,0,TAU);c.fill();
       c.strokeStyle=shade(RL.foliage[0],1.2);c.lineWidth=1.4;c.beginPath();c.moveTo(bx+lean,-hh-3);c.lineTo(bx+lean,-hh-9);c.stroke();}}
   c.restore();}
 // water iris — emergent accent bloom (feeds the bloom score)
-function drawIris(c,p){const RL=ROLES(),g=p.grow??0,h=20+34*g,sw=REDUCE?.3:1,t=Pond._t;
+function drawIris(c,p){const RL=ROLES(),g=p.grow??0,h=20+34*g,sw=REDUCE?.3:1,t=Pond._t,hm=1+(p.hue||0)*.008;
   c.save();c.translate(p.rx??p.x,p.ry??p.y);
   c.fillStyle='rgba(6,20,16,.2)';c.beginPath();c.ellipse(1,2,10,4,0,0,TAU);c.fill();
-  const grad=c.createLinearGradient(0,0,0,-h);grad.addColorStop(0,RL.foliage[2]);grad.addColorStop(1,RL.foliage[1]);   // one gradient for all blades
+  const grad=c.createLinearGradient(0,0,0,-h);grad.addColorStop(0,shade(RL.foliage[2],hm));grad.addColorStop(1,shade(RL.foliage[1],hm));   // one gradient for all blades
   c.strokeStyle=grad;c.lineWidth=2.4;
   for(let i=0;i<p.n;i++){const bx=(i-1)*4,lean=Math.sin(t*.45+p.bp+i)*3*sw;
     c.beginPath();c.moveTo(bx,1);c.quadraticCurveTo(bx+lean,-h*.6,bx+lean*1.4,-h);c.stroke();}
-  if(p.bloom>0){const b=p.bloom,r=5+8*b,lean=Math.sin(t*.45+p.bp)*3*sw,BA=RL.bloomAlt||RL.bloom;c.translate(lean*1.4,-h);
+  if(p.bloom>0){const b=p.bloom,r=(5+8*b)*(p.bsz||1),lean=Math.sin(t*.45+p.bp)*3*sw,BA=RL.bloomAlt||RL.bloom,np=p.pet||5;c.translate(lean*1.4,-h);
     const pg=c.createLinearGradient(0,0,0,-r*1.4);pg.addColorStop(0,BA.top);pg.addColorStop(1,BA.bot);
-    for(let i=0;i<5;i++){const a=i/5*TAU+.5;c.save();c.rotate(a);
+    for(let i=0;i<np;i++){const a=i/np*TAU+.5;c.save();c.rotate(a);
       c.fillStyle=pg;c.beginPath();c.moveTo(0,0);c.quadraticCurveTo(r*.5,-r*.75,0,-r*1.4);c.quadraticCurveTo(-r*.5,-r*.75,0,0);c.fill();c.restore();}
     c.fillStyle=RL.bloom.center;c.beginPath();c.arc(0,0,r*.26,0,TAU);c.fill();}
   c.restore();}
 // duckweed — drifting micro-pad clusters; koi nibble them (the pond feeds itself a little)
 function drawDuckweed(c,p){const RL=ROLES(),g=p.grow??.6;
   c.save();c.translate(p.rx??p.x,p.ry??p.y);c.rotate(p.rrot??p.rot);
+  c.globalAlpha=.9;c.fillStyle=shade(RL.foliage[0],1+(p.hue||0)*.008);   // seeded tone per raft
   for(let i=0;i<p.n;i++){const a=i/p.n*TAU+p.bp,d=5+8*((i*2.3)%1),r=(1.6+2.6*g)*(.7+.5*((i*1.7)%1));
-    c.fillStyle=hexA(RL.foliage[0],.9);c.beginPath();c.ellipse(Math.cos(a)*d,Math.sin(a)*d*.8,r,r*.8,a,0,TAU);c.fill();}
-  c.restore();}
+    c.beginPath();c.ellipse(Math.cos(a)*d,Math.sin(a)*d*.8,r,r*.8,a,0,TAU);c.fill();}
+  c.globalAlpha=1;c.restore();}
 // submerged grass — BELOW plane: darker, softer, parallax sway under the koi
-function drawGrass(c,p){const RL=ROLES(),g=p.grow??0,h=14+30*g,sw=REDUCE?.3:1,t=Pond._t;
+function drawGrass(c,p){const RL=ROLES(),g=p.grow??0,h=14+30*g,sw=REDUCE?.3:1,t=Pond._t,hm=1+(p.hue||0)*.008;
   c.save();c.globalAlpha=.45;c.translate(p.rx??p.x,p.ry??p.y);
-  const grad=c.createLinearGradient(0,0,0,-h);grad.addColorStop(0,shade(RL.foliage[2],.45));grad.addColorStop(1,shade(RL.foliage[1],.6));   // one gradient for all blades
+  const grad=c.createLinearGradient(0,0,0,-h);grad.addColorStop(0,shade(RL.foliage[2],.45*hm));grad.addColorStop(1,shade(RL.foliage[1],.6*hm));   // one gradient for all blades
   c.strokeStyle=grad;c.lineWidth=1.8;
-  for(let i=0;i<p.n;i++){const bx=(i-(p.n-1)/2)*5,ph=p.bp+i*.9,lean=Math.sin(t*.35+ph)*7*sw;
+  for(let i=0;i<p.n;i++){const bx=(i-(p.n-1)/2)*(p.spread||5),ph=p.bp+i*.9,lean=Math.sin(t*.35+ph)*7*sw;
     const hh=h*(.6+.4*Math.sin(ph*1.7));
     c.beginPath();c.moveTo(bx,3);c.quadraticCurveTo(bx+lean*.5,-hh*.5,bx+lean,-hh);c.stroke();}
   c.globalAlpha=1;c.restore();}
@@ -713,7 +724,7 @@ function drawPlant(c,p,pal,opts){switch(p.type){
   case 'duckweed':drawDuckweed(c,p);break;
   case 'grass':drawGrass(c,p);break;}}
 // hardscape — heavy forms that moss over grow (metal: oxidizing ore, via roles)
-function drawRockVec(c,r){const RL=ROLES(),R=rockR(r);
+function drawRockVec(c,r){const RL=ROLES(),R=rockR(r),rnd=srand(r.sd||0);   // seeded: every rock is its own individual
   c.save();c.translate(r.x,r.y);
   c.fillStyle='rgba(4,14,11,.3)';c.beginPath();c.ellipse(2,4,R*1.05,R*.5,0,0,TAU);c.fill();  // waterline shadow
   if(r.form==='lantern'){const s=r.size*1.25;                                                // stone toro — squat, grounded; kasa OVERHANGS the light box
@@ -726,57 +737,75 @@ function drawRockVec(c,r){const RL=ROLES(),R=rockR(r);
     c.quadraticCurveTo(0,-31*s,13*s,-22*s);c.quadraticCurveTo(0,-25.5*s,-13*s,-22*s);c.closePath();c.fill();
     c.fillStyle=RL.stone[0];c.beginPath();c.arc(0,-27.5*s,2.1*s,0,TAU);c.fill();             // hoju (finial)
   }else if(r.form==='driftwood'){c.rotate(r.rot);
-    // a weathered log: tapered trunk, a broken branch stub, end-grain rings at the cut, bark grain
-    const L=R,Wd=R*.24;
+    // weathered wood, three SEEDED forms: 0 = log with a broken branch stub · 1 = bowed slim log · 2 = forked snag
+    const vt=(r.sd||0)%3,L=R,Wd=R*(vt===1?.15+rnd()*.05:.2+rnd()*.08),bw=(rnd()-.5)*Wd*(vt===1?2.4:.8);
     const g=c.createLinearGradient(0,-Wd,0,Wd);g.addColorStop(0,RL.wood[0]);g.addColorStop(.5,RL.wood[1]);g.addColorStop(1,RL.wood[2]);
     c.fillStyle=g;c.beginPath();
-    c.moveTo(-L,-Wd*.6);c.quadraticCurveTo(-L*.2,-Wd*1.1,L*.5,-Wd*.72);c.lineTo(L*.98,-Wd*.3);
-    c.quadraticCurveTo(L*1.08,0,L*.98,Wd*.32);c.lineTo(L*.45,Wd*.74);
-    c.quadraticCurveTo(-L*.3,Wd*1.06,-L,Wd*.52);c.closePath();c.fill();
-    c.save();c.translate(-L*.2,-Wd*.85);c.rotate(-.65);                          // broken branch stub
-    const bg2=c.createLinearGradient(0,0,0,-R*.32);bg2.addColorStop(0,RL.wood[1]);bg2.addColorStop(1,RL.wood[2]);
-    c.fillStyle=bg2;c.beginPath();c.moveTo(-Wd*.32,0);c.lineTo(-Wd*.16,-R*.3);c.lineTo(Wd*.14,-R*.32);c.lineTo(Wd*.3,0);c.closePath();c.fill();
-    c.fillStyle=shade(RL.wood[0],1.25);c.beginPath();c.ellipse(0,-R*.3,Wd*.16,Wd*.09,0,0,TAU);c.fill();c.restore();
+    if(vt===2){                                                                   // fork: trunk splits into two weathered prongs
+      c.moveTo(-L,-Wd*.6);c.quadraticCurveTo(-L*.3,-Wd*1.05+bw,L*.28,-Wd*.7);
+      c.lineTo(L*.96,-Wd*1.7);c.lineTo(L*1.02,-Wd*1.1);c.lineTo(L*.44,-Wd*.1);
+      c.lineTo(L*.94,Wd*.75);c.lineTo(L*.78,Wd*1.3);c.lineTo(L*.26,Wd*.55);
+      c.quadraticCurveTo(-L*.35,Wd*1.02+bw,-L,Wd*.52);c.closePath();c.fill();
+    }else{
+      c.moveTo(-L,-Wd*.6);c.quadraticCurveTo(-L*.2,-Wd*1.1+bw,L*.5,-Wd*.72);c.lineTo(L*.98,-Wd*.3);
+      c.quadraticCurveTo(L*1.08,bw*.4,L*.98,Wd*.32);c.lineTo(L*.45,Wd*.74);
+      c.quadraticCurveTo(-L*.3,Wd*1.06+bw,-L,Wd*.52);c.closePath();c.fill();
+    }
+    if(vt===0){const sx=-L*(.05+rnd()*.35),sa=-.65+(rnd()-.5)*.5;                 // broken branch stub (seeded placement/angle)
+      c.save();c.translate(sx,-Wd*.85);c.rotate(sa);
+      const bg2=c.createLinearGradient(0,0,0,-R*.32);bg2.addColorStop(0,RL.wood[1]);bg2.addColorStop(1,RL.wood[2]);
+      c.fillStyle=bg2;c.beginPath();c.moveTo(-Wd*.32,0);c.lineTo(-Wd*.16,-R*.3);c.lineTo(Wd*.14,-R*.32);c.lineTo(Wd*.3,0);c.closePath();c.fill();
+      c.fillStyle=shade(RL.wood[0],1.25);c.beginPath();c.ellipse(0,-R*.3,Wd*.16,Wd*.09,0,0,TAU);c.fill();c.restore();}
     c.fillStyle=shade(RL.wood[0],1.22);c.beginPath();c.ellipse(-L*.97,-Wd*.04,Wd*.26,Wd*.55,0,0,TAU);c.fill();  // pale cut end
     c.strokeStyle=hexA(RL.wood[2],.7);c.lineWidth=1;                              // end-grain rings
     for(let i=1;i<=2;i++){c.beginPath();c.ellipse(-L*.97,-Wd*.04,Wd*.26*i/3,Wd*.55*i/3,0,0,TAU);c.stroke();}
-    c.strokeStyle=hexA(RL.wood[2],.5);c.lineWidth=1.1;                            // bark grain following the taper
-    for(let i=-1;i<=1;i++){c.beginPath();c.moveTo(-L*.82,i*Wd*.36);c.quadraticCurveTo(0,i*Wd*.55,L*.75,i*Wd*.26);c.stroke();}
-    c.fillStyle=hexA(RL.wood[2],.85);c.beginPath();c.ellipse(L*.32,Wd*.12,2.6,1.8,.4,0,TAU);c.fill();          // a knot
+    c.strokeStyle=hexA(RL.wood[2],.5);c.lineWidth=1.1;                            // bark grain follows the bow
+    for(let i=-1;i<=1;i++){c.beginPath();c.moveTo(-L*.82,i*Wd*.36);c.quadraticCurveTo(0,i*Wd*.55+bw*.6,L*(vt===2?.4:.75),i*Wd*.26);c.stroke();}
+    c.fillStyle=hexA(RL.wood[2],.85);                                             // knots — seeded count + placement
+    for(let i=0,nk=vt===1?2:1;i<nk;i++){c.beginPath();c.ellipse(L*(-.3+rnd()*.7),bw*.5+(rnd()-.5)*Wd*.6,2.6,1.8,rnd()*2,0,TAU);c.fill();}
     c.strokeStyle='rgba(255,255,255,.10)';c.lineWidth=1;                          // wet sheen on the top edge
-    c.beginPath();c.moveTo(-L*.9,-Wd*.62);c.quadraticCurveTo(-L*.1,-Wd*1.02,L*.5,-Wd*.68);c.stroke();
+    c.beginPath();c.moveTo(-L*.9,-Wd*.62);c.quadraticCurveTo(-L*.1,-Wd*1.02+bw,L*.5,-Wd*.68);c.stroke();
   }else if(r.form==='slate'){c.rotate(r.rot);
-    // flat LAYERED plates — sharp angular outline, visible strata edges
-    const P=[[-1,-.28],[-.5,-.52],[.3,-.46],[1,-.2],[.9,.26],[.2,.5],[-.55,.44],[-.95,.12]];
-    for(let l=2;l>=0;l--){const s2=1-l*.13,ox=l*2.2,oy=-l*3.4;
+    // flat LAYERED plates — SEEDED silhouette, 2–3 plates, each plate nudged/turned like a real stack
+    const P=[[-1,-.28],[-.5,-.52],[.3,-.46],[1,-.2],[.9,.26],[.2,.5],[-.55,.44],[-.95,.12]]
+      .map(q=>[q[0]*(1+(rnd()-.5)*.22),q[1]*(1+(rnd()-.5)*.22)]);
+    const NL=2+(rnd()*2|0),jx=[],jy=[],jr=[];                                     // plate count + per-plate jitter
+    for(let l=0;l<NL;l++){jx.push((rnd()-.5)*4);jy.push((rnd()-.5)*2.4);jr.push((rnd()-.5)*.14);}
+    for(let l=NL-1;l>=0;l--){const s2=1-l*.13,ox=l*2.2+jx[l],oy=-l*3.4+jy[l];
+      c.save();c.rotate(jr[l]);
       c.fillStyle=l===0?RL.stone[0]:shade(RL.stone[1],1-l*.12);
       c.beginPath();P.forEach((p2,i)=>{const x=p2[0]*R*s2+ox,y=p2[1]*R*.55*s2+oy;i?c.lineTo(x,y):c.moveTo(x,y);});
       c.closePath();c.fill();
-      c.strokeStyle='rgba(0,0,0,.28)';c.lineWidth=1;c.stroke();}
-    c.strokeStyle='rgba(255,255,255,.16)';c.lineWidth=1.1;                        // lit edge on the top plate
-    c.beginPath();P.slice(0,4).forEach((p2,i)=>{const x=p2[0]*R*.74+4.4,y=p2[1]*R*.55*.74-6.8;i?c.lineTo(x,y):c.moveTo(x,y);});c.stroke();
+      c.strokeStyle='rgba(0,0,0,.28)';c.lineWidth=1;c.stroke();c.restore();}
+    const tl=NL-1,ts=1-tl*.13;                                                    // lit edge on the topmost plate
+    c.save();c.rotate(jr[tl]);c.strokeStyle='rgba(255,255,255,.16)';c.lineWidth=1.1;
+    c.beginPath();P.slice(0,4).forEach((p2,i)=>{const x=p2[0]*R*ts+tl*2.2+jx[tl],y=p2[1]*R*.55*ts-tl*3.4+jy[tl];i?c.lineTo(x,y):c.moveTo(x,y);});c.stroke();c.restore();
   }else if(r.form==='boulder'){c.rotate(r.rot);
-    // angular and faceted — a lit top plane, a shadowed flank, old cracks
-    const P=[[-1,-.45],[-.25,-.9],[.55,-.7],[1,-.1],[.7,.6],[-.15,.85],[-.85,.5]];
+    // angular and faceted — SEEDED silhouette (each boulder its own cut), lit top plane, shadowed flank, varied cracks
+    const P=[[-1,-.45],[-.25,-.9],[.55,-.7],[1,-.1],[.7,.6],[-.15,.85],[-.85,.5]]
+      .map(q=>[q[0]+(rnd()-.5)*.24,q[1]+(rnd()-.5)*.24]);
     const g=c.createRadialGradient(-R*.3,-R*.3,2,0,0,R);g.addColorStop(0,RL.stone[0]);g.addColorStop(.65,RL.stone[1]);g.addColorStop(1,RL.stone[2]);
     c.fillStyle=g;c.beginPath();P.forEach((p2,i)=>{const x=p2[0]*R,y=p2[1]*R*.8;i?c.lineTo(x,y):c.moveTo(x,y);});c.closePath();c.fill();
     c.fillStyle='rgba(255,255,255,.10)';c.beginPath();                            // lit top facet
     c.moveTo(P[0][0]*R,P[0][1]*R*.8);c.lineTo(P[1][0]*R,P[1][1]*R*.8);c.lineTo(P[2][0]*R,P[2][1]*R*.8);c.lineTo(0,0);c.closePath();c.fill();
     c.fillStyle='rgba(0,0,0,.16)';c.beginPath();                                  // shadowed flank
     c.moveTo(P[4][0]*R,P[4][1]*R*.8);c.lineTo(P[5][0]*R,P[5][1]*R*.8);c.lineTo(P[6][0]*R,P[6][1]*R*.8);c.lineTo(0,R*.1);c.closePath();c.fill();
-    c.strokeStyle='rgba(0,0,0,.3)';c.lineWidth=1.1;                               // cracks
-    c.beginPath();c.moveTo(-R*.2,-R*.6);c.lineTo(-R*.05,-R*.15);c.lineTo(-R*.25,R*.25);c.stroke();
-    c.beginPath();c.moveTo(R*.45,-R*.1);c.lineTo(R*.2,R*.3);c.stroke();
+    c.strokeStyle='rgba(0,0,0,.3)';c.lineWidth=1.1;                               // cracks — seeded start/kink/reach
+    const cx0=-R*(.05+rnd()*.3);
+    c.beginPath();c.moveTo(cx0,-R*(.45+rnd()*.25));c.lineTo(cx0+R*(.08+rnd()*.16),-R*.15);c.lineTo(cx0-R*.1,R*(.12+rnd()*.22));c.stroke();
+    if(rnd()<.72){c.beginPath();c.moveTo(R*(.3+rnd()*.25),-R*.1);c.lineTo(R*(.08+rnd()*.16),R*(.18+rnd()*.2));c.stroke();}
   }else{c.rotate(r.rot);
-    // river stone: smooth worn pebble — soft outline, a pale sediment band, wet sheen
-    const g=c.createRadialGradient(-R*.3,-R*.3,2,0,0,R);g.addColorStop(0,RL.stone[0]);g.addColorStop(.65,RL.stone[1]);g.addColorStop(1,RL.stone[2]);
+    // river stone: smooth worn pebble — SEEDED elongation, outline wobble, tone, band placement
+    const el=.6+rnd()*.24,wob=rnd()*TAU,tn=.92+rnd()*.16;
+    const g=c.createRadialGradient(-R*.3,-R*.3,2,0,0,R);
+    g.addColorStop(0,shade(RL.stone[0],tn));g.addColorStop(.65,shade(RL.stone[1],tn));g.addColorStop(1,shade(RL.stone[2],tn));
     const P2=new Path2D();
-    for(let i=0;i<=12;i++){const a=i/12*TAU,rr=R*(.92+.08*Math.sin(a*2+r.rot*7));
-      const x=Math.cos(a)*rr,y=Math.sin(a)*rr*.72;i?P2.lineTo(x,y):P2.moveTo(x,y);}
+    for(let i=0;i<=12;i++){const a=i/12*TAU,rr=R*(.92+.08*Math.sin(a*2+wob));
+      const x=Math.cos(a)*rr,y=Math.sin(a)*rr*el;i?P2.lineTo(x,y):P2.moveTo(x,y);}
     P2.closePath();c.fillStyle=g;c.fill(P2);
     c.strokeStyle='rgba(255,255,255,.1)';c.lineWidth=1.2;c.stroke(P2);
     c.save();c.clip(P2);
-    c.fillStyle='rgba(255,255,255,.09)';c.beginPath();c.ellipse(0,-R*.08,R,R*.13,-.12,0,TAU);c.fill();   // sediment band
+    c.fillStyle='rgba(255,255,255,.09)';c.beginPath();c.ellipse(0,-R*(.02+rnd()*.14),R,R*(.09+rnd()*.08),-.12+(rnd()-.5)*.5,0,TAU);c.fill();   // sediment band
     c.fillStyle='rgba(255,255,255,.13)';c.beginPath();c.ellipse(-R*.3,-R*.28,R*.34,R*.2,.6,0,TAU);c.fill(); // wet sheen
     c.restore();}
   if(r.grow>0.05){c.globalAlpha=.5*r.grow;c.fillStyle=RL.moss;                               // moss creeps with age
@@ -1374,7 +1403,7 @@ kcSwim.addEventListener('click',()=>{if(!sel)return;
 function devWarp(days){Pond.eco.lastSeen=Date.now()-days*864e5;idleReturn(true);persist();}
 let devFps=null;
 if(DEV){const dtr=document.getElementById('devtray');dtr.style.display='flex';
-  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.3.1 · … fps';dtr.appendChild(devFps);
+  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.3.2 · … fps';dtr.appendChild(devFps);
   const acts=[['+1d',()=>devWarp(1)],['+7d',()=>devWarp(7)],['+30d',()=>devWarp(30)],
     ['+200❀',()=>{Pond.econ.serenity+=200;}],
     ['mature flora',()=>{for(const p of Pond.plants){p.grow=1;if(p.type==='lotus'||p.type==='iris'||p.type==='pad')p.bloom=1;}for(const r of Pond.rocks)r.grow=1;persist();}],
@@ -1450,7 +1479,7 @@ function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;retu
   if(_adT>=5){const f=_adN/_adT;_adN=0;_adT=0;
     if(f<22&&_shed<2){_shed++;DPR_CAP=_shed===1?1.5:1;WS=_shed===1?.45:.4;resize();
       try{localStorage.setItem('koipond_q',String(_shed));}catch(e){}}}
-  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.3.1 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
+  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.3.2 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
   saveT+=dt;if(saveT>5){saveT=0;persist();}}
 addEventListener('beforeunload',persist);
 
