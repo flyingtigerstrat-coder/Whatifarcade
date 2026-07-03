@@ -1,6 +1,18 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-03 — C.5.2: shadows hug their forms, moss lies in the grain (§10 micro-loop, human's live read)
+DECIDED (human, from a night hardscape screenshot): the driftwood's shadow oval didn't match the log it anchored ("it doesn't match up"), and the moss creep read as unidentifiable green blobs at high quantity — though "the pond is looking beautiful." Engine v3.4.3 → **v3.4.4**.
+
+CHANGED:
+- **Shadows tightened INSIDE their objects' footprints:** the soft sprite's fade already extends the perceived edge, so the geometry now sits within the silhouette — driftwood drops from a fat R×.36 oval to a **tight R×.2 sliver on the log's own axis** (and shorter than the tips); slate and general rocks trimmed similarly; alpha eased. The log and its shadow now register as one object.
+- **Moss hugs the form:** on driftwood, moss now lies **along the grain** — 2–3 seeded elongated streaks inside the wood silhouette (was: 4 circular blobs on a ring sized for round rocks, which landed half-off the log and read as floating leaves). On stones/boulders/slate, patches are tighter to the body, flatter, seeded in placement, and ~30% lighter. Same seeded-PRNG determinism as everything else (`sd+7`).
+
+TRIED / VERIFIED: all eight suites green (125/125); real-Chromium re-creation of the human's screenshot (mossy driftwood cluster + lanterns, night + day) — logs and shadows register as single objects, moss reads as growth on the wood. Screenshots shared.
+
+FEELING (human): "the pond is looking beautiful though I love it."
+
+
 ## 2026-07-03 — C.5.1: mobile feeding stability + subtler gulp (§10 micro-loop, human's live read)
 DECIDED (human, testing on device): "the fish glitch out crazy on mobile when being fed" + "reduce mouth size a little — without the head movement fully captured we can't get the perfect angle." Engine v3.4.2 → **v3.4.3**. TRIAGE: the glitch was **frame-rate-dependent motion at the food**, invisible on desktop's small dt but violent at mobile's clamped ~.1s dt. Three compounding causes, all fixed to be fps-independent:
 
