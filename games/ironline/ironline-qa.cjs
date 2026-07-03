@@ -108,8 +108,11 @@ ok('spine: the origin node is THE RAILHEAD', nodeName(0,0,0)==='THE RAILHEAD');
 ok('spine: 4 regions, Seam runs 7 columns', REGIONS.length===4&&REGIONS[3].cols===7);
 ok('spine: nodeType is deterministic', nodeType(1,3,1)===nodeType(1,3,1)&&['S','E','H','B'].includes(nodeType(1,3,1)));
 let edgesOK=true;
-for(let rg=0;rg<REGIONS.length;rg++)for(let c=0;c<REGIONS[rg].cols-1;c++)for(let rw=0;rw<navRows(rg,c);rw++){const E=nodeEdges(rg,c,rw);if(E.length<1||E.length>2)edgesOK=false;for(const e of E)if(e.reg!==rg||e.col!==c+1||e.row<0||e.row>=navRows(rg,c+1))edgesOK=false}
-ok('spine: every non-gate node has 1-2 valid forward edges', edgesOK);
+for(let rg=0;rg<REGIONS.length;rg++)for(let c=0;c<REGIONS[rg].cols-1;c++)for(let rw=0;rw<navRows(rg,c);rw++){const E=nodeEdges(rg,c,rw);if(E.length<1||E.length>3)edgesOK=false;for(const e of E)if(e.reg!==rg||e.col!==c+1||(e.row!==9&&(e.row<0||e.row>=navRows(rg,c+1))))edgesOK=false}
+ok('spine: every non-gate node has 1-3 valid forward edges (deep branches included)', edgesOK);
+ok('deep: the far node returns to the spine', nodeEdges(0,4,9).length===1&&nodeEdges(0,4,9)[0].row===0);
+ok('deep: dark water is two-oil country by profile', edgeProfile({reg:0,col:3,row:0},{reg:0,col:4,row:9}).deep===true&&edgeProfile({reg:0,col:3,row:0},{reg:0,col:4,row:9}).fuel>SINGLE_MAX);
+ok('deep: the four far nodes carry their names', nodeName(0,4,9)==='THE MOTHBALL YARDS'&&nodeName(3,4,9)==='THE WELLHEAD');
 const g0=nodeEdges(0,REGIONS[0].cols-1,0);
 ok('spine: a gate opens the next region’s entry', g0.length===1&&g0[0].reg===1&&g0[0].col===0&&g0[0].row===0);
 ok('spine: the Terminus gate ends the line', nodeEdges(3,REGIONS[3].cols-1,0).length===0);
@@ -351,6 +354,10 @@ ok('cripple: raised, she speaks again', gunVs('light')>0);
 S.leak=null;springLeak();
 ok('leak: a breach opens with a timer', !!S.leak&&S.leak.t===3);
 S.leak=null;
+// 53 · the Far Light choice persists
+S.farlight=1;S.origin=false;S.stop=null;S.mode='idle';S.depot=null;await save();S.farlight=0;await load();
+ok('far light: the permanent choice round-trips', S.farlight===1);
+S.farlight=0;
 
 // 21 · the ledger survives a save
 S.cargo={ore:3,relic:1};S.contracts=[{k:'haul',g:'grain',n:2,reg:1,src:'0:1:0',pay:60}];S.pax=[{special:true,nm:'X',fare:99,legs:2}];
