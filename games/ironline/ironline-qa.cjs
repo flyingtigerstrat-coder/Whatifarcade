@@ -11,11 +11,11 @@ global.document={getElementById:()=>anyElCache,querySelector:()=>anyElCache,quer
 global.Image=class{set src(v){}};
 global.requestAnimationFrame=()=>{};
 const script=fs.readFileSync(__dirname+'/battle-train-hd.html','utf8').match(/<script>([\s\S]*)<\/script>/)[1]
- +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS};';
+ +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT};';
 eval(script);
 (async()=>{
 await new Promise(r=>setTimeout(r,20)); // let the async boot IIFE settle
-const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS}=globalThis.__T;
+const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT}=globalThis.__T;
 let t=0,fails=0;const maxHullSafe=()=>60+S.engine*30;const step=n=>{for(let i=0;i<n;i++){t+=16;tick(t)}};
 const ok=(name,cond)=>{console.log((cond?'PASS':'FAIL')+'  '+name);if(!cond)fails++};
 
@@ -26,6 +26,9 @@ const off0=S.off;step(120);
 ok('docked: world frozen (off unchanged over 2s)', Math.abs(S.off-off0)<1e-9);
 ok('docked: no smoke at rest', S.smoke.length===0);
 ok('docked: lamps lit', S.lampK===1);
+// v1.6 wave 0 · fresh boots field the trimmed consist + the basic prow
+ok('boot: trimmed consist (oil + gun + empty), farm out of standard issue', S.slots[0].type==='oil'&&S.slots[1].type==='gun'&&S.slots[2]===null);
+ok('boot: the basic prow rides the bow', S.prow&&S.prow.lvl===1&&S.prow.fit==='ram');
 
 // 2 · departure: spin-up, station slides west & clears, steady cruise
 S.fuel=99;S.mode='run';S.jt=0;S.dur=9999;S.waves=[9999];S.wi=0;S.boss=null;S.ptrain=null;S.ptrainAt=-1;S.crateAt=-1;
@@ -255,6 +258,56 @@ S.linebroken=false;S.mode='idle';S.boss=null;S.stop=null;
 // 38 · the EMBER GALE blows only through the Seam
 ok('gale: a sixth weather, rolled by the Seam alone', WEATHERS.length===6&&WEATHERS[5].label==='EMBER GALE'&&BIOMES[3].wx.length===6&&BIOMES[0].wx.length===5);
 
+// ===== THE OCEAN'S MATH (v1.6 Wave 0) =====
+// 39 · the micro-font is complete — any name renders
+{let fontOK=true;const need='ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+ for(const ch of need){const g=RH_FONT[ch];if(!g||g.length!==5||g.some(r=>r<0||r>7))fontOK=false}
+ ok('font: full A-Z + digits, well-formed 3x5', fontOK);
+ ok('font: the Railhead glyphs unchanged', RH_FONT['T'].join()==='7,2,2,2,2'&&RH_FONT['R'].join()==='6,5,6,5,5'&&RH_FONT['D'].join()==='6,5,5,5,6');}
+// 40 · the origin fields no rear rank (byte-identity by construction)
+ok('ranks: THE RAILHEAD stays single-rank', RH_BUILDINGS.every(b=>!b.rank||b.rank===1));
+// 41 · route profiles: deterministic, complete, honest
+S.nav={seed:7,reg:0,col:1,row:0};
+{const a=edgeProfile({reg:0,col:1,row:0},{reg:0,col:2,row:0}),b=edgeProfile({reg:0,col:1,row:0},{reg:0,col:2,row:0});
+ ok('profiles: deterministic per edge', JSON.stringify(a)===JSON.stringify(b));
+ ok('profiles: fields complete', a.len>=2&&a.danger>=1&&a.danger<=3&&typeof a.reward==='string'&&typeof a.dry==='boolean'&&a.fuel>=8);}
+// 42 · the range model: tanks are real, deep water exceeds one tank BY CONSTRUCTION (law 6)
+S.slots=[{type:'oil',lvl:1},{type:'gun',wpn:'cannon',port:'auto',lvl:1},null];
+ok('range: engine 30 + oil lvl1 = 54 tank', tankCap()===54);
+S.slots=[{type:'oil',lvl:9},null,null];
+ok('range: oil tank growth caps at lvl 5', tankCap()===TANK_ENG+oilTank({lvl:9})&&oilTank({lvl:9})===oilTank({lvl:5}));
+{let deepOK=true;for(let L=10;L<=14;L++)if(legFuelOf(L,true)<=SINGLE_MAX)deepOK=false;
+ ok('range: a deep crossing ALWAYS exceeds engine + one maxed oil car', deepOK);}
+// 43 · fuel integrity: a breached tank weeps per mile
+S.fuel=40;S.leak={rate:2,t:0};
+ok('leak: 5 miles cost 10 fuel', Math.round(leakDrain(5))===10&&Math.round(S.fuel)===30);
+S.leak=null;
+// 44 · overrun severity: where < who < the Rearguard's answer
+ok('severity: a spine skirmish is tier 1', ovrSeverity('spine','swarm',0)===1);
+ok('severity: deep water + a captain is tier 3', ovrSeverity('deep','captain',0)===3);
+ok('severity: the Rearguard buys a tier back', ovrSeverity('deep','captain',9)<ovrSeverity('deep','captain',0));
+// 45 · THE PROW: real, capped, and NEVER total (law 8)
+S.prow={lvl:1,fit:'ram'};
+ok('prow: the ram meets a mine', prowMit('mine')>0.2&&prowMit('mine')<0.3);
+ok('prow: the wrong fit does nothing', prowMit('frontal')===0);
+S.prow={lvl:20,fit:'ram'};
+ok('prow: mitigation hard-caps at '+Math.round(PROW_CAP*100)+'%', prowMit('mine')===PROW_CAP);
+ok('prow: bypass classes roll unmitigated at ANY level', PROW_BYPASS.every(c=>prowMit(c)===0));
+S.prow={lvl:20,fit:'shield'};
+ok('prow: the shield meets frontal fire, never the broadside', prowMit('frontal')===PROW_CAP&&prowMit('broadside')===0);
+S.prow={lvl:1,fit:'ram'};
+// 46 · the caboose converts 1:1 into the Rearguard (harness-enforced)
+{const m7=migrate({v:6,journeys:3,caboose:4,nav:{seed:2,reg:0,col:0,row:0},visited:['0:0:0'],cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0},linebroken:0});
+ ok('v6->v7: caboose 1:1, prow + ledgers fielded', m7.v===SAVE_V&&m7.caboose===4&&m7.prow.lvl===1&&m7.leak===null&&Array.isArray(m7.crippled)&&Array.isArray(m7.prizes));}
+S.caboose=3;
+ok('rearguard: garrison scales with the stern', rgGarrison()===6&&typeof RGT[0]==='string');
+// 47 · v7 round-trips the bow and the wound ledger
+S.prow={lvl:3,fit:'shield'};S.leak={rate:1.5,t:4};S.crippled=[1];S.prizes=[{k:'car'}];S.origin=false;S.stop=null;S.mode='idle';S.depot=null;
+await save();S.prow={lvl:1,fit:'ram'};S.leak=null;S.crippled=[];S.prizes=[];
+await load();
+ok('v7 save: prow + leak + wounds round-trip', S.prow.lvl===3&&S.prow.fit==='shield'&&S.leak&&Math.abs(S.leak.rate-1.5)<1e-9&&S.crippled.length===1&&S.prizes.length===1);
+S.leak=null;
+
 // 21 · the ledger survives a save
 S.cargo={ore:3,relic:1};S.contracts=[{k:'haul',g:'grain',n:2,reg:1,src:'0:1:0',pay:60}];S.pax=[{special:true,nm:'X',fare:99,legs:2}];
 S.mode='idle';S.depot=null;S.origin=false;S.stop=null;
@@ -262,5 +315,5 @@ await save();S.cargo={};S.contracts=[];S.pax=[];
 await load();
 ok('v4 save: cargo + contracts + passengers round-trip', S.cargo.ore===3&&S.cargo.relic===1&&S.contracts.length===1&&S.contracts[0].pay===60&&S.pax.length===1&&S.pax[0].fare===99);
 
-console.log(fails? '\n'+fails+' FAILURES':'\nALL CHECKS PASS ('+((s=>s)(0)||'choreography + schema + spine + economy + combat + linebreaker + the bench')+')');process.exit(fails?1:0);
+console.log(fails? '\n'+fails+' FAILURES':'\nALL CHECKS PASS ('+((s=>s)(0)||'v1.2 canon + the ocean\'s math (v1.6 wave 0)')+')');process.exit(fails?1:0);
 })();

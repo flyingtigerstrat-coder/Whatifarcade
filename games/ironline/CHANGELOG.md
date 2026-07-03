@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-07-03 · session 14 — v1.6 Wave 0 · THE OCEAN'S MATH: range, integrity, THE PROW
+DECIDED: BRIEF v1.6 (THE OCEAN SPRINT) promoted; four plan calls ratified (tank numbers builder-tuned; pity scrap survives until Wave 3's OVERRUN replaces it; the caboose keeps its save field and converts 1:1 into THE REARGUARD; fresh consist = oil+gun+empty) plus the human's addition: the Rearguard's ladder must climb to a FORTRESS — tier names now run Red Caboose → Plated Rearguard → Keep-on-Wheels (art lands Wave 5). BUILT: full A–Z+digits micro-font (Railhead glyphs byte-preserved); second building rank (rear rank, stepped + veiled; origin stays single-rank); route profiles {len/danger/reward/dry/fuel} as the one honest book; the RANGE model — per-leg fuel, tank caps (engine 30, oil +18+6/lvl capped at 5), deep crossings ≥115% of one-tank-max BY CONSTRUCTION; leak substrate (drains per mile at arrival); overrun severity fn; THE PROW fixture (ram/shield fits, 18%+8%/lvl capped 66%, four bypass classes always unmitigated — law 8 as a unit test); garrison joins the boarding fight. SAVE_V=7.
+TRIED: THE RAILHEAD render byte-identical again; Playwright confirms the tank gauge (41/60), priced route cards with danger pips, and the prow block on the engine card.
+PARKED: Leak/adrift/overrun DRAMA (Wave 3); prow + rearguard ladder art (Wave 5).
+CHANGED: go() charges legCost(edge); navT carries the profile; fuel clamps to tankCap; harness 77 -> 100 assertions.
+OPEN: Wave 1 next — the settlement ladder (halts incl. OIL PUMP, true-settlement stations, walled capitals on the second rank).
+FEELING: The rig has a bow now, and the water has a price.
+
 ## 2026-07-03 · session 13 — the station SHEET: docked, not modal (Tiny Rails pass)
 DECIDED: The human called the full-screen station modal an immersion killer and pointed at Tiny Rails: you pull in, the world stays on screen, the station menu overlays it. Rebuilt: PORTRAIT = a bottom sheet sliding up under the ticker (canvas + rig-at-rest fully visible above, max 62dvh, no scrim); LANDSCAPE = a right-side panel (44% max) with the docked rig breathing beside it. Slide-in animations, ✕ sticky in the corner, panel internals slimmed so more world shows. The step-away/reopen loop is unchanged.
 TRIED: Playwright shots in both orientations — the landscape frame keeps the caboose-to-gun-car run visible beside the panel; the engine's nose tucks under it (the rig is wider than the window at dock camera; acceptable, Tiny Rails does the same).
