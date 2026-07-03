@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v3.4.3 (living pond, C.5.1: mobile frenzy stability + subtler gulp) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.4.4 (living pond, C.5.2: shadows hug their forms, moss lies in the grain) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
@@ -824,9 +824,13 @@ function drawRockVec(c,r){const RL=ROLES(),R=rockR(r),rnd=srand(r.sd||0);   // s
     c.fillStyle='rgba(255,255,255,.09)';c.beginPath();c.ellipse(0,-R*(.02+rnd()*.14),R,R*(.09+rnd()*.08),-.12+(rnd()-.5)*.5,0,TAU);c.fill();   // sediment band
     c.fillStyle='rgba(255,255,255,.13)';c.beginPath();c.ellipse(-R*.3,-R*.28,R*.34,R*.2,.6,0,TAU);c.fill(); // wet sheen
     c.restore();}
-  if(r.grow>0.05){c.globalAlpha=.5*r.grow;c.fillStyle=RL.moss;                               // moss creeps with age
-    for(let i=0;i<4;i++){const a=r.rot*3+i*1.7,d=R*.55;
-      c.beginPath();c.ellipse(Math.cos(a)*d,Math.sin(a)*d*.5-R*.15,R*.3*r.grow+2,R*.18*r.grow+1.4,a,0,TAU);c.fill();}
+  if(r.grow>0.05){c.globalAlpha=.36*r.grow;c.fillStyle=RL.moss;                              // moss creeps with age — hugging the FORM
+    const rn=srand((r.sd||0)+7);
+    if(r.form==='driftwood'){const L=R,Wd=R*.24;                  // moss lies ALONG the grain, inside the wood silhouette
+      for(let i=0;i<3;i++){const mx=(rn()-.5)*L*1.1,my=(rn()-.5)*Wd*.7;
+        c.beginPath();c.ellipse(mx,my,(L*.13*r.grow+2)*(.7+rn()*.6),Wd*.3*r.grow+1,0,0,TAU);c.fill();}}
+    else{for(let i=0;i<4;i++){const a=r.rot*3+i*1.7,d=R*(.3+rn()*.18);   // tighter + flatter: patches ON the stone, not leaves around it
+      c.beginPath();c.ellipse(Math.cos(a)*d,Math.sin(a)*d*.5-R*.1,R*.2*r.grow+2,R*.12*r.grow+1.2,a,0,TAU);c.fill();}}
     c.globalAlpha=1;}
   c.restore();}
 
@@ -861,9 +865,9 @@ function cachedPlant(c,p,keyExtra,bake){
   c.drawImage(s,-half,-half,half*2,half*2);c.restore();}
 function drawRock(c,r){                                  // rocks are static except slow moss — ideal sprites
   const R=rockR(r);                                      // shape-matched soft shadow, live (day-aware via SHDIM)
-  let rx=R*1.06,ry=R*.55,ro=0,sa=.6;
-  if(r.form==='driftwood'){rx=R*1.12;ry=R*.36;ro=r.rot;}         // a log shades a long sliver, not a disc
-  else if(r.form==='slate'){rx=R*1.02;ry=R*.5;ro=r.rot;sa=.55;}  // flat plates sit low — tight, thin
+  let rx=R*.98,ry=R*.48,ro=0,sa=.55;
+  if(r.form==='driftwood'){rx=R*.95;ry=R*.2;ro=r.rot;sa=.5;}     // a log shades a tight sliver hugging its own axis
+  else if(r.form==='slate'){rx=R*.92;ry=R*.42;ro=r.rot;sa=.5;}   // flat plates sit low — tight, thin
   else if(r.form==='lantern'){rx=R*.72;ry=R*.34;sa=.5;}          // only the base touches the water
   drawShadow(c,r.x,r.y,rx,ry,ro,sa);
   const half=r.form==='driftwood'?58:r.form==='lantern'?62:52;
@@ -1526,7 +1530,7 @@ kcSwim.addEventListener('click',()=>{if(!sel)return;
 function devWarp(days){Pond.eco.lastSeen=Date.now()-days*864e5;idleReturn(true);persist();}
 let devFps=null;
 if(DEV){const dtr=document.getElementById('devtray');dtr.style.display='flex';
-  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.4.3 · … fps';dtr.appendChild(devFps);
+  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.4.4 · … fps';dtr.appendChild(devFps);
   const acts=[['+1d',()=>devWarp(1)],['+7d',()=>devWarp(7)],['+30d',()=>devWarp(30)],
     ['+200❀',()=>{Pond.econ.serenity+=200;}],
     ['mature flora',()=>{for(const p of Pond.plants){p.grow=1;if(p.type==='lotus'||p.type==='iris'||p.type==='pad')p.bloom=1;}for(const r of Pond.rocks)r.grow=1;persist();}],
@@ -1602,7 +1606,7 @@ function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;retu
   if(_adT>=5){const f=_adN/_adT;_adN=0;_adT=0;
     if(f<22&&_shed<2){_shed++;DPR_CAP=_shed===1?1.5:1;WS=_shed===1?.45:.4;resize();
       try{localStorage.setItem('koipond_q',String(_shed));}catch(e){}}}
-  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.4.3 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
+  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.4.4 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
   saveT+=dt;if(saveT>5){saveT=0;persist();}}
 addEventListener('beforeunload',persist);
 
