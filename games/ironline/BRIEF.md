@@ -1,104 +1,107 @@
 # BRIEF — IRONLINE
-version: v1.2
-date: 2026-07-02
-status: built — awaiting human QA (all seven waves landed; no deploy until the human calls it)
-changed-since-last: PHASE A VERIFIED SHIPPED (supersedes v1.1 same day; v1.1 was cut before the director saw sessions 4–9 land). The Railhead is LIVE on whatifarcade.com as a full settlement — restage passed, arrival/departure choreography live as the reusable S.stop machine (world truly comes to rest), begin-at-origin live, the Dispatcher speaks, depots halt the world, pod docs + tooling promoted into the repo, depth ladder + building grammar + "The stop" canon in DESIGN.md, localStorage save shim fixed live persistence, NOODLE ratified on the platform (his gold is his alone). Wave 0 is therefore SLIMMED to the true remaining foundations (save schema v2 + migration, harness kept green). Waves 1–6 stand, now explicitly built ON the shipped foundations (The stop, the settlement/building grammar, the banner's layout gating). Builder-parked items routed to their waves. This brief is the sprint contract the builder's own session-9 OPEN line asked for: "the parked threads, in order: node-graph map first."
+version: v1.6
+date: 2026-07-03
+status: building
+changed-since-last: + THE PROW (surgical addition; supersedes v1.5 same-day as the standalone contract). The engine's drawn-but-jobless cowcatcher becomes an upgradeable BOW FITTING with two cycleable fits — RAM PLOW (hazard lane: mines/debris/storm) vs SHIELD PLATE (combat lane: frontal fire/breach) — mitigating oil-reducing and forward events. Hard-capped by new design law 8: NO ONE IS INVINCIBLE ON THE OCEAN (mitigation never total; broadsides, bait, sabotage, and deep-water surges bypass the prow entirely). Completes the rig's two-ended identity: THE PROW protects the crossing; THE REARGUARD protects the loss. Everything else stands from v1.5 (Places + Range + Defeat loop).
 ---
 
 ## vision
-A mature, chaotic little realm. The rail-ocean is no longer an endless treadmill — it is a CROSSING: four regions of waste between THE RAILHEAD (the last lit outpost — a real settlement now, lamps burning, a kid and his dog on the platform) and THE TERMINUS (the Warlord's rolling fortress squatting on the deep track, the rig that ends lines). Between them: stations with markets and moods, clans flying warpaint, caravans, contracts, passengers with somewhere to be, troops worth their rations, a ghost train nobody quite believes in. Cozy watch-it-roll, rust-dusk-diesel-bone, wry and a little lonely and warm — now with a spine, stakes, and an end. The ocean has an end; the game doesn't (the line stays open after).
+The rail-ocean becomes a CONTINENT you can point at — and an OCEAN you must be rigged for. Every stop is a drawn place with a reason to exist. Between them: the open water. "The wasteland is connected by miles of endless rails — but unless you have enough oil to make it from station to station, you'll be adrift in the endless sea of rails, in a wasteland that wants to loot you and then blow up your train." (— the human; the thesis.) Range is seaworthiness. The consist is the rigging. The PROW cuts the water; the REARGUARD holds the line; defeat loots you and leaves you a reason to ride back out. Wry, lonely, warm; lamps on the spine, dark water beyond, scars on the rig that tell where you've been.
 
-## the state we build from (verified live, 2026-07-02)
-- SHIPPED & LIVE (builder sessions 4–9): The Railhead settlement (station anchor w/ clock cupola, homes west, freight east, telegraph line, swept yard while docked); the Dispatcher's greeting + send-off; NOODLE on the platform (little black pup, tail mid-wag — the ONLY gold pixels in the scene; gold is his mark, keep it that way); THE STOP — reusable arriving/docked/departing state machine (decel-integral station glide, spd->0 at rest, smoke gated on speed, depart eases back out); begin-at-origin (fresh boot docks at the Railhead; loads are authoritative); depots physically halt the world; place-name = band-9 canvas banner GATED to portrait/immersive (landscape announces via DOM chrome — respect this gating in all Wave 6 banner work); standalone localStorage save shim (window.storage was undefined live — saves now persist); 20-assertion headless behavioral harness; exporter/importer + all pod docs (BRIEF/CHANGELOG/DESIGN/CLAUDE + HANDOFF) in `games/ironline/`; DESIGN.md carries the 9-band ladder, the building grammar, and "The stop".
-- STILL TRUE: `drawFortress()` orphaned (1 ref — its own definition; it becomes The Terminus). `dt` kinetic/blast/fire tags present and dormant. Troops inert. Gun ports tier-flat. `S.journeys` still the difficulty driver. Odometer still the travel model. No save schema versioning/migration yet (the shim persists, but state is unversioned).
-- STUDIO ENGINE at `/tools` (read-only): Relight kernel + lab + headless reader, pixel-pipeline skeleton (generalizes FROM ironline — extraction candidates are proposals, rule of three), Asset Contract spec.
-- Builder-parked items, routed: Fortress-skin smoke doesn't respect rest -> Wave 6. The retired shed/canopy station variant (recoverable from git) -> Wave 6's "grand city-node" station look.
-- Human's open loop (parallel, non-blocking): a full live play-through origin -> depart -> crossing -> depot -> return.
+## the state we build from
+- v1.2 BUILT end-to-end on the working branch (harness-green, 77 assertions), NOT deployed — human QA gates deploy. Deploy sequencing = open question; building proceeds on the branch either way.
+- Standing systems extended: THE STOP, the building grammar, station personalities, the ledger, the contract board, node graph + route board, fog-of-war map, clans/rep, captains + pretenders + stand-aside, SAVE_V=6 migrate chain, behavioral harness, Playwright DOM QA, the exporter. The engine's cowcatcher plow exists DRAWN and jobless — the Prow gives it its job (the drawFortress pattern).
+- Known weak loop this brief retires: defeat currently PAYS the player (pity scrap). Dead on arrival.
+- THE RAILHEAD render protected: byte-identical unless briefed. Noodle's gold stays his.
 
-## sprint rules (cross-cutting)
-1. SEVEN WAVES, IN ORDER, each leaving the game fully playable: parse-checked, harness green (extend the 20-assertion behavioral harness as systems grow), checkpoint commit, headless proof-still self-QA'd + human-blessed for anything visual. Break only at wave seams.
-2. SAVE SCHEMA v2 + MIGRATION — sacred and FIRST (Wave 0). Add `v:2` + `migrate()` on top of the shim. Live players now have real persisted rigs; they MUST survive every wave. Migrated players land at the nearest station node of the region matching their journey count. Extend save/load/reset together every time state grows.
-3. DEPTH-BAND LAW (DESIGN.md is canon): every new drawable declares its band. Stations band 4, player band 5, ground enemies band 6, fx band 7, banners band 9 (layout-gated). Pass/fail: the player train's silhouette stays unbroken at stations.
-4. EXTEND, DON'T REPLACE (§3.6) — and the shipped foundations ARE the extension points: THE STOP hosts every arrival in the game; the SETTLEMENT/BUILDING GRAMMAR hosts every station look; the depot path hosts services; the ptrain path hosts faction traffic; the boss-duel path hosts captains; `hash()` hosts the seeded map; the DOM panel hosts market/contracts. New subsystems only where nothing existing stretches.
-5. LANES: `games/ironline/` is yours; `/tools`, `/shared`, `index.html`, `/services`, other games — never. Extractions and shared/brand changes are PROPOSALS.
-6. DIFFICULTY REBASE: region tier (T0–T3) replaces `S.journeys` scaling; journeys stays as flavor.
-7. PERFORMANCE: one self-contained HTML, no build step, mobile-first 60fps; cap concurrent band-6 entities (~8); pool booms/tracers.
-8. FEELING-FIRST: no retention/monetization scaffolding, no cutscenes. Story = ticker lines, rumor lines, names. Noodle's gold stays his.
-
----
-
-## WAVE 0 — REMAINING FOUNDATIONS (slim — Phase A is live)
-- SAVE SCHEMA v2 + `migrate()` (rule 2). This is the wave's core job — everything after grows state.
-- Keep the behavioral harness green and extend its assertion pattern to cover new systems as they land (map, cargo, contracts, combat states).
-- Housekeeping, only if friction-free: organize game-local pipeline recipes toward `games/ironline/art-spec/` per the studio's engine/recipe split — do NOT force a churny move; note extraction candidates for pixel-pipeline as proposals.
-- DoD: unversioned live saves load, migrate, and round-trip cleanly; harness green; no visual change.
-
-## WAVE 1 — THE SPINE: the node map, regions, and the end of the ocean
-- WORLD = FOUR REGIONS, west to east, each a difficulty tier with its own palette/weather bias (the `wx` arrays) and station flavor: T0 THE RUST FLATS · T1 THE DEAD CITY · T2 THE BONE REEF (existing three) · T3 THE CINDER SEAM (NET NEW — burning coal-seam country: char-black ground, seam-glow fissures, smoke columns, ember light; the Warlord's home track). Full Seam art lands in Wave 6; Wave 1 needs its region slot, tier, and placeholder ground/haze.
-- NODE-GRAPH CROSSING replaces the odometer. Seeded per run (`S.seed`), deterministic via `hash(seed, region, col, row)`. Per region: 5–7 columns × 2–3 rows, edges forward to 1–2 next nodes. Node types: STATION (~40%), EVENT (~25%), HAZARD LEG (~20%), BLOCKADE (~10%), GATE (fixed, region end — a captain, Wave 4). Depart offers the current node's edges as the choice (one edge = plain Depart); the crossing leg is the existing run mode, flavored by node type + region tier. EVERY stop-type node arrives via THE STOP (it was built for exactly this).
-- MAP TAB becomes the graph: position, visited trail, branches ahead, region headers, THE TERMINUS marked far east. Mobile-tappable. Backdrop biome drives from the map's region (keep the blend machinery; retire hash-of-distance selection).
-- Anchor stations hand-named (generator fills minor ones): Rust Flats — THE RAILHEAD, Mercy Wells, Gallows Bend · Dead City — The Stacks, Old Exchange, Lantern Row · Bone Reef — Pale Landing, The Ribyard, Salt Hollow · Cinder Seam — Slagside, Last Signal, and the final node: THE TERMINUS itself (the "station" that isn't — his rig, parked on the deep track).
-- DoD: a run has visible shape — branches, a trail, a destination; regions advance in order; The stop fires at every station node; map usable on a phone.
-
-## WAVE 2 — STATIONS & ECONOMY: places that live
-- STATION PERSONALITIES (2 archetypes per station + market): YARD (repair, refits, car market), MARKET (trade goods emphasis), OUTPOST (recruit troops & wanderers), CHAPEL (Bone Reef flavor — blessings, relic trade, wry tithes). The existing offer system stretches to host these; services stay in the DOM panel (tappable buildings remain parked). Station VISUALS reuse the Railhead's building grammar with lighter dressing (full per-region variety is Wave 6).
-- STATION ECONOMICS: five trade goods — ORE, PARTS, MEDICINE, GRAIN, RELICS. Price = base × region supply/demand × station jitter (`hash`) — ore cheap in the Flats, dear in the Seam; medicine dear in the Reef; relics flow FROM the Reef/City. Buy low, haul east, sell high; visible buy/sell spread in the depot panel.
-- NEW CAR — CARGO CAR: hold slots (4 + 2/lvl) for trade goods and contract freight. Procedural car scene in the material language (strapped crates, tarps, a checker with a manifest).
-- NEW CAR — PASSENGER CAR: seats (2 + 1/lvl). Fares between stations; flag-down events add riders; SPECIAL PASSENGERS are mini-quests (named, a destination, a deadline in legs, a bonus — some step off and hand you a hero).
-- CONTRACTS — the Dispatcher's network (the echo planted at the origin pays off): a contract board at every station — haul X to Y, escort a caravan leg, deliver a passenger. Contract pay > spot trading; optional deadlines add pressure. 2–3 per board.
-- DoD: a player can run a trade route on purpose, and a station's name starts meaning something.
-
-## WAVE 3 — COMBAT, ENEMIES & FACTIONS: the chaos
-- DAMAGE TYPES GO LIVE: the dormant `dt` tags (kinetic/blast/fire) finally matter — enemy armor classes resist/weaken by type, so loadout choice is a real decision. Show it: resisted hits spark dull, weak hits bloom.
-- MARK TARGET — the one light active verb: tap an enemy to mark it; guns focus it. Mobile-friendly, optional, satisfying.
-- NEW ENEMIES (band 6 unless noted): CRAWLER (armored, slow, kinetic-resistant/blast-weak, sheds plates as it drops), MINELAYER (seeds shootable mines on your lane), BOARDER WAGON (grapples on — a boarding meter vs your TROOPS; if it wins, raiders on YOUR deck bleed scrap/damage a car until troops clear them), swarm-bike packs. Clan palette variants of the raider ptrains per region (band 4).
-- TROOPS = MANPOWER, finally: (1) boarding defense (auto), (2) SEND A PARTY at event nodes (risk troops for wreck salvage — choice, stakes), (3) GUARD requirement on high-value contracts (locked aboard while active), (4) recruit at OUTPOST stations for food. The war-camp car earns its keep.
-- FACTIONS: THE DISPATCHERS (station network — reputation from contracts: prices, better boards) · THE CARAVANEERS (trader trains — reputation from trade/rescue: convoy gifts, wanderer heroes) · THE CLANS under the Warlord's banner, one per region with a combat flavor (proposed: DUSTWOLVES/bikes in the Flats, THE FLAKWORKS/gun-trucks in the City, THE MARROW BANNER/bone-cult in the Reef, the Linebreaker's own in the Seam) — clans are enemies, no rep bookkeeping; their aggression steps with the story. TWO tracked reputations max (§3.6).
-- THE GHOST HAULER: rare band-4 mythic — a pale, silent train on the far rail. Never fights. Sometimes trades relics; once in a long while, leaves you THE STOWAWAY (named hero). Seasoning, not a system.
-- DoD: two combats in different regions FEEL different; a troop dies for a reason at least once; someone gets boarded and holds the deck.
-
-## WAVE 4 — THE MAIN STORYLINE: THE LINEBREAKER
-- THE ARC: the wastes answer to one Warlord — THE LINEBREAKER — whose rig, THE TERMINUS, ends every line it meets. The Railhead is where lines begin; The Terminus is where they end. You cross four regions to break him.
-- CAPTAINS AT THE GATES: each region ends at a fixed GATE node — a named captain of that region's clan, built on the existing boss-duel system with modifiers + a distinct convoy skin (proposed, swap freely: SPOKE of the Dustwolves · FOREMAN FLAK of the Flakworks · DEACON MARROW of the Marrow Banner). Breaking a captain opens the next region and drops a NAMED hero (Wave 5).
-- THE TERMINUS (final): multi-phase stop-and-duel at the last node. VISUAL FOUNDATION = the orphaned `drawFortress()` — the showpiece war-train that already faces LEFT (the boss direction), finally given its job (RESOLVES the two-Fortress question). Re-dress in warlord rust-iron + warpaint, arm it, shed armor by phase.
-- STORY DELIVERY, light-touch: Dispatcher lines at the origin, rumor lines at station boards ("the Marrow Banner tithes in bone two stops east"), captain intro lines in the ticker. Names and dread, no cutscenes.
-- AFTER THE WIN — THE LINE STAYS OPEN: free-roam across all four regions; contracts, trade, and events continue; captains respawn as scaled "pretenders." (NG+ keepsakes: parked.)
-- DoD: a player can articulate the goal one minute in ("cross the ocean, break the Linebreaker"), and the victory doesn't end the cozy loop.
-
-## WAVE 5 — PEOPLE: heroes, crew, passengers, interactability
-- +8 HEROES: 2 wanderers (proposed: SIGNALWOMAN — reveals an extra edge on the map; CARTWRIGHT — +cargo hold), 2 war (THE UNCOUPLED — boarding defense; SPOTTER — bonus vs armored), 4 NAMED one-per-run story heroes: one per captain kill + THE STOWAWAY (Ghost Hauler). Named heroes get stronger buffs + a visible pixel signature on their car.
-- TAP-TO-INSPECT: tap a crew figure / hero / passenger on the canvas (the crate-tap pointer path stretches to this) — a small card: name, rank, buff, one flavor line. The rig becomes a crew you can meet. (Noodle is tappable too; he has no stats — just a wag and a line. Some things aren't systems.)
-- HERO SIDE-QUESTS (template-driven, one active at a time): a hero asks for a haul/visit/kill ("the Medic needs medicine run to Pale Landing"); completing pays a rank-up + a flavor line.
-- CREW GROWTH VISIBLE: rank pips exist — add a max-rank pixel detail per hero kind.
-- DoD: the human taps a little figure, reads a name, and smiles.
-
-## WAVE 6 — THE POLISH PASS: every band refined
-Run the ladder top to bottom; headless proof-stills per band group, human-blessed.
-- Bands 1–3: THE CINDER SEAM full art — ember-gale sky, seam-glow ground, smoke-column far props, char ruins mid props, its own weather (EMBER GALE joins the roster; Seam bias hot). One new prop each for the three existing regions so the old world doesn't look poorer than the new.
-- Band 4: station visual variety keyed to region + personality, built on the settlement grammar — and recover the parked shed/canopy variant from git as the "grand city-node" look. The passing-train repaint sliver (traders/clans read at a glance). Fix the parked Fortress-skin smoke plume so hero skins respect rest.
-- Band 5 — GUN-PORT PARITY (the named debt): ports draw identically at every level while turrets grow with tier. Give casemates the same vtier growth (port -> armored casemate -> twin mount), distinct per-type silhouettes (auto/flak/flame), shell ejects + recoil, tier detailing consistent with the turret language. Plus engine tier silhouettes and cargo/passenger cars at full material quality.
-- Band 6: new enemy sprites at full quality; mines; boarding figures on deck.
-- Band 7: damage-type-coloured fx — kinetic tracers vs blast blooms vs fire gouts; resist-spark vs weak-bloom reads.
-- Band 8: region-tinted atmosphere; Seam ember particles.
-- Band 9: node-map UI + contract board styling in one coherent hand; all banner work respects the shipped layout gating (canvas banner portrait/immersive only; landscape announces via DOM chrome).
-- DoD: screenshot any moment in any region and it looks intentional; trace the train and hit nothing.
+## the sprint's design laws (read first)
+1. THE WORLD IS THE INTERFACE. Rolling = the window seat; docked = the screen IS the station (banner + 2–4 anchored chips, one chip = one compact panel; the sheet dissolves).
+2. EVERY PLACE ANSWERS "WHY IS THIS HERE?" Halts have survival logic, stations industry, capitals walls, far nodes legends.
+3. EACH NODE TYPE TAXES A DIFFERENT POCKET. Wrecks: troops. Hazards: hull-or-supplies. Blockades: scrap-or-blood. Dark stations: nerve. Deep crossings: OIL. Stations refill.
+4. HARD PATHS MUST PAY: deep-route EV > spine for a PREPARED rig, < for unprepared. Preparation has FIVE axes now: guns, troops, holds, range, THE PROW.
+5. SCALE IS INFORMATION. Tier reads from the window; a leg's thirst reads from the chart; a rig's fit shows on its bow and stern.
+6. RANGE IS SEAWORTHINESS. Fuel per leg by distance; oil cars = tank + regen; deep crossings need TWO oil cars; the chart never hides a cost.
+7. DEFEAT IS A STORY, NOT A SUBTRACTION. Lose and the wasteland loots you — manifest, cripples, marked prizes, bolder clans. WOUNDED, NEVER ERASED: engine, Rearguard, crew core, and a way back — always. No pity payouts; no dead spirals.
+8. NO ONE IS INVINCIBLE ON THE OCEAN (new): mitigation is real but NEVER total — the Prow's reduction hard-caps (tunable, ~2/3 at max fit+level), and some event classes BYPASS it entirely (broadside fire, bait wrecks, sabotage, deep-water surges). The ocean always keeps its cut.
+9. Standing discipline unchanged: wave-seam checkpoints; harness + Playwright + exporter stills per seam; depth-band law; save migration sacred; §3.6; /tools & /shared read-only; human eyes final on feeling.
 
 ---
 
-## names ledger (all PROPOSED — human may swap any without re-briefing)
-THE LINEBREAKER (the Warlord) · THE TERMINUS (his rig / final node) · THE CINDER SEAM (new region; alt: THE GLASS WASTES) · clans: DUSTWOLVES / THE FLAKWORKS / THE MARROW BANNER · captains: SPOKE / FOREMAN FLAK / DEACON MARROW · heroes: SIGNALWOMAN, CARTWRIGHT, THE UNCOUPLED, SPOTTER, THE STOWAWAY · weather: EMBER GALE · anchor stations as listed in Wave 1.
+## WAVE 0 — ENABLERS + THE RANGE REWORK + THE PROW
+- A–Z MICRO-FONT (+ digits): full set (name-boards, liveries, chart labels, "GO BACK").
+- SECOND BUILDING RANK: band-4 rear rank for capital mass. Trace test holds.
+- ROUTE PROFILE DATA MODEL: every edge {danger 1–3, reward tag, dryness, FUEL COST}; deterministic from seed + depth + length.
+- THE RANGE MODEL: fuel per LEG by distance; OIL CAR = tank + regen per level; range always visible; deep crossings exceed single-tank range by construction (harness law: 1-oil attempt = guaranteed adrift).
+- FUEL INTEGRITY substrate: the tank can be BREACHED (leak state: drain per mile, patch timers). Beats surface Wave 3.
+- OVERRUN SEVERITY MODEL: severity = f(WHERE: spine < dark < deep/adrift · WHO: swarm < blockade < captain · REARGUARD level). Beat lands Wave 3.
+- **THE PROW** (new — bow fitting, a fixture like engine/Rearguard, NOT a slot): upgradeable by level; TWO FITS cycled for scrap (the weapon-refit pattern): **RAM PLOW** — hazard lane: mine-strike deflection chance, debris cleared, storm/track damage eased, small ram bonus in collision beats · **SHIELD PLATE** — combat lane: frontal fire damage and frontal breach chance reduced. Mitigation scales with level under law 8's hard cap; BYPASS CLASSES (broadside, bait, sabotage, deep surge) roll unmitigated, always. The existing drawn cowcatcher = the level-1 visual (job given, pixels honored).
+- STARTING CONSIST TRIMMED (fresh games only): ENGINE (basic prow) + [OIL CAR, GUN CAR] + CABOOSE. Farm out of standard issue.
+- THE CABOOSE -> THE REARGUARD: garrison per level, rear defense, small salvage continuity, defeat mitigation. MIGRATION: caboose levels convert 1:1 — harness-enforced.
+- DoD: font renders any name; two-rank trace passes; profiles/fuel/leak/severity/PROW math deterministic (cap + bypass classes verified); fresh boot fields the new consist + basic prow; caboose migration round-trips; SAVE_V steps once (crippled/prize/leak/prow state in schema).
 
-## code hooks (updated to the shipped file)
-THE STOP (`S.stop` arriving/docked/departing — hosts every node arrival) · the settlement/building grammar + recipes (hosts station variety) · the behavioral harness (extend per wave) · `dt` tags dormant on TOPW/PORTW (Wave 3 activates) · `wx` weather-bias arrays (Seam adds its own) · `BIOMES`/`biomeIdx` (map-driven region order) · `maybeDepot`/`openDepot`/`depotOffers` (station seam) · `ptrain` path (faction traffic) · boss stop-and-duel path (captains + Terminus) · `drawFortress()` orphaned, faces LEFT (The Terminus) · `troops()` inert (manpower rework) · PORTW tier-flat (parity debt) · crate-tap pointer path (mark-target + tap-inspect) · `hash()` (seeded map) · `renderMap` (node graph UI) · `S.journeys` scaling (replace with region tiers) · the save shim (v2 + migrate goes on top).
+## WAVE 1 — THE SETTLEMENT LADDER (scale revised UP)
+- **HALT** (on-brand survival logic): WATER STOP · STRIP SIDING · SIGNAL BOX · WINDPUMP WELL · TOLL SHACK gone honest · **OIL PUMP** (the resupply island — sells fuel; clusters on the spine; the dark country is dry; deep crossings have none). 1–2 structures + 1 figure + 1 offer.
+- **STATION** (a TRUE settlement, Railhead-class): 5–8 structures — personality anchor + cluster (YARD → shed/freight/crane · MARKET → stalls/awnings/scale-house · OUTPOST → signal/fence/watchpost · CHAPEL → lantern-shack/bell/yard-of-markers) + homes + infrastructure, region palette. 2–4 figures; ONE tappable local carries the rumor/need.
+- **CAPITAL** (one per region — a WALLED TOWN, may out-scale the origin): grand train-shed anchor (recover from git), second rank engaged, 8–12 structures, SCRAP PALISADE + watchtowers + RAIL GATE (arrival beat: through the wall, then the town). 5–8 figures. Full personality spread.
+- **THE RAILHEAD** — singular. Capitals may out-scale it; nothing out-homes it.
+- DoD: exporter still per tier per region (incl. oil pump); tier readable at a glance; trace test everywhere; origin byte-identical.
+
+## WAVE 2 — STATION LIFE (mechanics by tier + world-as-interface)
+- CHIPS: DOM, brand-styled, ANCHORED TO MEANING (Market by the stalls, Board by the door, Services by the yard, FUEL by the pump, Depart in its lane). One chip = one panel. The sheet retires.
+- SERVICES BY TIER: Halt = 1 offer + top-up. Station = market + board (2–3) + personality service — YARDs repair CRIPPLED CARS, patch breached tanks, **and refit/upgrade THE PROW**. Capital = everything + best spread + CAR MARKET + signature service: THE JUNCTION's scrapworks · OLD EXCHANGE's auction · THE RIBYARD's bone-choir · **SLAGSIDE's forge (weapon AND prow refit discount)**.
+- CAPITAL KEEPERS: THE YARDMASTER · THE AUCTIONEER · THE CURATE · THE FORGEMASTER — tappable, region story voice, gate intel, one wry line per visit.
+- STATIONS REMEMBER YOU: visit counter → greetings, friendlier spread with familiarity, network gossip — including your defeats and your reclamations.
+- STATIONS HAVE A PULSE: seed-deterministic NEED → demand spike + board reflects it; the tappable local delivers it.
+- WORK-BACK PATHS: every station always offers one no-hold contract (escort/fare) — the way back after an overrun, never charity.
+- DoD: dock anywhere, never see a full sheet; fuel, repairs, and prow work purchasable exactly where the world says; a returning player greeted as one — scars and all.
+
+## WAVE 3 — THE SPACE BETWEEN (edge beats, ADRIFT, THE OVERRUN, fuel drama)
+FLOW TEMPLATE (all non-station nodes): approach → CHOICE CARD (2–3 options, costs visible) → resolution on-canvas → consequence.
+- **WRECK** (troops): party / strip / pass. Sometimes bait (BYPASSES the prow — law 8). Deep wrecks 2×. Fuel drums in reward tables.
+- **DRIFTERS** (seats/food): take / provision (rep) / pass. May trade fuel.
+- **CARAVAN MEET**: Caravaneer pop-up market; fuel deals.
+- **THE TANKER WRECK**: siphon (timed — the fire draws raiders) / torch-and-run (rep) / pass.
+- **HAZARD LEG** (the SHORTCUT): push / mitigate / turn back. DUST STORM · MINEFIELD · WHITEOUT · EMBER GALE. Mine strikes and blockade fire can BREACH THE TANK. **RAM PLOW mitigation applies here (deflection/clearing rolls, shown as a prow mark + ghosted danger pip on the choice card); the deep-water SURGE variant bypasses (law 8).**
+- **BLOCKADE** (scrap-or-blood): pay / fight (SHIELD PLATE eases frontal fire; their broadsides bypass) / STAND-ASIDE post-captain. Clan boldness raises tolls where a clan recently overran you.
+- **DARK STATION** (nerve): no services, big salvage, squatters; rare finds incl. derelict car hulls.
+- **LANDMARK** (one per region, one secret each): THE SUNKEN LINER · THE FALLEN SPAN · THE LEVIATHAN GATE · THE CRUCIBLE.
+- **THE DEAD PUMP**: dry mid-crossing pump, "GO BACK" in the micro-font. Sometimes a trickle. Sometimes bait.
+- **THE LEAK**: a breached tank drains fuel PER MILE until stopped — fuel crew patch over rank-scaled time, or HALT to patch now (exposure vs range). Drip fx + gauge flash + ticker. The range model's drama engine on deep water.
+- **ADRIFT** (fuel = 0 mid-leg): the world halts on open rail — wrong silence, escalating waves. Three outs, costly, never save-fatal: JURY-RIG · DISTRESS FLARE (rep-gated gouge) · STAND AND FIGHT (tow at brutal cost). Losing adrift = heaviest OVERRUN tier.
+- **THE OVERRUN** (the defeat beat; retires the pity scrap): hull 0 → you WATCH the looting (boarders swarm, crates walk), then the MANIFEST CARD. Tiers: 1 SKIRMISH LOSS (cargo cut + skim, limp on) · 2 STRIPPED (hold emptied; contracts aboard FAIL + rep ding; ONE car CRIPPLED — charred/boarded, dead until YARD repair; towed to the nearest friendly station behind you) · 3 TAKEN (rare; deep/captain/adrift): tier 2 + a car UNCOUPLED AND TAKEN or a hero CAPTURED → spawns a MARKED PRIZE. NEVER the engine, NEVER the Rearguard — every overrun ends on "the Rearguard held." Rearguard level mitigates one tier. The floor (law 7) always holds.
+- DoD: each node taxes its pocket; adrift + the leak reachable, survivable, terrifying; overruns play at all tiers in the harness; prow mitigation + bypass classes verified in beats; the pity scrap is gone from the codebase.
+
+## WAVE 4 — THE CONTINENT (chart, deep crossings, far nodes, MARKED PRIZES)
+- **THE SURVEYOR'S CHART**: hand-inked sepia (band-9): four terrain masses W→E, rail inked, landmarks drawn, capitals bold, gates as terrain chokes, THE TERMINUS a black mark far east. Fog = blank parchment. Deep crossings = dashed ink + dry-drum glyph + "HERE THE LINE RUNS DRY." Every known edge: fuel cost + danger pips + reward tag.
+- **THREE ZOOMS**: CONTINENT → REGION (spine vs dark country distinct) → LEG (tap: type/danger/reward/fuel).
+- **GENERATOR RESHAPE — lit spine, dark country**: main line (stations/halts/pumps/tolls) + deep branches (dry, dangerous, rich). Dead-ends always reward, always return.
+- **MARKED PRIZES**: a TAKEN car / CAPTURED hero appears as a marked clan node ("they're flying your gun car's colors at the Gallows Bend blockade"). Reclaim BY FORCE; reclaimed cars carry a permanent SCAR/TROPHY; rescued heroes return with a new line. Prizes persist; clans may relocate them one node if you dawdle.
+- **CLAN BOLDNESS**: the clan that overran you gouges bolder in its region for a stretch — the mirror of stand-aside; a reclaimed prize deflates it.
+- **THE FOUR FAR NODES** (hand-built, TWO-OIL by construction): 1. THE MOTHBALL YARDS (Rust Flats, far Long Shallow) — the old world's parked fleet; the Yard-born who've never seen a train move; salvage epic; derelict hulls; THE YARDBORN. 2. THE FIRST ENGINE (Dead City, beneath the Fallen Ring) — the Grand Terminal and the first locomotive, polished by no one anyone has met; the most reverent beat; THE FIRST LANTERN + one quiet truth about what broke the world. 3. THE FAR LIGHT (Bone Reef, past the White Drifts) — a light kept forty years because "a train always comes, eventually"; THE PERMANENT CHOICE: take THE KEEPER (unique hero, lantern buff) and the light goes dark forever, or leave them keeping — a standing beacon + Caravaneer trickle. 4. THE WELLHEAD (Cinder Seam, the heart of the Burn) — the last true well, feeding ONE customer: THE TERMINUS. Raid or deal; the fuel line is cut either way — the finale THINS, Seam oil collapses, pump halts light the Seam spine.
+- SUB-AREAS: THE LONG SHALLOW · THE FALLEN RING · THE WHITE DRIFTS · THE BURN. KNOWLEDGE AS A RESOURCE: rumors/blessings/SIGNALWOMAN reveal; keepers hint at the far nodes.
+- **THE GAZETTEER** in DESIGN.md: regions, sub-areas, capitals + keepers, landmarks + secrets, halt catalog, clan territories, far nodes + storylines, the range model, OVERRUN tiers + prize rules, **the Prow's fits + law 8's bypass classes**. The world's bones, written down.
+- DoD: a stranger reads the chart in ten seconds; far nodes visibly demand two-oil rigging BEFORE commitment; Far Light choice + a marked prize persist in save and chart.
+
+## WAVE 5 — BALANCE + POLISH (the laws enforced)
+- ECONOMY + RANGE + LOSS + PROW PASS: laws 4/6/7/8 in numbers — deep EV inequality holds; two-oil gate holds; adrift/leak outs costly-but-fair; loss economy tuned (an overrun HURTS but tier-2 recovers in ~2–3 legs of honest work; tier-3 reclamation feels like revenge, not chores); **prow cap enforced (~2/3 max, tunable) and bypass classes statistically verified — a maxed prow still bleeds on the ocean**. Targets documented in DESIGN.md.
+- THE REARGUARD'S FORTRESS LADDER + **THE PROW'S LADDER** (visual, band 5): red caboose → plated rearguard → keep-on-wheels; basic cowcatcher → toothed ram plow / riveted shield bow (fit-distinct silhouettes, level detailing in the material language). Bow and stern read as the rig's hard ends. CRIPPLED-CAR art state + reclaimed SCAR mark in the same pass.
+- Beat-frequency pass (no identical beats back-to-back where the generator can help).
+- Harness + Playwright: chips, choice cards per node type, tier composition, chart zooms/taps, stand-aside + boldness, familiarity/pulse, RANGE (per-leg math, leak drain/patch, adrift entries/exits, two-oil gate, caboose migration), OVERRUN (three tiers, Rearguard mitigation, the floor), PROW (fit cycle, cap, bypass classes, card surfacing), marked-prize round-trip, Far Light persistence.
+- Exporter stills: tier/region matrix + oil pump, four landmarks, FOUR FAR NODES, capital wall-arrival, Rearguard ladder, **Prow ladder (both fits)**, a crippled car + a scarred reclaim, chart at three zooms, one ADRIFT frame, one OVERRUN frame — human-blessed.
+- DoD: laws 1–8 verifiably hold; SAVE_V stepped once with migration; The Railhead byte-identical.
+
+---
+
+## names ledger (PROPOSED — swap freely, non-blocking)
+Capitals: THE JUNCTION · OLD EXCHANGE · THE RIBYARD · SLAGSIDE. Keepers: THE YARDMASTER · THE AUCTIONEER · THE CURATE · THE FORGEMASTER. Landmarks: THE SUNKEN LINER · THE FALLEN SPAN · THE LEVIATHAN GATE · THE CRUCIBLE. Far nodes: THE MOTHBALL YARDS · THE FIRST ENGINE · THE FAR LIGHT · THE WELLHEAD. Figures/relics: THE YARDBORN · THE KEEPER · THE FIRST LANTERN. Sub-areas: THE LONG SHALLOW · THE FALLEN RING · THE WHITE DRIFTS · THE BURN. Systems: THE REARGUARD · THE OVERRUN · MARKED PRIZES · THE LEAK · THE TANKER WRECK · THE DEAD PUMP · **THE PROW (fits: RAM PLOW · SHIELD PLATE)**.
 
 ## out-of-scope (this sprint)
-- THE TUTORIAL (Phase B) — still PINNED; this sprint is the mechanics-settling it waited for. It un-pins as the NEXT thread, teaching finished verbs via the Depart / Guided Departure fork at The Railhead.
-- RELIGHT RETROFIT of the backdrop — parked ("light as performance" for arrivals = future thread).
-- Editing `/tools` or `/shared` — extraction candidates are proposals only.
-- The train-customization fork · resolution bump · AUDIO (the game is silent — its own future thread) · tappable station buildings · monetization/retention anything · multiplayer/cloud saves · NG+ keepsakes.
+- THE TUTORIAL (Phase B) — pinned; un-pins AFTER Places ships.
+- Hero permadeath (wounded/captured only) · station ownership · per-station quest chains beyond contracts/favors/needs · a third oil tier · a third prow fit · new combat systems beyond blockade/Wellhead/reclaim setpieces · audio · resolution bump · customization fork · Relight retrofit · /tools edits · monetization · multiplayer.
 
 ## open-questions
-- Ratify or swap the names ledger (non-blocking — names are skin-deep by design).
-- THE CINDER SEAM vs THE GLASS WASTES (Seam recommended: the Warlord's home should burn).
-- Ghost Hauler in or out (recommended IN).
-- Postgame = free-roam + pretenders this sprint; NG+ parked — confirm.
+- DEPLOY SEQUENCING (unchanged, non-blocking): deploy v1.2 after QA first (director's lean), or ship together?
+- Ratified-in-brief unless flagged: capitals out-scale origin; farm out; caboose 1:1 conversion; Far Light permanence; no hero permadeath; prow cap ~2/3 (builder tunes under law 8).
+- Tier-3 TAKEN frequency: rare enough to be a story, common enough to be feared — builder tunes, director reviews in playtest.
+- Two prow fits confirmed as the right count? (A third fit is explicitly parked — the ocean can deepen later.)
+- Names ledger swaps, if any.
