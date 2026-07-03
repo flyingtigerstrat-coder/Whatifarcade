@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-07-03 · session 13 — the station SHEET: docked, not modal (Tiny Rails pass)
+DECIDED: The human called the full-screen station modal an immersion killer and pointed at Tiny Rails: you pull in, the world stays on screen, the station menu overlays it. Rebuilt: PORTRAIT = a bottom sheet sliding up under the ticker (canvas + rig-at-rest fully visible above, max 62dvh, no scrim); LANDSCAPE = a right-side panel (44% max) with the docked rig breathing beside it. Slide-in animations, ✕ sticky in the corner, panel internals slimmed so more world shows. The step-away/reopen loop is unchanged.
+TRIED: Playwright shots in both orientations — the landscape frame keeps the caboose-to-gun-car run visible beside the panel; the engine's nose tucks under it (the rig is wider than the window at dock camera; acceptable, Tiny Rails does the same).
+PARKED: Docked-camera nudge (easing the rig left while the sheet is open) if the human wants the engine visible too.
+CHANGED: #depot CSS only (positioning/animation/sizing) — zero logic changes; harness untouched and green.
+OPEN: Human re-test: sheet height on a real phone, side-panel width on desktop.
+FEELING: Pull in, and the stop is a place you're AT — not a page you were sent to.
+
 ## 2026-07-02 · session 12 — THE SPINE made legible: route board, station popups, map rework (human feedback pass)
 DECIDED: The human tested and called it straight: forks were invisible, stations buried in a submenu, the map unintuitive. Fixed all three. (1) ROUTE BOARD — the travel strip's tiny fork text becomes big tappable route cards (glyph + name + what the leg IS: station/event/hazard/BLOCKADE/GATE), the fork announces itself with a header and a ticker line on arrival, and DEPART names its destination ("Depart ▸ Rust Junction · 11 fuel"). Fork frequency raised 60%→70% — the choice is the point. (2) STATION POPUP — #depot is now a modal over the whole screen (scrim + ✕ step-away that keeps the stop open; the Depart button reopens it), not a panel under the canvas. (3) MAP REWORK — fog-of-war (names/glyphs only for you, your choices, anchors, and ridden rail), heading strip ("the line forks — tap a lit stop · heading: X"), fat 17px tap targets, past rail dimmed, edge labels anchored so they never clip.
 TRIED: Playwright + the sandbox's Chromium can screenshot the DOM UI headlessly — first time the pod could self-QA menus before the human's eyes. It caught a real bug immediately: upd() re-rendered the map EVERY FRAME while the tab was open, destroying tap targets mid-tap (why map taps felt broken on the phone). renderMap now caches on a state key.
