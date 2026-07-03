@@ -1,6 +1,16 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-03 — C.6.1: metal koi tail fins — foil, not wedges (§10 micro-loop, human's live read)
+DECIDED (human, from the C.6 metal screenshot): "ensure there are no bugs with the tails of the koi in that environment." Engine v3.5 → **v3.5.1**. Two layered problems, one cosmetic and one structural:
+
+CHANGED:
+- **Material:** metal fins were filled with the fish's DARK base metal (`m.base` at .24) — solid dark wedges against the bright mirror. Now **thin polished foil**: translucent pale `shiro` fill (the water shows through) with a **bright cool edge stroke** that catches the sky, per the metal grade's cool-specular rule.
+- **Geometry (shared `tailFin`, all skins benefit):** the bright foil edge exposed that the tail fin anchored at a **single point** on the tail tip and ballooned straight to full width — reading as a hinged leaf hanging off the fish. The fin now **grows out of the caudal peduncle at its width** (base spans ±.24 body-width, seam hidden under the body), so it's a continuation of the fish, not an attachment.
+
+TRIED / VERIFIED: all nine suites green (134/134); real-Chromium metal lineup with three ELDERS (longest trailing fins — worst case) mid-swim: fins read as attached translucent foil with forked trailing edges; natural re-shot to confirm the shared geometry change reads clean there too (it improved it). Screenshots shared.
+
+
 ## 2026-07-03 — C.6: skin-reactive chrome + per-skin signatures (§10 polish round toward mature MVP)
 DECIDED (human): "a tightening pass for the visuals of the ui across the different filters… add details for each theme that make them unique visually… high end polish round as we get close to a more mature mvp." Engine v3.4.5 → **v3.5**.
 

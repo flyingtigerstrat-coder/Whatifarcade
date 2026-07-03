@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v3.5 (living pond, C.6: skin-reactive chrome + per-skin signatures — pollen · sweep · hanko · breathed pane) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.5.1 (living pond, C.6.1: metal koi fins read as polished foil, not dark wedges) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
@@ -509,10 +509,15 @@ function bodyPath2(k,sp){const P=new Path2D(),wd=ewd(k),C=sp.length;
   for(let i=C-1;i>=0;i--){const w=wd*widthAt(sp[i].t);P.lineTo(sp[i].x-sp[i].nx*w,sp[i].y-sp[i].ny*w);}P.closePath();return P;}
 function tailFin(c,k,sp){const e=sp[sp.length-1],p=sp[sp.length-2];let tx=e.x-p.x,ty=e.y-p.y;const l=Math.hypot(tx,ty)||1;tx/=l;ty/=l;
   const nx=-ty,ny=tx,fl=elen(k)*.32*(1+.7*eldF(k)),fw=ewd(k)*1.45*(1+.18*eldF(k)),sw=Math.sin(k.phase+.5)*fw*.65;   // elder: long flowing trailing fins (prestige, not decline)
-  c.beginPath();c.moveTo(e.x,e.y);
+  // the fin GROWS OUT of the caudal peduncle at its width (base spans pw both sides,
+  // hidden under the body) — anchoring at a single point read as a hinged leaf once
+  // metal's bright fin edge made the outline visible
+  const pw=ewd(k)*.24;
+  c.beginPath();c.moveTo(e.x+nx*pw,e.y+ny*pw);
   c.quadraticCurveTo(e.x+tx*fl*.6+nx*(fw+sw),e.y+ty*fl*.6+ny*(fw+sw),e.x+tx*fl+nx*sw,e.y+ty*fl+ny*sw);
   c.quadraticCurveTo(e.x+tx*fl*.7,e.y+ty*fl*.7,e.x+tx*fl-nx*sw,e.y+ty*fl-ny*sw);
-  c.quadraticCurveTo(e.x+tx*fl*.6-nx*(fw-sw),e.y+ty*fl*.6-ny*(fw-sw),e.x,e.y);c.closePath();}
+  c.quadraticCurveTo(e.x+tx*fl*.6-nx*(fw-sw),e.y+ty*fl*.6-ny*(fw-sw),e.x-nx*pw,e.y-ny*pw);
+  c.closePath();}
 function pecFins(c,k,sp){const i=Math.round(sp.length*.26),p=sp[i],fw=elen(k)*.15,sw=Math.sin(k.finph)*.5,dx=Math.cos(k.ang),dy=Math.sin(k.ang),wd=ewd(k);
   for(const s of[1,-1]){const bx=p.x+p.nx*wd*widthAt(p.t)*s,by=p.y+p.ny*wd*widthAt(p.t)*s,ax=p.nx*s,ay=p.ny*s;
     c.beginPath();c.moveTo(bx,by);
@@ -1046,11 +1051,15 @@ SKINS.metal={
     c.globalCompositeOperation='source-over';drawWakes(c);},
   // --- warm wet-metal koi (the real pattern, cast in metal), one cool silver focal ---
   koi(c,k,sp,dim){const m=koiMetal(k.V),vm={...k.V,base:m.base,accent:m.accent,sumi:m.sumi,shiro:m.shiro},bp=bodyPath2(k,sp);
-    // fins under the body
-    c.fillStyle=hexA(m.base,.24*dim);tailFin(c,k,sp);c.fill();pecFins(c,k,sp);
+    const cool=m.cool?'#ffffff':METAL_COOL;                            // platinum gets the whitest/brightest highlight
+    // fins under the body — thin polished FOIL, not wedges: the dark base fill read as
+    // solid dark blobs against the bright mirror. Pale translucent shiro lets the water
+    // show through, and a bright cool edge catches the sky the way a fin edge would.
+    c.fillStyle=hexA(m.shiro,.16*dim);tailFin(c,k,sp);c.fill();
+    c.strokeStyle=hexA(cool,.32*dim);c.lineWidth=1;c.stroke();
+    c.fillStyle=hexA(m.shiro,.14*dim);pecFins(c,k,sp);
     // body: warm metal flanks, a COOL specular band, genuinely dark edges (cool-on-warm, high contrast)
     const mid=sp[sp.length>>1],wd=ewd(k)*2.1;
-    const cool=m.cool?'#ffffff':METAL_COOL;                            // platinum gets the whitest/brightest highlight
     const tb=clamp(.5+.24*Math.sin(Pond._t*.9+k.phase*1.3),.2,.8);     // the cool reflection SLIDES across the flank (chrome flow)
     const bg=c.createLinearGradient(mid.x-mid.nx*wd,mid.y-mid.ny*wd,mid.x+mid.nx*wd,mid.y+mid.ny*wd);
     bg.addColorStop(0,shade(m.sumi,dim*.7));
@@ -1590,7 +1599,7 @@ kcSwim.addEventListener('click',()=>{if(!sel)return;
 function devWarp(days){Pond.eco.lastSeen=Date.now()-days*864e5;idleReturn(true);persist();}
 let devFps=null;
 if(DEV){const dtr=document.getElementById('devtray');dtr.style.display='flex';
-  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.5 · … fps';dtr.appendChild(devFps);
+  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.5.1 · … fps';dtr.appendChild(devFps);
   const acts=[['+1d',()=>devWarp(1)],['+7d',()=>devWarp(7)],['+30d',()=>devWarp(30)],
     ['+200❀',()=>{Pond.econ.serenity+=200;}],
     ['mature flora',()=>{for(const p of Pond.plants){p.grow=1;if(p.type==='lotus'||p.type==='iris'||p.type==='pad')p.bloom=1;}for(const r of Pond.rocks)r.grow=1;persist();}],
@@ -1666,7 +1675,7 @@ function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;retu
   if(_adT>=5){const f=_adN/_adT;_adN=0;_adT=0;
     if(f<22&&_shed<2){_shed++;DPR_CAP=_shed===1?1.5:1;WS=_shed===1?.45:.4;resize();
       try{localStorage.setItem('koipond_q',String(_shed));}catch(e){}}}
-  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.5 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
+  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.5.1 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
   saveT+=dt;if(saveT>5){saveT=0;persist();}}
 addEventListener('beforeunload',persist);
 
