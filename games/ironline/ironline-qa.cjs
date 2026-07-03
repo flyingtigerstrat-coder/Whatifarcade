@@ -329,6 +329,9 @@ S.nav={seed:7,reg:0,col:1,row:0};S.fam={};
 ok('pulse: every station names a need', GKEYS.includes(stationNeed(0,1,0)));
 S.fam['0:1:0']=5;
 ok('memory: familiarity changes the greeting', famGreet('X',5)!==famGreet('X',1));
+ok('signage: every station raises a fuel island', (()=>{const sd=S.nav.seed;for(let s2=1;s2<14;s2++){S.nav.seed=s2;const sp=settleSpec(1,1,0);if(sp.tier=='station'&&!sp.B.some(b=>b.f.name==='bOilPump')){S.nav.seed=sd;return false}}S.nav.seed=sd;return true})());
+ok('signage: every capital keeps stalls + a pump', (()=>{const sd=S.nav.seed;for(let s2=1;s2<14;s2++){S.nav.seed=s2;const sp=settleSpec(2,2,0);if(!sp.B.some(b=>b.f.name==='bStalls')||!sp.B.some(b=>b.f.name==='bOilPump')){S.nav.seed=sd;return false}}S.nav.seed=sd;return true})());
+ok('signage: the Railhead pumps its own fuel', RH_BUILDINGS.some(b=>b.f.name==='bOilPump'));
 ok('work-back: every board keeps a no-hold contract', (()=>{for(let s=1;s<30;s++){S.nav.seed=s;if(!mkBoard().some(c=>c.k==='escort'))return false}return true})());
 S.fam={};
 

@@ -2522,7 +2522,8 @@ function settleSpec(reg,col,row){const tier=settleTier(reg,col,row),k=reg*1000+c
   pick(bWatchtower,-46,2);pick(bFreight,-30,2);pick(bSilo,14,2);pick(bShack,34,2);pick(bWaterTower,58,2); // the rear rank: mass behind the wall
   pick(bRailGate,-34);pick(bTrainShed,-6);
   pick(pers.includes('market')?bStalls:pers.includes('outpost')?bWatchpost:pers.includes('chapel')?bBellShack:bFreight,84);
-  pick(bWindpump,124);pick(bShack,148);pick(bSignal,176);
+  if(pers.includes('market'))pick(bWindpump,124);else pick(bStalls,116); // a capital ALWAYS keeps a market row (the chip never points at a warehouse)
+  pick(bOilPump,146);pick(bSignal,180);
   return{tier,pers,pal:[-60,-38],pal2:[74,196],B,figs:5}}
  // station — a true settlement: personality anchor + cluster + homes
  pick(bShack,-34);pick(bWaterTower,-6);
@@ -2531,13 +2532,13 @@ function settleSpec(reg,col,row){const tier=settleTier(reg,col,row),k=reg*1000+c
  if(pers.includes('yard'))pick(bFreight,126);
  if(pers.includes('outpost'))pick(bWatchpost,100);
  if(pers.includes('chapel'))pick(bBellShack,118);
- pick(bSilo,160);pick(bWindpump,184);
+ pick(bOilPump,160);pick(bWindpump,188); // every station sells fuel, so every station HAS a fuel island (the chip hangs on truth)
  return{tier,pers,pump:false,B,figs:2+Math.floor(hash(S.nav.seed+k*5+3)*3)}}
 // the railhead settlement, as a list of building entities (offsets from the station anchor):
 // homes quarter west (shack · water tower · shed), the STATION as anchor, working quarter east
 // (freight house · silo · signal · wind pump) — two quarters flanking the anchor, tied by the wire.
 const RH_BUILDINGS=[{f:bShack,dx:-38},{f:bWaterTower,dx:6},{f:bShed,dx:31},{f:bStation,dx:50},
- {f:bFreight,dx:118},{f:bSilo,dx:160},{f:bSignal,dx:188},{f:bWindpump,dx:224}];
+ {f:bFreight,dx:118},{f:bOilPump,dx:158},{f:bSignal,dx:188},{f:bWindpump,dx:224}]; // the pump island keeps the old silo slot — fuel lives WHERE the fuel is
 // THE RAILHEAD — BAND 4 (backdrop, BEHIND the train): the depot cluster, set on the far rail and
 // haze-dimmed by aerial perspective. No over-rail structures — the train stays alone on band 5.
 function drawRailhead(sx){
