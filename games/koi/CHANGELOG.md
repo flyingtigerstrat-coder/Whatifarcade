@@ -1,6 +1,20 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-03 — C.5: soft shape-matched day-aware shadows (§10 micro-loop, human's live read)
+DECIDED (human, from a night screenshot during soak-testing): "refine the shadow elements more." The read: every rock/pad sat on a hard-edged dark ellipse — wrong shape (logs floating in round blobs), sticker-crisp edges, and full daytime strength at night when there's no sun. Engine v3.4.1 → **v3.4.2**.
+
+CHANGED (shadows now behave like light in water):
+- **One shared soft shadow sprite** (dark radial, baked once) replaces every hard-edged ellipse fill — edges diffuse the way submerged shadows actually do. One `drawImage` per entity, zero per-frame gradients (the B.2 budget holds).
+- **Shape-matched:** shadows are elongated and **rotated to the object** — a log shades a long sliver along its own axis, slate sits low and thin, the lantern only shades at its base, pads/lotus/cluster colonies get correctly sized soft pools, reeds/iris keep a small waterline contact. Offset scales gently with size (a fixed light direction, bigger things cast a touch farther).
+- **Day-aware (`SHDIM`, set per frame from `dayMix`):** full strength under the noon sun → softened through dusk/dawn → **~35% at night** (moonlight, not sun). Koi floor shadows and the dragonfly's water shadow follow the same dial. Ink keeps a fixed stylized weight (its eternal dusk).
+- **Moved OUT of the sprite bakes:** rock/pad shadows used to be baked into the entity sprites (which is why they couldn't react to the day); they now draw live under the cached sprite — bakes stay static, shadows stay honest.
+
+TRIED / VERIFIED: new C.5 gate suite (8/8 — SHDIM 1.0 at noon / ≤.45 at night / between at dusk+dawn / ink fixed .85; full flora+hardscape scene renders in all four skins × day+night with zero warnings; reduced-motion clean). All six prior suites re-run green (**117/117 total**). REAL-BROWSER: noon + night screenshots of the same hardscape-heavy pond — shadows hug the driftwood along its axis by day and melt into the water at night — shared in channel.
+
+OPEN: shadow direction is a fixed light azimuth (down-right); if the director ever wants it to track the wandering sunbeam it's a live-draw change now (no bake in the way), at the cost of shadows that visibly crawl.
+
+
 ## 2026-07-03 — C.4: size-led feeding hierarchy (§10 micro-loop, human's live read + koi research)
 DECIDED (human, from watching real ponds): "the biggest koi be most aggressive for food — make it realistic." Researched wild/pond koi behavior first: koi run a **size-led pecking order** — larger, older fish hold higher rank and get priority access to food and prime position; the biggest/boldest reaches the food first and takes the first bite, pushing smaller fish aside. Boldness is a **second, personality axis** (partly genetic — "bold koi rush the surface; shy ones linger for leftovers"). Human ratified: **size-led (60% size / 40% seeded boldness)** + **nudge-and-yield** aggression (dominant holds the spot, subordinate shoved to leftovers, nobody starved). Engine v3.4 → **v3.4.1**.
 
