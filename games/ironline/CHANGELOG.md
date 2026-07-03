@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-07-03 · session 15 (cont.) — THE LINGER: you stay docked until you say otherwise
+DECIDED: The human ratified it — a station is a place you STAY. Offers no longer end the stop: each marks itself "done for this visit" and the town stays open; only DEPART ends it, and DEPART now lives ON the platform — the route board shows at the dock ("DOCKED AT X · THE LINE FORKS"), you choose a heading and the one button rolls you out through the full departure choreography. The "Press on without stopping" button retires. LINGERING PAYS: docked hull regen doubles and the crew eats warm (slow food trickle). THE TOWN ANSWERS TAPS: the LOCAL on the platform speaks region-flavored lines and — if you hold what the town NEEDS — leans in with a one-shot 1.6× buyout of your hold (rep with the Caravaneers); the STATION HOUSE deals gossip (rumors, your marked prizes on the wind, the good stuff for regulars).
+TRIED: Playwright drove the whole loop: offer -> still docked (mode 'depot', chip lit, offer greyed) -> Depart -> mode 'run'.
+PARKED: More platform figures with lines (one local carries it for now); boarding animations.
+CHANGED: depot offer handler keeps the dock; go() docked branch falls through to departure; upd() route board renders at dock; tick rest bonus; LOCAL_LINES/localSpeak/houseGossip + tap zones.
+OPEN: Human feel-test: does a stop now earn its minute? Is the 1.6× local buyout too rich?
+FEELING: You pull in, the signs light, somebody talks, the kettle is warm — and the line can wait until YOU say it can't.
+
 ## 2026-07-03 · session 15 (cont.) — station SIGNAGE: the menu hangs where the building stands
 DECIDED: The chips became SIGNBOARDS, Tiny Rails proper: hung in the sky band over their ACTUAL buildings with a pointer stem down at the structure — Services over the station house, Fuel over the pump/silo/water tower (whichever the settlement actually built), Market over the stalls, the KEEPER over the capital's train-shed — while the BOARD stays down on the platform with the people. Personality trades got their own building-tied signs: CHAPEL over the bell-shack (blessing + its line), WATCH over the outpost post (recruit + wall duty) — and every offer now knows its home, so each panel lists only its building's trade (the fuel panel carries the pump's own offer).
 TRIED: First pass hung the signs BELOW the canvas — the #chips container was a zero-height bottom anchor, so top-positioning fell through the floor; Playwright caught it in one frame. Container now spans the frame; verified in both orientations.

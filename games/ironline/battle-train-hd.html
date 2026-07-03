@@ -590,7 +590,7 @@ else return;
 renderCrew();cards();save();
 });
 document.getElementById('go').addEventListener('click',()=>{
-if(S.mode=='depot'){S.depotView='services';S.depotMin=false;renderDepot();showView('travel');return} // the Depart button doubles as the Services bell while docked
+if(S.mode=='depot'){S.depot=null;S.depotView=null;S.depotMin=false;S.mode='idle';renderDepot();renderChips()} // DEPART from the platform: close the town, fall through to the departure
 if(S.mode=='run')return;
 if(S.stop&&S.stop.ph=='arriving')return;                     // she's still rolling in — let her settle first
 const edges=nodeEdges(S.nav.reg,S.nav.col,S.nav.row);
@@ -776,6 +776,25 @@ const KEEPERS=[{nm:'THE YARDMASTER',line:'"Every rig that ever mattered came thr
 function stationNeed(reg,col,row){const k=reg*1000+col*37+row*7,vk=navVK(reg,col,row),v=(S.fam[vk]|0);
  return GKEYS[Math.floor(hash(S.nav.seed+k*29+v*7+41)*GKEYS.length)]}
 function famGreet(nm,v){return v<=1?'You pull into '+nm+'.':v<4?'They remember the rig at '+nm+'. Nods from the platform.':'Lamps swing a welcome at '+nm+' \u2014 they know this engine by sound now.'}
+const LOCAL_LINES=[
+ ['\u201cFlats iron is honest iron. Everything else out here lies.\u201d','\u201cSPOKE\u2019s boys tax the west road. You look taxable.\u201d','\u201cWe had rain once. Kept it in a jar.\u201d'],
+ ['\u201cThe towers hum at night. We don\u2019t ask what to.\u201d','\u201cThe Choir pays for quiet. Nobody sells it.\u201d','\u201cOld Exchange will buy ANYTHING. Even that.\u201d'],
+ ['\u201cBones keep the wind off. Dead things are good neighbors.\u201d','\u201cThe Curate blesses every rig that stops. Even yours.\u201d','\u201cPast the Drifts there\u2019s a light. Forty years now.\u201d'],
+ ['\u201cThe ground here never cooled. Neither did the grudges.\u201d','\u201cSLAGSIDE\u2019s forge can sharpen a bow to a whisper.\u201d','\u201cNobody rides east of the Wellhead. Nobody rides BACK, anyway.\u201d']];
+function localSpeak(){const d=S.depot;if(!d)return;
+ const need=d.need,held=S.cargo[need]||0;
+ log(LOCAL_LINES[S.nav.reg][Math.floor(Math.random()*3)]+' \u2014 a local, eyeing your rig.');
+ if(held>0&&!d.localDone){d.localDone=true;const px2=Math.round(gPrice(need)*1.6);
+  showChoice('THE LOCAL LEANS IN','\u201cThat '+GOODS[need].nm+' in your hold \u2014 we NEED that here. Name your price.\u201d',[
+   {label:'Sell '+held+' '+GOODS[need].nm,desc:'+'+(px2*held)+' scrap \u00b7 1.6\u00d7 spot',fn:()=>{closeChoice();S.scrap+=px2*held;S.cargo[need]=0;S.rep.carav=Math.min(10,S.rep.carav+1);log('The whole town turns out to unload it. +'+(px2*held)+' scrap, and they will remember this.');save()}},
+   {label:'Keep the hold',desc:'the need keeps',fn:()=>{closeChoice();log('You tip your hat and keep your manifest.')}}])}}
+function houseGossip(){const d=S.depot;if(!d)return;
+ const v=famOf(d.key),rl=RUMORS[S.nav.reg];
+ const bits=[];
+ if(S.prizes.length)bits.push('Word is a clan camp is flying '+(S.prizes[0].k==='car'?'a stolen car\u2019s colors':'a captive\u2019s name')+' out there. Your colors, they say.');
+ bits.push('Rumor \u2014 '+rl[Math.floor(Math.random()*rl.length)]);
+ if(v>=4)bits.push('The station master pours you the good stuff. Regulars drink free-ish.');
+ log(bits[Math.floor(Math.random()*bits.length)]);}
 const PAXN=['The Cartographer','A Quiet Bride','The Bone-Doctor','A Debt-Runner','The Lantern Widow','The Deaf Surveyor'];
 function paxBoard(){ // seats fill at stations; specials pay 5x and carry a name
  let on=0;const free=seats()-S.pax.length;
@@ -934,7 +953,7 @@ if(!d||S.depotMin||!S.depotView){el.className='';if(!d)el.innerHTML='';else el.i
 if(S.depotView=='keeper'){log(KEEPERS[S.nav.reg].nm+': '+KEEPERS[S.nav.reg].line+' \u2014 "'+CAPTAINS[Math.min(3,S.nav.reg)].nm+' holds the gate east. Mind the tolls where the clans grew bold."');S.depotView=null;el.className='';return}
 let h='<button class="dstep" data-k="-2" title="Back to the platform">\u2715</button><h3>'+d.name+'</h3><div class="flav"><span class="pers">'+d.pers.map(p=>PERS[p]).join(' + ')+'</span> — needs <b style="color:#e0a33a">'+GOODS[d.need||'grain'].nm+'</b></div>';
 if(S.depotView=='services'||S.depotView=='chapel'||S.depotView=='outpost'){const want=S.depotView;
- d.offers.forEach((o,k)=>{const hm=o.home||'services';if((want=='services'&&hm!='chapel'&&hm!='outpost'&&hm!='fuel')||hm===want)h+='<button class="opt" data-k="'+k+'" '+(o.can()?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'});
+ d.offers.forEach((o,k)=>{const hm=o.home||'services';if((want=='services'&&hm!='chapel'&&hm!='outpost'&&hm!='fuel')||hm===want)h+='<button class="opt" data-k="'+k+'" '+((o.can()&&!o.used)?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+(o.used?'done for this visit':o.desc)+'</span></button>'});
  if(want=='chapel')h+='<div class="flav">bell-metal and lamp-smoke \u2014 the yard of markers faces west</div>';
  if(want=='outpost')h+='<div class="flav">the watch sees everything on the flat \u2014 and hires</div>'}
 if(S.depotView=='fuel'){d.offers.forEach((o,k)=>{if((o.home||'')==='fuel')h+='<button class="opt" data-k="'+k+'" '+(o.can()?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'});const fo=offerObj('fuel',d.idx);h+='<button class="opt" data-k="-3" '+(fo.can()?'':'disabled')+'><span>'+fo.label+'</span><span class="od">'+fo.desc+'</span></button>';h+='<div class="flav">tank '+Math.floor(S.fuel)+' / '+tankCap()+'</div>'}
@@ -952,7 +971,7 @@ if(S.depotView=='board'){h+='<div class="mkthd">DISPATCHER BOARD · '+S.contract
    +(dl?'<button class="tbtn hot" data-cact="deliver" data-ci="'+i+'">Deliver · +'+c.pay+'</button>':'<span class="gp">'+c.pay+' scrap</span>')+'</div>'});
  d.board.forEach((c,i)=>{if(S.contracts.length>=2)return;
   h+='<div class="mrow crow"><span class="gn">'+cLabel(c)+'</span><span class="gp">'+c.pay+' scrap</span><button class="tbtn" data-cact="accept" data-ci="'+i+'">Ink it</button></div>'})}
-if(S.depotView=='services')h+='<button class="leave" data-k="-1">Press on without stopping</button>';
+
 el.innerHTML=h;el.className='show';
 }
 document.getElementById('depot').addEventListener('click',e=>{const b=e.target.closest('button');if(!b||b.disabled||!S.depot)return;
@@ -969,7 +988,7 @@ if(b.dataset.cact){const ci=+b.dataset.ci; // contracts keep it open too
 const k=+b.dataset.k;
 if(k==-3){const fo=offerObj('fuel',S.depot.idx);if(fo.can()){fo.act();renderDepot();upd();save()}return}
 if(k==-2){S.depotView=null;renderDepot();upd();return} // ✕ = back to the platform; the stop stays open, the chips stay lit
-if(k>=0)S.depot.offers[k].act();S.depot=null;S.depotMin=false;S.depotView=null;S.mode='idle';if(S.stop)stopDepart();renderDepot();cards();save();showView('travel')});
+if(k>=0){const o=S.depot.offers[k];if(o&&!o.used&&o.can()){o.act();o.used=true}renderDepot();upd();cards();save()}}); // you stay DOCKED — only Depart ends the stop
 /* ---- view router: persistent shell + swappable content ---- */
 function showView(v){S.view=v;
 for(const id of ['travel','train','crew','map','log'])document.getElementById('v-'+id).hidden=(id!=v);
@@ -1055,6 +1074,10 @@ cv.addEventListener('pointerdown',e=>{_pd=true;_pdrag=false;_psx=_lx(e);_ppan=S.
 cv.addEventListener('pointermove',e=>{if(!_pd)return;const dx=_lx(e)-_psx;if(!_pdrag&&Math.abs(dx)>6)_pdrag=true;if(_pdrag&&!(S.boss||S.raiders.length)){S.pan=Math.max(0,Math.min(S.maxPan,_ppan+dx));S.panHintT=2;}});
 const NOODLE_LINES=['Noodle\u2019s tail goes like a signal flag. No notes.','Noodle looks up, decides you are good people, and says so with his whole body.','A small black puppy accepts your affection as tribute. The line can wait.','Noodle sneezes at the coal dust, then immediately forgives it.'];
 cv.addEventListener('pointerup',e=>{const ix=_lx(e),iy=_ly(e);if(_pd&&Math.abs(ix-_psx)<8){if(S.crate&&!S.crate.grabbed){const c=S.crate;if(ix>=c.x-9&&ix<=c.x+20&&iy>=c.y-10&&iy<=c.y+20){grabCrate();_pd=false;_pdrag=false;return}}
+ // docked at a town: the LOCAL on the platform and the STATION HOUSE both answer a tap
+ if(S.mode=='depot'&&S.place&&S.stop&&S.stop.ph=='docked'&&!S.choice){const psx=(S.stationX==null?STATION_HOME:S.stationX);
+  if(iy>146&&iy<176&&Math.abs(ix-(psx+100))<44){localSpeak();_pd=false;_pdrag=false;return}
+  {const bST=S.place.B.find(b2=>b2.f===bStation);if(bST&&iy>76&&iy<114&&ix>=psx+bST.dx&&ix<=psx+bST.dx+64){houseGossip();_pd=false;_pdrag=false;return}}}
  // Noodle is tappable. No stats. Obviously.
  if(S.origin&&S.stop&&S.stop.ph=='docked'){const nx=(S.stationX==null?STATION_HOME:S.stationX)+118-86+38;
   if(ix>=nx-5&&ix<=nx+7&&iy>=157&&iy<=172){S.noodleT=3;log(NOODLE_LINES[Math.floor(Math.random()*NOODLE_LINES.length)]);_pd=false;_pdrag=false;return}}
@@ -1078,17 +1101,15 @@ document.getElementById('s-hull').textContent=Math.max(0,Math.round(S.hull))+'/'
 document.getElementById('hullbox').className='st'+(S.hull<maxHull()*0.35?' warn':'');
 const b=document.getElementById('go'),nd=document.getElementById('nextdepot'),docked=S.mode=='depot';
 b.classList.toggle('docked',docked);
-const _edges=(!docked&&S.mode!='run')?nodeEdges(S.nav.reg,S.nav.col,S.nav.row):null,atEnd=_edges&&!_edges.length;
-if(docked){b.disabled=false;b.textContent=S.view=='travel'?'At '+S.depot.name:'\u25b8 Open '+S.depot.name}
-else if(S.mode=='run'){b.disabled=true;b.textContent='Crossing the rail ocean...'}
+const _edges=(S.mode!='run')?nodeEdges(S.nav.reg,S.nav.col,S.nav.row):null,atEnd=_edges&&!_edges.length;
+if(S.mode=='run'){b.disabled=true;b.textContent='Crossing the rail ocean...'}
 else if(atEnd){b.disabled=true;b.textContent='The end of the line'}
 else{const _s=_edges[Math.min(S.sel,_edges.length-1)],_c=legCost(_s);b.disabled=S.fuel<_c;b.textContent='Depart \u25b8 '+nodeName(_s.reg,_s.col,_s.row)+' \u00b7 '+_c+' fuel'}
 {const km='<span style="color:#cdb894">'+Math.floor(S.dist)+' km</span>';let h;
- if(docked)h=km+' \u00b7 docked at '+S.depot.name;
- else if(S.mode=='run'){const t=S.navT&&S.navT.to;h=km+' \u00b7 crossing to <span style="color:#cdb894">'+(t?nodeName(t.reg,t.col,t.row):'the far shore')+'</span>\u2026'}
+ if(S.mode=='run'){const t=S.navT&&S.navT.to;h=km+' \u00b7 crossing to <span style="color:#cdb894">'+(t?nodeName(t.reg,t.col,t.row):'the far shore')+'</span>\u2026'}
  else if(atEnd)h=km+' \u00b7 THE TERMINUS \u2014 the last gate stands broken behind you';
  else{S.sel=Math.min(S.sel,_edges.length-1);const fork=_edges.length>1;
-  h='<div class="rbhd">'+(fork?'\u26a0 THE LINE FORKS \u2014 choose your heading':'NEXT STOP')+'</div>'
+  h='<div class="rbhd">'+(docked?'DOCKED AT '+S.depot.name+' \u00b7 ':'')+(fork?'\u26a0 THE LINE FORKS \u2014 choose your heading':'NEXT STOP')+'</div>'
    +_edges.map((e,i)=>{const t=nodeType(e.reg,e.col,e.row),sel=i==S.sel,cross=e.reg!=S.nav.reg;
     const rt=cross?(e.reg<S.nav.reg?'the loop home \u00b7 '+REGIONS[e.reg].name:'across the border \u00b7 '+REGIONS[e.reg].name)
      :t=='D'?'DARK WATER \u00b7 a legend \u00b7 TWO-OIL COUNTRY':t=='S'?'station \u00b7 trade &amp; repair':t=='E'?'event \u00b7 unknown':t=='H'?'hazard \u00b7 heavy raids':t=='B'?'BLOCKADE \u00b7 elite warband':'GATE \u00b7 warlord crossing';
@@ -2690,6 +2711,7 @@ if(S.adrift){S.adrift.t+=dt; // adrift: the waves escalate until an out is taken
   else{wave();log('They come again out of the dark \u2014 wave '+S.adrift.wv+' of 4.')}}}
 {const hr=crewBuffs().hullRegen;if(hr>0&&S.hull<maxHull())S.hull=Math.min(maxHull(),S.hull+hr*dt);}
 if(S.mode=='idle'&&S.hull<maxHull())S.hull=Math.min(maxHull(),S.hull+1.3*dt);
+if(S.mode=='depot'&&S.stop&&S.stop.ph=='docked'){if(S.hull<maxHull())S.hull=Math.min(maxHull(),S.hull+2.6*dt);S.food=Math.min(999,S.food+0.05*dt)} // warm bunks, warm meals — lingering at a stop is worth something
 S.smT-=dt;
 if(S.smT<=0&&!S.engineSkin&&spd>2){S.smoke.push({x:S.stackX,y:90,t:1.4});S.smT=S.mode=='run'?0.08:0.35} // no chuff at rest — the smoke thins to nothing
 S.smoke.forEach(s=>{s.t-=dt;s.x-=(spd*0.32)*dt;s.y-=9*dt});
