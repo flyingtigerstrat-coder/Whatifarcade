@@ -14,7 +14,7 @@ DECIDED: The human called the full-screen station modal an immersion killer and 
 TRIED: Playwright shots in both orientations — the landscape frame keeps the caboose-to-gun-car run visible beside the panel; the engine's nose tucks under it (the rig is wider than the window at dock camera; acceptable, Tiny Rails does the same).
 PARKED: Docked-camera nudge (easing the rig left while the sheet is open) if the human wants the engine visible too.
 CHANGED: #depot CSS only (positioning/animation/sizing) — zero logic changes; harness untouched and green.
-OPEN: Human re-test: sheet height on a real phone, side-panel width on desktop.
+OPEN: Human re-test: sheet height on a real phone, side-panel width on desktop. NEXT LOOP PROPOSED: the human pointed at Tiny Rails stations (menu as part of the landscape) — status update + BRIEF v1.3 (THE PLACES SPRINT) proposal filed to [drive] POD_IRONLINE/POD_STATUS_ironline_2026-07-03_v1.md; awaiting the director's pass.
 FEELING: Pull in, and the stop is a place you're AT — not a page you were sent to.
 
 ## 2026-07-02 · session 12 — THE SPINE made legible: route board, station popups, map rework (human feedback pass)
