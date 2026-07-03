@@ -256,7 +256,7 @@ const KEY='battle-train-save';
 const S={scrap:120,food:20,fuel:30,heroes:[],crewSel:-1,journeys:0,engine:1,caboose:1,maxSlots:3,
 slots:[{type:'oil',lvl:1},{type:'gun',wpn:'cannon',port:'auto',lvl:1},null],
 mode:'idle',jt:0,dur:14,waves:[],wi:0,hull:0,off:0,flash:0,raiders:[],smoke:[],booms:[],tracers:[],smT:0,saveT:0,resetArm:0,T:0,dt:0.016,ex:216,stackX:286,pan:0,maxPan:0,panHintT:0,tw:{x:360,r:0},turr:{},boss:null,crate:null,crateAt:-1,lastRegion:-1,lastWx:-1,ptrain:null,ptrainAt:-1,ptrainKind:'trader',ptrainElite:false,dist:0,depot:null,discount:false,view:'travel',logHist:[],layout:'',layoutManual:false,immersive:false,engineSkin:null,fortressUnlocked:false,origin:false,stationX:null,stop:null,lampK:1,
-nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null,cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0},linebroken:false,prow:{lvl:1,fit:'ram'},leak:null,crippled:[],prizes:[]};
+nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null,cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0},linebroken:false,prow:{lvl:1,fit:'ram'},leak:null,crippled:[],prizes:[],place:null};
 const gun=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='gun'?s.lvl*wpow(s.wpn||'cannon',s.port||'auto'):0),0)*crewBuffs().gunMult;
 const troops=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='troop'?s.lvl*4:0),0);
 const farm=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='farm'?s.lvl*0.5:0),0)*crewBuffs().foodMult;
@@ -477,7 +477,7 @@ S.prow=(d.prow&&typeof d.prow=='object')?{lvl:Math.max(1,d.prow.lvl|0),fit:d.pro
 S.leak=(d.leak&&typeof d.leak=='object')?{rate:+d.leak.rate||0,t:+d.leak.t||0}:null;
 S.crippled=Array.isArray(d.crippled)?d.crippled:[];S.prizes=Array.isArray(d.prizes)?d.prizes:[];
 if(d.origin&&S.nav.reg==0&&S.nav.col==0){S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1} // saved while docked at the origin — wake up there
-else{S.origin=false;S.stop=null;S.stationX=null;S.lampK=1}                                       // ...otherwise the load is authoritative: mid-journey, no stop
+else{S.origin=false;S.stop=null;S.stationX=null;S.lampK=1}S.place=null;                          // ...otherwise the load is authoritative: mid-journey, no stop (staged places are session-only)
 return true}
 }catch(e){}
 return false;
@@ -589,7 +589,7 @@ if(!S.resetArm){S.resetArm=1;b.textContent='Tap again to confirm';setTimeout(()=
 S.resetArm=0;b.innerHTML='Scuttle &amp; restart';
 S.scrap=120;S.food=20;S.fuel=30;S.heroes=[];S.crewSel=-1;S.journeys=0;S.engine=1;S.caboose=1;S.maxSlots=3;
 S.slots=[{type:'oil',lvl:1},{type:'gun',wpn:'cannon',port:'auto',lvl:1},null];S.slots.forEach(s=>crewOf(s));
-S.prow={lvl:1,fit:'ram'};S.leak=null;S.crippled=[];S.prizes=[];
+S.prow={lvl:1,fit:'ram'};S.leak=null;S.crippled=[];S.prizes=[];S.place=null;
 S.hull=maxHull();S.mode='idle';S.raiders=[];S.booms=[];S.tracers=[];S.boss=null;S.crate=null;S.dist=0;S.depot=null;S.discount=false;renderDepot();
 S.nav={seed:1+Math.floor(Math.random()*99999),reg:0,col:0,row:0};S.visited=['0:0:0'];S.sel=0;S.navT=null;
 S.cargo={};S.pax=[];S.contracts=[];S.rep={disp:0,carav:0,tr:0};S.linebroken=false;
@@ -748,7 +748,7 @@ function navArrive(){ // every completed leg lands here: move the rig on the map
  S.contracts.forEach(c=>{if(c.k=='escort')c.left--});                              // every safe leg counts toward an escort
  S.contracts=S.contracts.filter(c=>{if(c.k=='escort'&&c.left<=0){const pay=Math.round(c.pay*(1+S.rep.disp*0.02)*(1+troops()*0.01));S.scrap+=pay;S.rep.disp=Math.min(10,S.rep.disp+1);log('Escort complete — the caravan pays out '+pay+' scrap'+(troops()?' (your riflemen earn their keep)':'')+'.');return false}return true});
  paxArrive(ty=='S');
- if(ty=='S'){openDepot(nm);paxBoard()}
+ if(ty=='S'){S.place=Object.assign(settleSpec(to.reg,to.col,to.row),{name:nm});openDepot(nm);paxBoard()}
  else{stopArrive(false);S.stop.auto=true; // a real halt at every stop — then she rolls on her own
   if(ty=='E')navEvent(nm);
   else if(ty=='H'){const heal=Math.round(maxHull()*0.25);S.hull=Math.min(maxHull(),S.hull+heal);log('You clear the bad country and breathe at '+nm+'. The crew patches plate — +'+heal+' hull.')}
@@ -777,7 +777,8 @@ if(!pick.includes('scavenge')&&!pick.includes('cache'))pick[pick.length-1]='scav
 return pick.map(t=>offerObj(t,idx))}
 function openDepot(nm){const idx=eff(),pers=stationPers(S.nav.reg,S.nav.col,S.nav.row);S.depotMin=false;
 S.depot={idx,name:nm,pers,key:navVK(S.nav.reg,S.nav.col,S.nav.row),offers:depotOffers(idx,pers),board:mkBoard()};
-S.mode='depot';stopArrive(false);log('You pull into '+nm+'. '+depotFlavor(idx));
+if(S.place&&S.place.pump)S.depot.offers.unshift(offerObj('fuel',idx)); // an OIL PUMP sells fuel before anything else
+S.mode='depot';if(S.place&&!S.origin){const _o=S.origin;stopArrive(true);S.origin=_o}else stopArrive(false);log('You pull into '+nm+'. '+depotFlavor(idx));
 {const cand=[];S.heroes.forEach(h=>{if(h.rank<MAXRANK)cand.push(h)});S.slots.forEach(s=>{if(s&&s.hero&&s.hero.rank<MAXRANK)cand.push(s.hero)});
  if(cand.length&&Math.random()<0.35){const h=cand[Math.floor(Math.random()*cand.length)],cost=Math.round(crewRankCost(h.rank)*0.6);
  S.depot.offers.push({label:CREW[h.kind].nm+'\u2019s favor',desc:'\u2212'+cost+' scrap \u00b7 they train to '+RNK[h.rank+1],can:()=>S.scrap>=cost,act:()=>{S.scrap-=cost;h.rank++;log(CREW[h.kind].nm+' repays the favor in skill \u2014 rank '+RNK[h.rank]+'.')}})}}
@@ -2050,6 +2051,7 @@ for(const rr of [lseg,lseg+1]){if(hash(rr*97+9)<0.45){const sx=(rr+0.3)*BIOME_LE
 // (foreground wreck-tire retired — its car-sized scale broke the world's proportions; trackside debris lives in the deb cells)
 ambientLife(cur);
 if(S.origin)drawRailhead(S.stationX==null?STATION_HOME:S.stationX);
+else if(S.place)drawSettlement(S.stationX==null?STATION_HOME:S.stationX,S.place);
 }
 function storyAt(x,v){
 if(v==0){ctx.save();ctx.translate(x,0);ctx.rotate(-0.08);
@@ -2264,6 +2266,75 @@ function bWindpump(x){const hy=66,cxx=x+5;                         // wind pump 
  px(cxx,hy,1,1,BSTL[4]);                                             // hub glint
  px(cxx+2,hy,4,1,BSTL[1]);px(cxx+6,hy-1,2,3,BSTL[2]);                // tail vane
 }
+/* ---- v1.6 WAVE 1: the settlement ladder's new recipes (same parts, same laws) ---- */
+function bOilPump(x){const y=94;                                   // OIL PUMP — the resupply island: tank, hose gantry, drum row
+ bFoot(x,26);bWall(x,y,14,BIRON,1);
+ cyl(x+1,y-9,12,8,BIRON);px(x+2,y-10,10,1,BIRON[3]);               // horizontal fuel tank on the roof
+ px(x+16,y-4,2,RHGY-y+4-2,BSTL[1]);px(x+16,y-4,2,1,BSTL[3]);       // pump post
+ px(x+15,y-7,5,4,BSTL[2]);px(x+16,y-6,1,1,'#e07b2a');              // pump head + live gauge
+ ctx.strokeStyle='rgba(20,14,10,0.8)';ctx.beginPath();ctx.moveTo(x+18,y-2);ctx.quadraticCurveTo(x+24,y+5,x+22,RHGY-2);ctx.stroke(); // the hose
+ drum(x+22,RHGY,'#5a4632');drum(x+27,RHGY,'#6a5438');
+ pxa(x+4,y-2,2,1,'rgba(240,150,60,'+(0.4+0.4*bGlow())+')')}        // spill glow at the valve
+function bStalls(x){const w=30,y=100;                              // MARKET stalls — awning row + counters (the trade reads)
+ bFoot(x,w);
+ for(let s=0;s<3;s++){const sx2=x+s*10;px(sx2,y,8,RHGY-y,BWOOD[1]);px(sx2,y,8,1,BWOOD[3]);
+  px(sx2-1,y-3,10,2,s%2?'#8a3a28':'#5a5f52');px(sx2-1,y-2,10,1,'rgba(10,8,6,0.4)');  // striped awnings
+  px(sx2+1,y+4,6,2,BWOOD[0]);px(sx2+2,y+3,4,1,'#c9a15a')}          // counter + goods
+ pxa(x+3,y-1,1,1,'rgba(242,182,92,'+(0.5*bGlow())+')')}
+function bWatchpost(x){const y=84;                                 // OUTPOST watchpost — leggy tower + hooded lamp
+ px(x+1,y+8,2,RHGY-y-8,BWOOD[0]);px(x+7,y+8,2,RHGY-y-8,BWOOD[0]);bBraceX(x+1,y+14,8,6,BWOOD[2]);
+ box(x,y,10,8,BIRON[1]);px(x+1,y+1,8,1,BIRON[3]);px(x+2,y+3,3,3,'#16242a');
+ px(x+4,y-3,2,3,BSTL[1]);px(x+3,y-4,4,1,'#241a12');pxa(x+4,y-2,2,1,'rgba(240,150,60,'+(0.5*bGlow())+')')}
+function bBellShack(x){const w=18,y=99;                            // CHAPEL of the open rail — lantern shack + bell + yard of markers
+ bFoot(x,w);bWall(x,y,w,BWOOD,1);bGable(x,y,w,BWOOD);bDoor(x+7,y+4);
+ px(x+8,y-9,2,5,'#241a12');px(x+7,y-11,4,3,'#3a342e');px(x+8,y-9,2,2,'#caa23a');   // the bell
+ for(let g=0;g<4;g++)px(x+w+3+g*4,RHGY-3-(g%2),1,3+(g%2),'#463f37');               // the yard of markers, facing west
+ pxa(x+3,y+2,1,1,'rgba(242,182,92,'+(0.6*bGlow())+')')}
+function bPalisade(x1,x2){for(let p=x1;p<x2;p+=3){const ln=Math.floor(hash(p*1.7)*3);px(p,RHGY-10-ln,2,10+ln,'#3a2f24');px(p,RHGY-10-ln,1,1,'#5a4a38')} // CAPITAL scrap palisade
+ px(x1,RHGY-7,x2-x1,1,'rgba(20,14,10,0.5)')}
+function bWatchtower(x){const y=70;                                // capital wall tower — tall, manned, lit
+ px(x+1,y+10,2,RHGY-y-10,BIRON[0]);px(x+7,y+10,2,RHGY-y-10,BIRON[0]);bBraceX(x+1,y+18,8,7,BIRON[2]);
+ box(x-1,y,12,10,BIRON[1]);px(x,y+1,10,1,BIRON[3]);px(x+2,y+3,3,3,'#16242a');px(x+7,y+3,2,3,'#16242a');
+ px(x+3,y-4,4,4,BSTL[2]);pxa(x+4,y-3,2,2,'rgba(240,150,60,'+(0.55*bGlow())+')')}
+function bRailGate(x){                                             // THE RAIL GATE — the wall opens for the line (arrival beat)
+ bWatchtower(x-14);bWatchtower(x+16);
+ px(x-3,RHGY-26,2,26,BSTL[0]);px(x+11,RHGY-26,2,26,BSTL[0]);
+ px(x-3,RHGY-26,16,3,BIRON[1]);px(x-3,RHGY-26,16,1,BIRON[3]);
+ rhText('GATE',x-6,RHGY-23,'#e6cfa0')}
+function bTrainShed(x){const w=74,y=72;                            // the GRAND TRAIN-SHED — a capital's anchor: arched roof over a stub track
+ bFoot(x,w);
+ for(let i=0;i<w;i++){const t=(i-w/2)/(w/2),top=y+Math.round(10*t*t);px(x+i,top,1,RHGY-top,i%9==0?BIRON[0]:BIRON[1]);if(i%9==1)px(x+i,top,1,RHGY-top,BIRON[2]);px(x+i,top,1,1,BIRON[3])}
+ px(x+6,y+16,w-12,10,'#100b07');                                    // the dark mouth
+ for(let a=0;a<3;a++)px(x+10+a*22,y+18,3,3,'rgba(242,182,92,'+(0.3+0.4*bGlow())+')'); // lamps inside
+ px(x+2,RHGY-7,w-4,1,'rgba(20,14,10,0.5)');
+ bClock(x+w/2,y+2)}
+/* the settlement COMPOSER: tier + personality + seed -> a building list (the origin keeps its own hand-set list) */
+function settleTier(reg,col,row){if(reg==0&&col==0)return 'origin';
+ if(col==2&&row==0)return 'capital';
+ return hash(S.nav.seed+reg*777+col*37+row*7+31)<0.4?'halt':'station'}
+function settleSpec(reg,col,row){const tier=settleTier(reg,col,row),k=reg*1000+col*37+row*7,pers=stationPers(reg,col,row),B=[];
+ const pick=(f,dx,rank)=>B.push({f,dx,rank});
+ if(tier=='halt'){const v=Math.floor(hash(S.nav.seed+k*3+9)*4);
+  if(v==0){pick(bWaterTower,20);pick(bShed,50)}
+  else if(v==1){pick(bOilPump,10);pick(bShack,48)}
+  else if(v==2){pick(bSignal,14);pick(bShed,34)}
+  else{pick(bWindpump,12);pick(bShack,36)}
+  return{tier,pers,pump:v==1,B,figs:1}}
+ if(tier=='capital'){
+  pick(bWatchtower,-46,2);pick(bFreight,-30,2);pick(bSilo,14,2);pick(bShack,34,2);pick(bWaterTower,58,2); // the rear rank: mass behind the wall
+  pick(bRailGate,-34);pick(bTrainShed,-6);
+  pick(pers.includes('market')?bStalls:pers.includes('outpost')?bWatchpost:pers.includes('chapel')?bBellShack:bFreight,84);
+  pick(bWindpump,124);pick(bShack,148);pick(bSignal,176);
+  return{tier,pers,pal:[-60,-38],pal2:[74,196],B,figs:5}}
+ // station — a true settlement: personality anchor + cluster + homes
+ pick(bShack,-34);pick(bWaterTower,-6);
+ pick(bStation,22);
+ if(pers.includes('market'))pick(bStalls,94);
+ if(pers.includes('yard'))pick(bFreight,126);
+ if(pers.includes('outpost'))pick(bWatchpost,100);
+ if(pers.includes('chapel'))pick(bBellShack,118);
+ pick(bSilo,160);pick(bWindpump,184);
+ return{tier,pers,pump:false,B,figs:2+Math.floor(hash(S.nav.seed+k*5+3)*3)}}
 // the railhead settlement, as a list of building entities (offsets from the station anchor):
 // homes quarter west (shack · water tower · shed), the STATION as anchor, working quarter east
 // (freight house · silo · signal · wind pump) — two quarters flanking the anchor, tied by the wire.
@@ -2285,6 +2356,31 @@ function drawRailhead(sx){
  {const a=0.4*(0.45+0.55*dnLight),hz=ctx.createLinearGradient(0,76,0,RHGY+2);
   hz.addColorStop(0,'rgba(228,170,96,0)');hz.addColorStop(1,'rgba(228,170,96,'+a+')');
   ctx.fillStyle=hz;ctx.fillRect(0,76,320,RHGY+2-76);}
+}
+/* v1.6 WAVE 1 — any staged settlement, band 4: the composer's list through the railhead's own pipeline */
+function drawSettlement(sx,pl){
+ for(let i=0;i<6;i++)pxa(sx-14-i*8,137,5,1,'rgba(46,34,24,'+Math.max(0,0.5-i*0.08)+')');
+ bPole(sx-14,34);bPole(sx+200,36);
+ bWire(0,74,sx-13,78,2);bWire(sx-13,78,sx+201,76,4);bWire(sx+201,76,320,74,1);
+ if(pl.pal){bPalisade(sx+pl.pal[0],sx+pl.pal[1]);bPalisade(sx+pl.pal2[0],sx+pl.pal2[1])}  // the capital's wall, opened by the gate
+ {const r2=pl.B.filter(b=>b.rank==2),r1=pl.B.filter(b=>!b.rank||b.rank==1);
+  if(r2.length){ctx.save();ctx.translate(0,-6);for(const b of r2)b.f(sx+b.dx);ctx.restore();
+   const H2=h2(BIOMES[curIdx].haze);ctx.fillStyle='rgba('+H2[0]+','+H2[1]+','+H2[2]+',0.26)';ctx.fillRect(0,56,320,RHGY-4-56)}
+  for(const b of r1)b.f(sx+b.dx)}
+ {const a=0.4*(0.45+0.55*dnLight),hz=ctx.createLinearGradient(0,76,0,RHGY+2);
+  hz.addColorStop(0,'rgba(228,170,96,0)');hz.addColorStop(1,'rgba(228,170,96,'+a+')');
+  ctx.fillStyle=hz;ctx.fillRect(0,76,320,RHGY+2-76)}}
+function drawPlaceFront(sx,pl){ // band 6: a working platform sized to the tier — people, lanterns, freight (never Noodle; he keeps the origin)
+ const SW=200,cx=sx+SW/2,glow=Math.max(0.34,1.08-dnLight),deck=170;
+ const pW=pl.tier=='capital'?110:pl.tier=='halt'?46:80,pL=Math.round(cx-pW/2),pR=Math.round(cx+pW/2);
+ {const aL=pL-12,aR=pR+16,g1=lerpCol(BIOMES[curIdx].ground[1],BIOMES[nextIdx].ground[1],blendT);ctx.fillStyle=g1;
+  for(let ax=aL;ax<aR;ax++){const ed=Math.min(ax-aL,aR-1-ax),top=146+(ed<6?Math.floor(hash(ax*7.3)*(6-ed)):Math.floor(hash(ax*7.3)*2));ctx.fillRect(ax,top,1,166-top)}}
+ for(let p=pL+6;p<pR;p+=20)box(p,deck+4,3,8,'#46382a');
+ box(pL,deck,pR-pL,8,'#5a4128');px(pL,deck,pR-pL,1,'#a07c4e');px(pL,deck+1,pR-pL,1,'#8c6a3e');
+ rhLantern(pL+8,150,deck,glow,true);if(pW>60)rhLantern(pR-8,150,deck,glow,true);
+ const kinds=['worker','disp','worker','disp','worker','worker','disp','worker'];
+ for(let f=0;f<Math.min(pl.figs,8);f++)rhFig(pL+14+f*Math.max(14,Math.floor((pW-24)/Math.max(1,pl.figs))),deck,kinds[f]);
+ if(pl.tier!='halt'){px(pR-20,deck-6,6,6,'#6e5a44');px(pR-20,deck-6,6,1,'#8a7458')}          // waiting freight
 }
 // THE RAILHEAD — BAND 6 (foreground, IN FRONT of the rail): a thin near platform + the people of the stop.
 // Kept low (apron level) so nothing crosses the train's silhouette.
@@ -2315,13 +2411,14 @@ function drawRailheadFront(sx){
 }
 // THE RAILHEAD — BAND 9 (UI): the place-name as a banner at the top of frame. Off the rail, always legible,
 // scales to every future depot regardless of how the rig is composed.
-function drawRailheadBanner(){
- const w=86,bx=Math.round(160-w/2),by=4,tw=12*4-1;
+function drawRailheadBanner(nm){
+ nm=(nm||'THE RAILHEAD').toUpperCase().slice(0,18);
+ const tw=nm.length*4-1,w=Math.max(86,tw+14),bx=Math.round(160-w/2),by=4;
  pxa(bx-1,by+2,w+2,12,'rgba(18,11,7,0.4)');                                                    // drop shadow
  box(bx,by,w,12,'#3a2c1c');                                                                     // frame
  px(bx+1,by+1,w-2,10,'#f0ddb0');px(bx+1,by+1,w-2,1,'#f6e7c4');px(bx+1,by+10,w-2,1,'#cdb48a');   // cream plaque, top-lit
  px(bx+2,by+2,1,1,'#8a6a3e');px(bx+w-3,by+2,1,1,'#8a6a3e');px(bx+2,by+9,1,1,'#8a6a3e');px(bx+w-3,by+9,1,1,'#8a6a3e'); // corner rivets
- rhText('THE RAILHEAD',Math.round(160-tw/2),by+4,'#7a3322');
+ rhText(nm,Math.round(160-tw/2),by+4,'#7a3322');
 }
 const REGTINT=[null,'rgba(120,110,70,0.05)','rgba(210,200,175,0.05)','rgba(200,80,40,0.07)']; // rust flats = baseline · sallow city · pale reef · ember seam
 function drawOverlays(){
@@ -2344,6 +2441,7 @@ ctx.fillStyle='rgba(24,12,6,0.22)';ctx.fillRect(16,139,294,4);
 drawTrain();
 lane(166);
 if(S.origin)drawRailheadFront(S.stationX==null?STATION_HOME:S.stationX);
+else if(S.place)drawPlaceFront(S.stationX==null?STATION_HOME:S.stationX,S.place);
 if(S.mode=='idle'){
 const tw=S.tw;
 px(tw.x,160+Math.round(Math.abs(Math.sin(S.T*7))*-4),5,5,'#a8773e');
@@ -2369,7 +2467,7 @@ if(S.mark){const pu=0.5+0.5*Math.sin(S.T*6);let mx=null,my=0;
  px(bx,58,w,5,'#241a12');px(bx+1,59,w-2,3,'#3a2020');px(bx+1,59,Math.round((w-2)*p.board),3,p.board>0.7?'#d23a2a':'#e07b2a');
  if(p.board>0.4){for(let gl=0;gl<2;gl++){const gx=bx+10+gl*22;ctx.strokeStyle='rgba(200,190,170,0.7)';ctx.lineWidth=1;ctx.beginPath();ctx.moveTo(gx,104);ctx.lineTo(gx+16+Math.sin(S.T*9+gl)*2,146);ctx.stroke()}}}}
 drawOverlays();
-if(S.origin&&(S.immersive||S.layout!='landscape'))drawRailheadBanner(); // canvas banner only where the DOM chrome isn't announcing the place (portrait / immersive); landscape's status pill carries it
+if((S.origin||S.place)&&(S.immersive||S.layout!='landscape'))drawRailheadBanner(S.origin?'THE RAILHEAD':S.place.name); // canvas banner only where the DOM chrome isn't announcing the place (portrait / immersive); landscape's status pill carries it
 drawPanHint();
 if(S.mode=='run'){const bf=S.boss&&!S.boss.dead,eD=S.ptrain&&S.ptrain.elite&&!S.ptrain.dead&&S.ptrain.state!='out',bc=(bf||eD)?'#d23a2a':'#e0a33a',prog=bf?(1-Math.max(0,S.boss.hp)/S.boss.max):eD?(1-Math.max(0,S.ptrain.hp)/S.ptrain.max):(S.jt/S.dur);px(14,174,292,4,'#5a4632');px(14,174,Math.round(292*prog),4,bc);px(14,174,Math.round(292*prog),1,'#f2c560')}
 }
@@ -2398,7 +2496,7 @@ if(S.stop){const st=S.stop;st.t+=dt;
  else if(st.ph=='docked'){spd=0;if(st.auto&&st.t>2.4)stopDepart()} // an auto stop (event/rest halt) breathes, then rolls on her own
  else if(st.ph=='departing'){const u=Math.min(1,st.t/st.T),vt=S.mode=='run'?((S.boss&&S.boss.set&&!S.boss.dead)?0:110):14;
   spd=vt*u*u;                                                             // she leans into the run
-  if(st.vis){S.stationX-=spd*dt;if(S.stationX<-300){S.origin=false;S.stop=null;S.lampK=1}}
+  if(st.vis){S.stationX-=spd*dt;if(S.stationX<-300){S.origin=false;S.place=null;S.stop=null;S.lampK=1}}
   else if(u>=1)S.stop=null;}
 }
 S.off+=spd*dt;

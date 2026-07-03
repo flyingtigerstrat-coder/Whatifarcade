@@ -247,7 +247,7 @@ global.requestAnimationFrame = () => {};
 
 // ---- load the game & expose its internals --------------------------------
 let script = fs.readFileSync(GAME, 'utf8').match(/<script>([\s\S]*)<\/script>/)[1];
-script += '\n;globalThis.__G={drawBoss,drawBossEngine,drawBossCar,drawTrain,drawRaider,drawPtrain,drawPElite,drawFortress,drawTerminus,drawBackdrop,drawRailheadFront,drawRailheadBanner,STATION_HOME,S,BENGW,BCARW,tick,stopArrive,stopDepart};';
+script += '\n;globalThis.__G={drawBoss,drawBossEngine,drawBossCar,drawTrain,drawRaider,drawPtrain,drawPElite,drawFortress,drawTerminus,drawBackdrop,drawSettlement,drawPlaceFront,settleSpec,settleTier,drawRailheadFront,drawRailheadBanner,STATION_HOME,S,BENGW,BCARW,tick,stopArrive,stopDepart};';
 try { eval(script); } catch (e) { console.error('Failed to load game:', e.message); process.exit(1); }
 const G = globalThis.__G, S = G.S;
 
@@ -344,6 +344,24 @@ const SUBJECTS = {
     S.origin = true; S.stationX = o.sx != null ? o.sx : null; S.lampK = o.lamp != null ? o.lamp : 1;
     S.slots = [{ type: 'gun', wpn: 'cannon', port: 'auto', lvl: 1 }, { type: 'farm', lvl: 1 }, null];
     G.drawBackdrop(); G.drawTrain(); G.drawRailheadFront(S.stationX == null ? G.STATION_HOME : S.stationX); G.drawRailheadBanner(); // band 4 is inside drawBackdrop; front (6) + banner (9) go over the train
+    return { scale: 4, fixedBox: { minx: 0, miny: 0, maxx: 319, maxy: 179 } };
+  },
+  // settlement [--reg=N --kind=halt|station|capital --T=N] — a composed settlement staged at dock (v1.6 wave 1)
+  settlement(o) {
+    S.T = o.T != null ? o.T : 0; S.off = 0;
+    const reg = o.reg != null ? +o.reg : 0;
+    S.nav = { seed: o.seed != null ? +o.seed : 1, reg, col: 1, row: 0 };
+    // walk the region's nodes for the asked tier (capital lives at col2 row0 by law)
+    let col = 1, row = 0;
+    const want = o.tierName || 'station';
+    if (want === 'capital') { col = 2; row = 0; }
+    else { for (let c = 1; c < 5 && G.settleTier(reg, col, row) !== want; c++) { col = c; row = 0; if (G.settleTier(reg, col, row) === want) break; } }
+    S.nav.col = col; S.nav.row = row;
+    S.origin = false; S.place = Object.assign(G.settleSpec(reg, col, row), { name: 'PROOF STILL' });
+    S.stationX = G.STATION_HOME; S.stop = { ph: 'docked', t: 0, vis: true }; S.lampK = 1;
+    S.engine = 2; S.ex = 184.5; S.pan = 0;
+    S.slots = [{ type: 'oil', lvl: 1 }, { type: 'gun', wpn: 'cannon', port: 'auto', lvl: 1 }, null];
+    G.drawBackdrop(); G.drawTrain(); G.drawPlaceFront(S.stationX, S.place); G.drawRailheadBanner(S.place.tier.toUpperCase() + ' PROOF');
     return { scale: 4, fixedBox: { minx: 0, miny: 0, maxx: 319, maxy: 179 } };
   },
   // terminus [phase 1-3] [--T=N] — THE LINEBREAKER's fortress engine holding the last gate (wave 4 finale proof)
@@ -443,6 +461,8 @@ function run(subject, arg, opt) {
     else if (a.startsWith('--lamp=')) opt.lamp = +a.slice(7);
     else if (a.startsWith('--reg=')) opt.reg = +a.slice(6);
     else if (a.startsWith('--cars=')) opt.cars = a.slice(7);
+    else if (a.startsWith('--kind=')) opt.tierName = a.slice(7);
+    else if (a.startsWith('--seed=')) opt.seed = +a.slice(7);
     else pos.push(a);
   }
   const subject = pos[0];
