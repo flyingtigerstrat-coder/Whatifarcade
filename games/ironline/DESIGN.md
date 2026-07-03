@@ -127,6 +127,12 @@ The rail ocean is **4 regions** (`REGIONS`): Rust Flats → Dead City → Bone R
 
 ---
 
+## The Gazetteer — the continent's bones (v1.6 Waves 1–4)
+
+**Regions & capitals:** THE RUST FLATS (capital THE JUNCTION · keeper THE YARDMASTER · scrapworks) → THE DEAD CITY (OLD EXCHANGE · THE AUCTIONEER · the auction) → THE BONE REEF (THE RIBYARD · THE CURATE · the bone-choir) → THE CINDER SEAM (SLAGSIDE · THE FORGEMASTER · the forge). Capitals sit at each region's mid anchor **by law** (walled towns, second rank engaged). **The settlement ladder:** origin (singular) · halt (survival logic — water stop, signal box, windpump well, oil pump) · station (true settlement, personality clusters) · capital. **Far nodes** (row-9 deep branches off column 3, TWO-OIL by profile construction, dead-ends that always return): THE MOTHBALL YARDS (the Yard-born) · THE FIRST ENGINE (the First Lantern's one quiet truth) · THE FAR LIGHT (**the permanent choice** — take THE KEEPER and the light dies, or leave them keeping; `S.farlight` persists) · THE WELLHEAD (the Terminus' fuel line — raid or deal). **The Overrun tiers:** 1 skirmish (cargo cut + skim) · 2 stripped (hold emptied, contracts fail, a car crippled) · 3 taken (a car or hero becomes a **marked prize** at a node — reclaim by force; reclaimed cars wear a permanent scar). Severity: spine < dark < deep < adrift · swarm < blockade < captain · the Rearguard buys tiers back. **The Prow:** RAM PLOW {mine, debris, storm, collision} · SHIELD PLATE {frontal, breach} · cap 66% · bypass {broadside, bait, sabotage, surge}. **Range:** engine tank 30 · oil car 18+6/lvl (cap lvl 5) · deep ≥ 115% of one-tank max. The chart strip on the Map tab reads the continent W→E; fog is blank parchment.
+
+---
+
 ## Save schema — versioned, migrated stepwise
 
 `save()` stamps `v: SAVE_V`; `load()` runs `migrate(d)` **first**, so load logic only ever reads the current schema. `migrate()` is a **chain of stepwise upgrades** — one step per wave that grows state (v1→v2 normalized the live-shipped unversioned shape; v2→v3 will add map state and place veterans on the node graph). **Policy: a rig is sacred** — unknown/higher versions pass through untouched and load reads known fields defensively; only a genuinely unparseable blob falls back to a fresh boot. Extend save/load/reset (and the harness) together every time state grows.

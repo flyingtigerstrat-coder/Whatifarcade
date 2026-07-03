@@ -11,11 +11,11 @@ global.document={getElementById:()=>anyElCache,querySelector:()=>anyElCache,quer
 global.Image=class{set src(v){}};
 global.requestAnimationFrame=()=>{};
 const script=fs.readFileSync(__dirname+'/battle-train-hd.html','utf8').match(/<script>([\s\S]*)<\/script>/)[1]
- +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet};';
+ +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet,theOverrun,springLeak,stokerRank,closeChoice};';
 eval(script);
 (async()=>{
 await new Promise(r=>setTimeout(r,20)); // let the async boot IIFE settle
-const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet}=globalThis.__T;
+const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet,theOverrun,springLeak,stokerRank,closeChoice}=globalThis.__T;
 let t=0,fails=0;const maxHullSafe=()=>60+S.engine*30;const step=n=>{for(let i=0;i<n;i++){t+=16;tick(t)}};
 const ok=(name,cond)=>{console.log((cond?'PASS':'FAIL')+'  '+name);if(!cond)fails++};
 
@@ -108,8 +108,11 @@ ok('spine: the origin node is THE RAILHEAD', nodeName(0,0,0)==='THE RAILHEAD');
 ok('spine: 4 regions, Seam runs 7 columns', REGIONS.length===4&&REGIONS[3].cols===7);
 ok('spine: nodeType is deterministic', nodeType(1,3,1)===nodeType(1,3,1)&&['S','E','H','B'].includes(nodeType(1,3,1)));
 let edgesOK=true;
-for(let rg=0;rg<REGIONS.length;rg++)for(let c=0;c<REGIONS[rg].cols-1;c++)for(let rw=0;rw<navRows(rg,c);rw++){const E=nodeEdges(rg,c,rw);if(E.length<1||E.length>2)edgesOK=false;for(const e of E)if(e.reg!==rg||e.col!==c+1||e.row<0||e.row>=navRows(rg,c+1))edgesOK=false}
-ok('spine: every non-gate node has 1-2 valid forward edges', edgesOK);
+for(let rg=0;rg<REGIONS.length;rg++)for(let c=0;c<REGIONS[rg].cols-1;c++)for(let rw=0;rw<navRows(rg,c);rw++){const E=nodeEdges(rg,c,rw);if(E.length<1||E.length>3)edgesOK=false;for(const e of E)if(e.reg!==rg||e.col!==c+1||(e.row!==9&&(e.row<0||e.row>=navRows(rg,c+1))))edgesOK=false}
+ok('spine: every non-gate node has 1-3 valid forward edges (deep branches included)', edgesOK);
+ok('deep: the far node returns to the spine', nodeEdges(0,4,9).length===1&&nodeEdges(0,4,9)[0].row===0);
+ok('deep: dark water is two-oil country by profile', edgeProfile({reg:0,col:3,row:0},{reg:0,col:4,row:9}).deep===true&&edgeProfile({reg:0,col:3,row:0},{reg:0,col:4,row:9}).fuel>SINGLE_MAX);
+ok('deep: the four far nodes carry their names', nodeName(0,4,9)==='THE MOTHBALL YARDS'&&nodeName(3,4,9)==='THE WELLHEAD');
 const g0=nodeEdges(0,REGIONS[0].cols-1,0);
 ok('spine: a gate opens the next region’s entry', g0.length===1&&g0[0].reg===1&&g0[0].col===0&&g0[0].row===0);
 ok('spine: the Terminus gate ends the line', nodeEdges(3,REGIONS[3].cols-1,0).length===0);
@@ -327,6 +330,34 @@ S.fam['0:1:0']=5;
 ok('memory: familiarity changes the greeting', famGreet('X',5)!==famGreet('X',1));
 ok('work-back: every board keeps a no-hold contract', (()=>{for(let s=1;s<30;s++){S.nav.seed=s;if(!mkBoard().some(c=>c.k==='escort'))return false}return true})());
 S.fam={};
+
+// ===== THE SPACE BETWEEN (v1.6 Wave 3) =====
+// 49 · THE OVERRUN: the wasteland loots you; the pity scrap is DEAD; the Rearguard holds
+S.nav={seed:7,reg:0,col:1,row:0};S.navT={to:{reg:0,col:2,row:0},regChange:false,prof:{len:3,deep:false}};
+S.mode='run';S.adrift=null;S.caboose=1;S.slots=[{type:'gun',wpn:'cannon',port:'auto',lvl:2},{type:'cargo',lvl:1},null];
+S.cargo={ore:4};S.scrap=200;S.contracts=[];S.prizes=[];S.crippled=[];S.hull=0;S.pax=[];
+theOverrun('swarm');closeChoice();
+ok('overrun t1: cargo cut + scrap skimmed, NO payout', S.scrap<200&&S.scrap>=170&&(S.cargo.ore||0)<4&&S.prizes.length===0&&S.crippled.length===0);
+ok('overrun: the leg failed but the map never moved', S.navT===null&&S.nav.col===1);
+// 50 · tier 3 on deep water vs a captain: a MARKED PRIZE is born; never the engine, never the Rearguard
+S.navT={to:{reg:0,col:2,row:0},regChange:false,prof:{len:12,deep:true}};S.adrift=null;
+S.slots=[{type:'gun',wpn:'cannon',port:'auto',lvl:3},null,null];S.cargo={};S.scrap=300;S.hull=0;S.crippled=[];S.prizes=[];
+theOverrun('captain');closeChoice();
+ok('overrun t3: a car taken -> a marked prize on the ledger', S.prizes.length===1&&S.prizes[0].k==='car'&&S.slots[0]===null);
+ok('overrun: engine + Rearguard always survive', S.engine>=1&&S.caboose===1);
+// 51 · a crippled car contributes NOTHING until a yard raises it
+S.slots=[{type:'gun',wpn:'cannon',port:'auto',lvl:3,crip:true},null,null];
+ok('cripple: a boarded gun car goes silent', gunVs('light')===0);
+delete S.slots[0].crip;
+ok('cripple: raised, she speaks again', gunVs('light')>0);
+// 52 · the leak: sprung, then patched over rank-scaled legs
+S.leak=null;springLeak();
+ok('leak: a breach opens with a timer', !!S.leak&&S.leak.t===3);
+S.leak=null;
+// 53 · the Far Light choice persists
+S.farlight=1;S.origin=false;S.stop=null;S.mode='idle';S.depot=null;await save();S.farlight=0;await load();
+ok('far light: the permanent choice round-trips', S.farlight===1);
+S.farlight=0;
 
 // 21 · the ledger survives a save
 S.cargo={ore:3,relic:1};S.contracts=[{k:'haul',g:'grain',n:2,reg:1,src:'0:1:0',pay:60}];S.pax=[{special:true,nm:'X',fare:99,legs:2}];

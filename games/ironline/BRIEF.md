@@ -1,7 +1,7 @@
 # BRIEF — IRONLINE
 version: v1.6
 date: 2026-07-03
-status: building
+status: built — awaiting human QA (all six waves landed; no deploy until the human calls it)
 changed-since-last: + THE PROW (surgical addition; supersedes v1.5 same-day as the standalone contract). The engine's drawn-but-jobless cowcatcher becomes an upgradeable BOW FITTING with two cycleable fits — RAM PLOW (hazard lane: mines/debris/storm) vs SHIELD PLATE (combat lane: frontal fire/breach) — mitigating oil-reducing and forward events. Hard-capped by new design law 8: NO ONE IS INVINCIBLE ON THE OCEAN (mitigation never total; broadsides, bait, sabotage, and deep-water surges bypass the prow entirely). Completes the rig's two-ended identity: THE PROW protects the crossing; THE REARGUARD protects the loss. Everything else stands from v1.5 (Places + Range + Defeat loop).
 ---
 

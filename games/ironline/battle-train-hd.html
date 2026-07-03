@@ -134,6 +134,11 @@ button{font-family:'VT323',monospace;cursor:pointer;border:none}
 #maplist .navmap{display:block;width:100%;background:#1d1814;border:2px solid #3a2e22}
 #maplist .navmap .mapsel{cursor:pointer}
 #maplist .maplegend{font-size:14px;color:#8a7a64;text-align:center;margin-top:8px}
+#maplist .chartstrip{display:flex;align-items:center;justify-content:center;gap:4px;font-size:12.5px;letter-spacing:0.5px;color:#8a7658;background:#262016;border:2px solid #4a3a28;padding:5px 4px;margin-bottom:6px;filter:sepia(0.15)}
+#maplist .chartstrip .cs{white-space:nowrap}
+#maplist .chartstrip .cs b{color:#cdb894;margin-left:3px;font-weight:400}
+#maplist .chartstrip .cs.here{color:#f2c560}
+#maplist .chartstrip i{color:#4a3a28;font-style:normal}
 #maplist .routestrip{font-size:15px;color:#a8957a;text-align:center;padding:5px 6px;margin-bottom:8px;background:#1d1814;border:2px solid #3a2e22}
 #maplist .routestrip b{color:#f2c560;font-weight:400}
 #loglist .ln{font-size:17px;color:#a8957a;padding:5px 2px;border-bottom:1px solid #241c14;line-height:1.3}
@@ -260,13 +265,13 @@ const KEY='battle-train-save';
 const S={scrap:120,food:20,fuel:30,heroes:[],crewSel:-1,journeys:0,engine:1,caboose:1,maxSlots:3,
 slots:[{type:'oil',lvl:1},{type:'gun',wpn:'cannon',port:'auto',lvl:1},null],
 mode:'idle',jt:0,dur:14,waves:[],wi:0,hull:0,off:0,flash:0,raiders:[],smoke:[],booms:[],tracers:[],smT:0,saveT:0,resetArm:0,T:0,dt:0.016,ex:216,stackX:286,pan:0,maxPan:0,panHintT:0,tw:{x:360,r:0},turr:{},boss:null,crate:null,crateAt:-1,lastRegion:-1,lastWx:-1,ptrain:null,ptrainAt:-1,ptrainKind:'trader',ptrainElite:false,dist:0,depot:null,discount:false,view:'travel',logHist:[],layout:'',layoutManual:false,immersive:false,engineSkin:null,fortressUnlocked:false,origin:false,stationX:null,stop:null,lampK:1,
-nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null,cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0},linebroken:false,prow:{lvl:1,fit:'ram'},leak:null,crippled:[],prizes:[],place:null,fam:{},depotView:null};
-const gun=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='gun'?s.lvl*wpow(s.wpn||'cannon',s.port||'auto'):0),0)*crewBuffs().gunMult;
-const troops=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='troop'?s.lvl*4:0),0);
-const farm=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='farm'?s.lvl*0.5:0),0)*crewBuffs().foodMult;
-const repairRate=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='repair'?s.lvl*3:0),0);
-const cargoCap=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='cargo'?2+s.lvl*2:0),0);   // 4 holds at lvl 1, +2/lvl
-const seats=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='pass'?1+s.lvl:0),0);         // 2 seats at lvl 1, +1/lvl
+nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null,cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0},linebroken:false,prow:{lvl:1,fit:'ram'},leak:null,crippled:[],prizes:[],place:null,fam:{},depotView:null,farlight:0};
+const gun=()=>S.slots.reduce((a,s)=>a+(s&&!s.crip&&s.type=='gun'?s.lvl*wpow(s.wpn||'cannon',s.port||'auto'):0),0)*crewBuffs().gunMult;
+const troops=()=>S.slots.reduce((a,s)=>a+(s&&!s.crip&&s.type=='troop'?s.lvl*4:0),0);
+const farm=()=>S.slots.reduce((a,s)=>a+(s&&!s.crip&&s.type=='farm'?s.lvl*0.5:0),0)*crewBuffs().foodMult;
+const repairRate=()=>S.slots.reduce((a,s)=>a+(s&&!s.crip&&s.type=='repair'?s.lvl*3:0),0);
+const cargoCap=()=>S.slots.reduce((a,s)=>a+(s&&!s.crip&&s.type=='cargo'?2+s.lvl*2:0),0);   // 4 holds at lvl 1, +2/lvl
+const seats=()=>S.slots.reduce((a,s)=>a+(s&&!s.crip&&s.type=='pass'?1+s.lvl:0),0);         // 2 seats at lvl 1, +1/lvl
 const maxHull=()=>60+S.engine*30;
 const loot=()=>1+S.caboose*0.1;
 S.hull=maxHull();
@@ -290,7 +295,7 @@ const PORTW={auto:{nm:'Autocannon',pow:4,dt:'kinetic',c:'#cdb894'},flak:{nm:'Fla
 const TOPKEYS=Object.keys(TOPW),PORTKEYS=Object.keys(PORTW);
 const wpow=(top,port)=>(TOPW[top]?TOPW[top].pow:5)+(PORTW[port]?PORTW[port].pow:0);
 /* ---- WAVE 3: damage types go LIVE — armor classes make the refit choice matter ---- */
-const dtMix=()=>{const m={kinetic:0,blast:0,fire:0};for(const s of S.slots){if(s&&s.type=='gun'){m[TOPW[s.wpn||'cannon'].dt]+=s.lvl*TOPW[s.wpn||'cannon'].pow;m[PORTW[s.port||'auto'].dt]+=s.lvl*PORTW[s.port||'auto'].pow}}const g=crewBuffs().gunMult;for(const k in m)m[k]*=g;return m};
+const dtMix=()=>{const m={kinetic:0,blast:0,fire:0};for(const s of S.slots){if(s&&!s.crip&&s.type=='gun'){m[TOPW[s.wpn||'cannon'].dt]+=s.lvl*TOPW[s.wpn||'cannon'].pow;m[PORTW[s.port||'auto'].dt]+=s.lvl*PORTW[s.port||'auto'].pow}}const g=crewBuffs().gunMult;for(const k in m)m[k]*=g;return m};
 const AC={light:{kinetic:1,blast:1,fire:1.3},armored:{kinetic:0.7,blast:1.5,fire:0.8},swarm:{kinetic:0.8,blast:0.9,fire:1.6}}; // resist sparks · weakness blooms
 const ACNM={light:'light raiders',armored:'armored plate',swarm:'a bike swarm'};
 function gunVs(cl){const m=dtMix(),a=AC[cl]||AC.light;return m.kinetic*a.kinetic+m.blast*a.blast+m.fire*a.fire}
@@ -339,7 +344,8 @@ const CREW={
  stowaway   :{nm:'THE STOWAWAY',    hero:true, grp:'story', rare:true, buff:r=>'+'+(r*12)+'% scrap'},
  lanternkeeper:{nm:'THE LANTERNKEEPER',hero:true,grp:'story',rare:true, buff:r=>'hull floor '+(25+r*10)+'%'},
  gatewright :{nm:'THE GATEWRIGHT',  hero:true, grp:'story', rare:true, buff:r=>'+'+(r*10)+'% gun &amp; \u2212'+(r*3)+'% fuel'},
- surveyor   :{nm:'THE SURVEYOR',    hero:true, grp:'story', rare:true, buff:r=>'+'+(r*15)+'% food &amp; +'+(r*5)+'% scrap'}
+ surveyor   :{nm:'THE SURVEYOR',    hero:true, grp:'story', rare:true, buff:r=>'+'+(r*15)+'% food &amp; +'+(r*5)+'% scrap'},
+ keeper     :{nm:'THE KEEPER',      hero:true, grp:'story', rare:true, buff:r=>'hull floor '+(30+r*10)+'% &amp; \u2212'+(r*4)+'% hull damage'}
 };
 const WANDER_HEROES=['cook','medic','greaser','tinker','signalwoman','cartwright'];
 const WAR_HEROES=['bombardier','ironside','reaver','spotter','uncoupled']; // + warboss (rare), rolled separately
@@ -366,6 +372,7 @@ function crewBuffs(){
   else if(c.kind=='lanternkeeper')b.hullFloor=Math.max(b.hullFloor,0.25+r*0.10);
   else if(c.kind=='gatewright'){b.gunMult+=r*0.10;b.fuelMult-=r*0.03;}
   else if(c.kind=='surveyor'){b.foodMult+=r*0.15;b.scrapMult+=r*0.05;}
+  else if(c.kind=='keeper'){b.hullFloor=Math.max(b.hullFloor,0.30+r*0.10);b.hullDmgMult-=r*0.04;}
   else if(c.kind=='cook')b.foodMult+=r*0.18;
   else if(c.kind=='medic')b.hullFloor=Math.max(b.hullFloor,0.20+r*0.10);
   else if(c.kind=='greaser')b.fuelMult-=r*0.07;
@@ -401,7 +408,7 @@ function recruitHero(group){
  return kind;
 }
 // fuel = movement gate (oil cars); food = growth gate + crew rations (farms)
-const oilProd=()=>S.slots.reduce((a,s)=>a+(s&&s.type=='oil'?s.lvl*0.4:0),0);
+const oilProd=()=>S.slots.reduce((a,s)=>a+(s&&!s.crip&&s.type=='oil'?s.lvl*0.4:0),0);
 const fuelC=()=>Math.max(3,Math.round((6+crewCount()*1.5)*crewBuffs().fuelMult));   // fuel per departure
 const rations=()=>Math.max(2,Math.round(crewCount()*1.4));                          // food crew eat per departure
 const NEWCAR=40;                                                                     // scrap to weld a new car
@@ -448,7 +455,7 @@ function migrate(d){
   d.v=6;
  }
  if(d.v==6){                                // v6 -> v7: THE OCEAN — bow fitting, tank integrity, wound & prize ledgers. The caboose converts 1:1 into the Rearguard.
-  d.prow={lvl:1,fit:'ram'};d.leak=null;d.crippled=[];d.prizes=[];d.fam={};
+  d.prow={lvl:1,fit:'ram'};d.leak=null;d.crippled=[];d.prizes=[];d.fam={};d.farlight=0;
   d.v=7;
  }
  // future steps append here, in order: if(d.v==7){ ... d.v=8 }
@@ -459,7 +466,7 @@ let saveTimer=null;
 async function save(){
 if(!canSave){setSaveMsg('Saving unavailable here');return}
 try{
-const d={v:SAVE_V,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0,nav:S.nav,visited:S.visited,cargo:S.cargo,pax:S.pax,contracts:S.contracts,rep:S.rep,linebroken:S.linebroken?1:0,prow:S.prow,leak:S.leak,crippled:S.crippled,prizes:S.prizes,fam:S.fam};
+const d={v:SAVE_V,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0,nav:S.nav,visited:S.visited,cargo:S.cargo,pax:S.pax,contracts:S.contracts,rep:S.rep,linebroken:S.linebroken?1:0,prow:S.prow,leak:S.leak,crippled:S.crippled,prizes:S.prizes,fam:S.fam,farlight:S.farlight|0};
 const r=await window.storage.set(KEY,JSON.stringify(d));
 if(r){setSaveMsg('Progress saved');clearTimeout(saveTimer);saveTimer=setTimeout(()=>setSaveMsg(''),2500)}
 }catch(e){canSave=false;setSaveMsg('Saving unavailable here')}
@@ -479,7 +486,7 @@ S.sel=0;S.navT=null;
 S.cargo=(d.cargo&&typeof d.cargo=='object')?d.cargo:{};S.pax=Array.isArray(d.pax)?d.pax:[];S.contracts=Array.isArray(d.contracts)?d.contracts:[];S.rep=(d.rep&&typeof d.rep=='object')?{disp:d.rep.disp|0,carav:d.rep.carav|0,tr:d.rep.tr|0}:{disp:0,carav:0,tr:0};S.linebroken=!!d.linebroken;
 S.prow=(d.prow&&typeof d.prow=='object')?{lvl:Math.max(1,d.prow.lvl|0),fit:d.prow.fit=='shield'?'shield':'ram'}:{lvl:1,fit:'ram'};
 S.leak=(d.leak&&typeof d.leak=='object')?{rate:+d.leak.rate||0,t:+d.leak.t||0}:null;
-S.crippled=Array.isArray(d.crippled)?d.crippled:[];S.prizes=Array.isArray(d.prizes)?d.prizes:[];S.fam=(d.fam&&typeof d.fam=='object')?d.fam:{};
+S.crippled=Array.isArray(d.crippled)?d.crippled:[];S.prizes=Array.isArray(d.prizes)?d.prizes:[];S.fam=(d.fam&&typeof d.fam=='object')?d.fam:{};S.farlight=d.farlight|0;
 if(d.origin&&S.nav.reg==0&&S.nav.col==0){S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1} // saved while docked at the origin — wake up there
 else{S.origin=false;S.stop=null;S.stationX=null;S.lampK=1}S.place=null;                          // ...otherwise the load is authoritative: mid-journey, no stop (staged places are session-only)
 return true}
@@ -593,7 +600,7 @@ if(!S.resetArm){S.resetArm=1;b.textContent='Tap again to confirm';setTimeout(()=
 S.resetArm=0;b.innerHTML='Scuttle &amp; restart';
 S.scrap=120;S.food=20;S.fuel=30;S.heroes=[];S.crewSel=-1;S.journeys=0;S.engine=1;S.caboose=1;S.maxSlots=3;
 S.slots=[{type:'oil',lvl:1},{type:'gun',wpn:'cannon',port:'auto',lvl:1},null];S.slots.forEach(s=>crewOf(s));
-S.prow={lvl:1,fit:'ram'};S.leak=null;S.crippled=[];S.prizes=[];S.place=null;S.fam={};S.depotView=null;
+S.prow={lvl:1,fit:'ram'};S.leak=null;S.crippled=[];S.prizes=[];S.place=null;S.fam={};S.depotView=null;S.farlight=0;
 S.hull=maxHull();S.mode='idle';S.raiders=[];S.booms=[];S.tracers=[];S.boss=null;S.crate=null;S.dist=0;S.depot=null;S.discount=false;renderDepot();
 S.nav={seed:1+Math.floor(Math.random()*99999),reg:0,col:0,row:0};S.visited=['0:0:0'];S.sel=0;S.navT=null;
 S.cargo={};S.pax=[];S.contracts=[];S.rep={disp:0,carav:0,tr:0};S.linebroken=false;
@@ -624,7 +631,7 @@ const fl=k>1.2?' Your '+dom+' fire blooms against '+ACNM[cl]+'.':k<0.85?' Your '
 if(dmg<=0)log('Wave of '+clan.nm+' repelled \u2014 '+enemy+' raider strength shredded.'+fl);
 else{const tk=hurt(dmg);log(clan.nm.charAt(0).toUpperCase()+clan.nm.slice(1)+' breached the firing line \u2014 hull takes '+tk+'!'+fl)}
 if(cl=='armored'&&eff()>=8&&dmg>0&&Math.random()<0.5&&!S.mined){S.mined=true;log('A MINELAYER slips past in the dust \u2014 the rail ahead is seeded.')}
-if(S.hull<=0){const r=Math.round(base()*0.25);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.mode='idle';S.raiders=[];S.ptrain=null;navFail();log('Hull failure! You limp back to '+nodeName(S.nav.reg,S.nav.col,S.nav.row)+' with only '+r+' scrap. Repair and rearm.');cards();save()}
+if(S.hull<=0)theOverrun('swarm');
 }
 function finish(){const r=Math.round(base()*crewBuffs().scrapMult);S.scrap+=r;S.journeys++;S.mode='idle';S.ptrain=null;S.crate=null;log('Crossing complete. Salvaged '+r+' scrap from the far shore.');navArrive()}
 function bossKill(){const wasCap=(S.boss.cap!=null&&!S.boss.pret)?CAPTAINS[S.boss.cap]:null,wasFinal=!!S.boss.final,wasPret=!!S.boss.pret;const r=Math.round(base()*2.2*crewBuffs().scrapMult);S.scrap+=r;S.journeys++;const cn=(S.boss.cars||[1,1]).length;for(let i=0;i<7+cn*2;i++)S.booms.push({x:S.boss.x-26+i*(BENGW+(cn-1)*BCARW)/(7+cn*2),y:138+(i%3)*7,t:0.04+i*0.04});S.boss=null;S.mode='idle';S.raiders=[];S.tracers=[];S.crate=null;log('Warlord convoy destroyed! You haul back '+r+' scrap and the wastes learn your name.');if(Math.random()<0.85)recruitHero('war');else{const b=Math.round(30+eff()*8);S.scrap+=b;log('No survivors worth taking \u2014 you strip the wreck for '+b+' more scrap.');}
@@ -632,7 +639,7 @@ if(wasFinal&&!S.linebroken){S.linebroken=true;log('THE LINEBREAKER: '+CAPTAINS[3
 else if(wasCap)log(wasCap.nm+': '+wasCap.die);
 if(wasPret)grantHero('gatewright','A prisoner kicks free of the pretender\u2019s wreck, spits, and asks who is holding these gates NOW.');
 navArrive()}
-function bossEscape(){const r=Math.round(base()*0.3);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.boss=null;S.mode='idle';S.raiders=[];S.tracers=[];S.crate=null;navFail();log('The warlord overran your line \u2014 you uncouple and limp home with '+r+' scrap. The gate still answers to them.');cards();save()}
+function bossEscape(){S.crate=null;theOverrun('captain')}
 function grabCrate(){const c=S.crate;if(!c||c.grabbed)return;c.grabbed=true;if(Math.random()<0.65){const sc=Math.round(28+eff()*14),fd=4+Math.floor(Math.random()*5);S.scrap+=sc;S.food+=fd;S.booms.push({x:c.x+5,y:c.y+4,t:0.12});log('Salvage secured — +'+sc+' scrap, +'+fd+' food.')}else{const dmg=Math.round(5+eff()*1.5);S.hull=Math.max(Math.round(maxHull()*0.35),S.hull-dmg);S.flash=1.2;for(let i=0;i<2;i++)S.raiders.push(raiderSpawn(340+i*22));log('Ambush! The wreck was bait — hull takes '+dmg+' and raiders close in.')}S.crate=null}
 /* ---- THE SPINE: the node-graph journey (BRIEF v1.2 wave 1) ----
    The rail ocean is 4 REGIONS, each a seeded node graph: columns of stops, 1-2 forward edges per node,
@@ -645,18 +652,21 @@ const REGIONS=[
  {name:'THE CINDER SEAM',biome:3,cols:7,anchors:['EMBERFALL','THE CRUCIBLE LINE','THE TERMINUS']}];
 const navVK=(reg,col,row)=>reg+':'+col+':'+row;
 function navRows(reg,col){const R=REGIONS[reg];if(col<=0||col>=R.cols-1)return 1;return 2+(hash(S.nav.seed+reg*1000+col*37+5)<0.5?0:1)}
-function nodeType(reg,col,row){const R=REGIONS[reg];if(col<=0)return 'S';if(col>=R.cols-1)return 'G';
+function nodeType(reg,col,row){const R=REGIONS[reg];if(row===9)return 'D';if(col<=0)return 'S';if(col>=R.cols-1)return 'G';
  const r=hash(S.nav.seed+reg*1000+col*37+row*7+9);return r<0.42?'S':r<0.67?'E':r<0.87?'H':'B'}
 function nodeEdges(reg,col,row){const R=REGIONS[reg];
+ if(row===9)return[{reg,col:Math.min(R.cols-1,5),row:0}];               // a far node's only line runs BACK to the spine — dead-ends always return
  if(col>=R.cols-1)return reg>=REGIONS.length-1?(S.linebroken?[{reg:0,col:0,row:0}]:[]):[{reg:reg+1,col:0,row:0}]; // the Terminus ends the line — until the line is broken open, then it loops home
  const nr=navRows(reg,col+1),a=Math.min(nr-1,row),out=[{reg,col:col+1,row:a}];
  const h=hash(S.nav.seed+reg*1000+col*37+row*7+3);
  if(nr>1&&h<0.7){const b=(a+(h<0.35?1:nr-1))%nr;if(b!==a)out.push({reg,col:col+1,row:b})} // ~70% of multi-lane columns fork — the choice is the point
+ if(col==3&&row==0)out.push({reg,col:4,row:9});                        // the DEEP BRANCH: off the lit spine, into dark water (two-oil country)
  return out}
 const DPRE=['Rust','Ash','Salt','Bone','Iron','Dust','Gallows','Cinder','Scrap','Vulture','Mercy','Pale','Ember','Hollow','Tar'];
 const DSUF=['Halt','Junction','Yard','Crossing','Siding','Reach','Hollow','Spur','Wells','Camp','Landing','Run','Bend'];
 const DFLAV=['Lanterns burn in the dark; the crews eye your guns.','A makeshift market clings to the dead rails.','Survivors trade scrap and rumors here.','Half-buried in dust, still clinging to life.','A fuel stop on the edge of nowhere.','Welders and scavengers work the wreck-stacks.'];
 function nodeName(reg,col,row){const R=REGIONS[reg];
+ if(row===9)return ['THE MOTHBALL YARDS','THE FIRST ENGINE','THE FAR LIGHT','THE WELLHEAD'][reg];
  if(col<=0)return R.anchors[0];
  if(col>=R.cols-1)return R.anchors[2];
  if(col==2&&row==0)return R.anchors[1];
@@ -696,7 +706,7 @@ const legFuelOf=(len,deep)=>deep?Math.ceil(SINGLE_MAX*1.15)+len:8+len*2;        
 const RTAGS=['salvage','trade','relic','fuel','quiet'];
 const edgeKey=(a,b)=>a.reg*100000+a.col*3700+a.row*700+b.reg*1000+b.col*37+b.row;
 function edgeProfile(from,to){const k=edgeKey(from,to),ty=nodeType(to.reg,to.col,to.row);
- const deep=!!(to.deep||from.deep);                                               // deep branches arrive with the wave-4 generator; the math is ready now
+ const deep=to.row===9||from.row===9||!!(to.deep||from.deep);                                               // deep branches arrive with the wave-4 generator; the math is ready now
  const len=deep?10+Math.floor(hash(S.nav.seed+k*7+11)*5):2+Math.floor(hash(S.nav.seed+k*7+11)*4); // miles
  const danger=deep?3:ty=='G'?3:(ty=='B'||ty=='H')?Math.min(3,2+(hash(S.nav.seed+k*13+3)<0.4?1:0)):1+(hash(S.nav.seed+k*13+3)<0.35?1:0);
  const reward=ty=='S'?'trade':ty=='G'?'the gate':RTAGS[Math.floor(hash(S.nav.seed+k*17+5)*RTAGS.length)];
@@ -718,6 +728,35 @@ const PROW_REFIT=30;
 // THE REARGUARD: the caboose grows a garrison and, in time, becomes a keep on wheels (ladder art lands wave 5)
 const RGT=['Red Caboose','Plated Rearguard','Keep-on-Wheels','Keep-on-Wheels'];
 const rgGarrison=()=>S.caboose*2;
+/* ---- v1.6 WAVE 3: THE SPACE BETWEEN — choice cards, the leak, ADRIFT, THE OVERRUN ---- */
+function showChoice(title,body,opts){S.choice={title,body,opts};const el=document.getElementById('depot');
+ let h='<h3>'+title+'</h3><div class="flav">'+body+'</div>';
+ opts.forEach((o,i)=>{h+='<button class="opt" data-ch="'+i+'" '+((!o.can||o.can())?'':'disabled')+'><span>'+o.label+'</span><span class="od">'+o.desc+'</span></button>'});
+ el.innerHTML=h;el.className='show'}
+function closeChoice(){S.choice=null;const el=document.getElementById('depot');el.className='';el.innerHTML=''}
+const stokerRank=()=>{let r=0;for(const s of S.slots)if(s&&s.type=='oil'){const c=activeCrew(s);if(c)r=Math.max(r,c.rank)}return r};
+function springLeak(){if(S.leak)return;S.leak={rate:0.8+eff()*0.08,t:3};S.flash=1.2;log('THE TANK IS BREACHED \u2014 fuel weeping onto the rail. The stoker starts a patch; a YARD can do it faster.')}
+/* THE OVERRUN (law 7): defeat is a story — the wasteland loots you, the Rearguard holds, and there is always a way back */
+function theOverrun(who){
+ const where=S.adrift?'adrift':(S.navT&&S.navT.prof&&S.navT.prof.deep?'deep':'spine');
+ const tier=ovrSeverity(where,who,S.caboose);
+ S.mode='idle';S.raiders=[];S.tracers=[];S.boss=null;S.ptrain=null;S.adrift=null;S.hull=Math.round(maxHull()*0.35);
+ navFail();const lines=[];
+ {let cut=0;GKEYS.forEach(g=>{const n=S.cargo[g]||0,take=tier>=2?n:Math.ceil(n*0.4);if(take){cut+=take;S.cargo[g]=n-take}});
+  if(cut)lines.push(tier>=2?'HOLD EMPTIED \u2014 '+cut+' goods walked off your rig.':cut+' goods cut from the hold.')}
+ {const skim=Math.round(S.scrap*(tier>=2?0.2:0.1));S.scrap-=skim;lines.push(skim+' scrap skimmed from the strongbox.')}
+ if(tier>=2){if(S.contracts.length){S.contracts=[];S.rep.disp=Math.max(0,S.rep.disp-1);lines.push('Contracts aboard FAILED \u2014 the Dispatchers mark the ledger.')}
+  const cand=S.slots.map((s,i)=>s&&!s.crip?i:-1).filter(i=>i>=0);
+  if(tier>=3&&cand.length){const i=cand[Math.floor(Math.random()*cand.length)],s=S.slots[i];
+   S.prizes.push({k:'car',type:s.type,lvl:s.lvl,wpn:s.wpn,port:s.port,at:navVK(S.nav.reg,S.nav.col,S.nav.row)});S.slots[i]=null;
+   lines.push('A CAR UNCOUPLED AND TAKEN \u2014 they are flying your '+NM[s.type]+'\u2019s colors somewhere out there. A MARKED PRIZE.')}
+  else if(cand.length){const i=cand[Math.floor(Math.random()*cand.length)];S.slots[i].crip=true;if(!S.crippled.includes(i))S.crippled.push(i);
+   lines.push('One car CRIPPLED \u2014 charred and boarded, dead weight until a YARD raises it.')}}
+ lines.push('THE REARGUARD HELD. Engine, stern, and crew ride on.');
+ log('OVERRUN \u2014 tier '+tier+'. The Rearguard held.');
+ showChoice('THE OVERRUN \u00b7 TIER '+tier,'Hull failure at the worst place. You watch them loot the rig \u2014 the manifest reads:<br><br>'+lines.join('<br>'),
+  [{label:'Ride on',desc:'the line is still yours',fn:()=>{closeChoice();cards();save()}}]);
+ cards();save()}
 const CAPNM=['THE JUNCTION','OLD EXCHANGE','THE RIBYARD','SLAGSIDE'];
 const KEEPERS=[{nm:'THE YARDMASTER',line:'"Every rig that ever mattered came through my yard. Most left."'},
  {nm:'THE AUCTIONEER',line:'"Everything sells, engineer. The only variable is when."'},
@@ -752,20 +791,66 @@ function navArrive(){ // every completed leg lands here: move the rig on the map
  if(!to){cards();save();return}
  const _mi=(S.navT&&S.navT.prof)?S.navT.prof.len:4;
  S.dist+=_mi;
- {const ld=leakDrain(_mi);if(ld>0)log('The breached tank wept '+Math.round(ld)+' fuel across the crossing. Patch it at a YARD.')}
+ {if(S.leak){S.leak.t-=1+stokerRank()*0.5;if(S.leak.t<=0){S.leak=null;log('The stoker\u2019s patch holds. The tank is TIGHT again.')}else log('The tank still weeps \u2014 the stoker needs '+Math.ceil(S.leak.t)+' more leg'+(Math.ceil(S.leak.t)>1?'s':'')+' (a YARD does it now).')}}
  S.nav={seed:S.nav.seed,reg:to.reg,col:to.col,row:to.row};
  const vk=navVK(to.reg,to.col,to.row);if(!S.visited.includes(vk))S.visited.push(vk);
  if(to.reg==3&&to.col==0)grantHero('surveyor','A dust-caked mapmaker climbs down from the water tower at the Seam\u2019s edge, folding a chart of lines that should not exist.');
  S.sel=0;
  if(nodeEdges(S.nav.reg,S.nav.col,S.nav.row).length>1)log('The line FORKS ahead \u2014 choose your heading on the route board or the Map.');
  const ty=nodeType(to.reg,to.col,to.row),nm=nodeName(to.reg,to.col,to.row);
+ {const vk2=navVK(to.reg,to.col,to.row),pi=S.prizes.findIndex(p=>p.at===vk2);
+  if(pi>=0){const pz=S.prizes[pi];showChoice('YOUR COLORS FLY HERE',(pz.k==='car'?'They\u2019re flying your '+NM[pz.type]+'\u2019s colors over this camp.':'They hold your crew here.')+' RECLAIM BY FORCE?',[
+   {label:'Take it back',desc:'guns and blood',fn:()=>{closeChoice();const str=gunVs('armored')+troops()*1.5,need=55+eff()*7;
+    if(str>=need){S.prizes.splice(pi,1);if(pz.k==='car'){const sl=S.slots.indexOf(null);if(sl>=0){S.slots[sl]={type:pz.type,lvl:pz.lvl,wpn:pz.wpn,port:pz.port,scar:true};crewOf(S.slots[sl]);log('RECLAIMED. Your '+NM[pz.type]+' rejoins the line wearing a SCAR it will keep forever.')}else{S.scrap+=Math.round(80+pz.lvl*30);log('RECLAIMED \u2014 no coupling free, so you strip her for parts and keep the trophy plate.')}}else{S.heroes.push({kind:pz.kind,rank:pz.rank||1});log(CREW[pz.kind].nm+' walks out of the cage with a new line: \u201cTook you long enough.\u201d')}cards();save()}
+    else{const dmg=Math.round(12+eff()*2);S.hull=Math.max(1,S.hull-dmg);S.flash=1.4;log('They held. Hull takes '+dmg+' \u2014 the prize stays theirs, for now.');save()}}},
+   {label:'Not today',desc:'the mark keeps',fn:()=>{closeChoice();log('You ride past your own colors. The mark keeps.')}}])}}
  S.contracts.forEach(c=>{if(c.k=='escort')c.left--});                              // every safe leg counts toward an escort
  S.contracts=S.contracts.filter(c=>{if(c.k=='escort'&&c.left<=0){const pay=Math.round(c.pay*(1+S.rep.disp*0.02)*(1+troops()*0.01));S.scrap+=pay;S.rep.disp=Math.min(10,S.rep.disp+1);log('Escort complete — the caravan pays out '+pay+' scrap'+(troops()?' (your riflemen earn their keep)':'')+'.');return false}return true});
  paxArrive(ty=='S');
  if(ty=='S'){S.place=Object.assign(settleSpec(to.reg,to.col,to.row),{name:nm});openDepot(nm);paxBoard()}
  else{stopArrive(false);S.stop.auto=true; // a real halt at every stop — then she rolls on her own
-  if(ty=='E')navEvent(nm);
-  else if(ty=='H'){const heal=Math.round(maxHull()*0.25);S.hull=Math.min(maxHull(),S.hull+heal);log('You clear the bad country and breathe at '+nm+'. The crew patches plate — +'+heal+' hull.')}
+  if(ty=='E'){const k=navK(),roll=hash(S.nav.seed+k*61+19);
+   if(roll<0.3){const bait=Math.random()<0.18; // WRECK — troops' work; sometimes bait, and bait BYPASSES the prow (law 8)
+    showChoice('A WRECK ON THE SIDING','A dead train, doors ajar. Salvage \u2014 or teeth.',[
+     {label:'Send a party',desc:troops()>0?'troops do the work':'NO TROOPS \u2014 risky',fn:()=>{closeChoice();
+      if(bait){const dmg=Math.round((8+eff()*2)*(1-0));S.hull=Math.max(1,S.hull-dmg);S.flash=1.4;log('BAIT. The wreck was rigged \u2014 hull takes '+dmg+'. The prow means nothing to a trap.')}
+      else{const g=Math.round(40+eff()*14+troops()*2);S.scrap+=g;if(Math.random()<0.3)S.fuel=Math.min(tankCap(),S.fuel+8);log('The party strips the wreck \u2014 +'+g+' scrap'+(Math.random()<0.5?' and a fuel drum':'')+'.')}cards();save()}},
+     {label:'Strip the surface',desc:'quick, safe, thin',fn:()=>{closeChoice();const g=Math.round(14+eff()*5);S.scrap+=g;log('You take what hangs loose \u2014 +'+g+' scrap.');save()}},
+     {label:'Pass it by',desc:'the wastes keep it',fn:()=>{closeChoice();log('You let the dead lie.')}}])}
+   else if(roll<0.55){showChoice('DRIFTERS ON THE BERM','Half a dozen souls flag you down, dust to the eyes.',[
+     {label:'Take them aboard',desc:seats()>0?'fares later, karma now':'no coach \u2014 they ride the deck',fn:()=>{closeChoice();if(seats()>S.pax.length)paxBoard();S.rep.carav=Math.min(10,S.rep.carav+1);log('They climb up. The Caravaneers hear of it \u2014 rep \u2605.');save()}},
+     {label:'Provision them',desc:'\u22125 food \u00b7 rep',can:()=>S.food>=5,fn:()=>{closeChoice();S.food-=5;S.rep.carav=Math.min(10,S.rep.carav+1);log('You leave food and water. The line remembers kindness.');save()}},
+     {label:'Roll past',desc:'the ocean is wide',fn:()=>{closeChoice();log('You do not slow. Their lamps shrink behind you.')}}])}
+   else if(roll<0.8){showChoice('CARAVAN MEET','A Caravaneer pop-up market, lanterns strung wheel to wheel.',[
+     {label:'Buy fuel',desc:'\u221218 scrap \u00b7 +14 fuel',can:()=>S.scrap>=18,fn:()=>{closeChoice();S.scrap-=18;S.fuel=Math.min(tankCap(),S.fuel+14);log('Drums roll across. The tank drinks.');save()}},
+     {label:'Trade stories',desc:'free \u00b7 rumor',fn:()=>{closeChoice();const rl=RUMORS[S.nav.reg];log('Rumor \u2014 '+rl[Math.floor(Math.random()*rl.length)])}},
+     {label:'Move on',desc:'',fn:()=>{closeChoice();log('You trade nods and keep the drivers turning.')}}])}
+   else{showChoice('THE TANKER WRECK','A fuel tanker on its side \u2014 still burning at one end.',[
+     {label:'Siphon',desc:'+16 fuel \u00b7 the fire draws raiders',fn:()=>{closeChoice();S.fuel=Math.min(tankCap(),S.fuel+16);for(let i=0;i<3;i++)S.raiders.push(raiderSpawn(340+i*24));S.flash=1.2;log('You drink from the wreck \u2014 and the fire calls its friends.');save()}},
+     {label:'Torch and run',desc:'deny the clans \u00b7 rep',fn:()=>{closeChoice();S.rep.carav=Math.min(10,S.rep.carav+1);log('You burn it to the rail. The clans get nothing. The Caravaneers approve.');save()}},
+     {label:'Pass wide',desc:'',fn:()=>{closeChoice();log('Some fires are not yours to touch.')}}])}}
+  else if(ty=='H'){const surge=S.navT===null&&false; // deep-water surge variant arrives with wave 4's deep legs
+   const mit=prowMit('mine');
+   showChoice('THE FIELD AHEAD','Mine casings glint between the ties. The shortcut is paid for in nerve.'+(mit>0?'<br><span style="color:#e0a33a">\u2693 RAM PLOW \u2212'+Math.round(mit*100)+'% \u00b7 the ocean keeps its cut</span>':''),[
+    {label:'Push through',desc:'fast \u00b7 the prow earns its keep',fn:()=>{closeChoice();
+     if(Math.random()<0.55*(1-mit)){let dmg=Math.round((10+eff()*2)*(1-mit));S.hull=Math.max(1,S.hull-dmg);S.flash=1.4;log('MINE STRIKE \u2014 hull takes '+dmg+(mit>0?' (the plow threw the worst of it)':'')+'.');if(Math.random()<0.4)springLeak()}
+     else log(mit>0?'The plow shoulders the field aside. Not a scratch.':'Luck rides the bow today. Clean through.');cards();save()}},
+    {label:'Pick through slow',desc:'\u22124 food \u00b7 safe',can:()=>S.food>=4,fn:()=>{closeChoice();S.food-=4;log('Walking pace, poles out. The field lets you live.');save()}},
+    {label:'Rest and patch',desc:'+25% hull',fn:()=>{closeChoice();const heal=Math.round(maxHull()*0.25);S.hull=Math.min(maxHull(),S.hull+heal);log('You hold at '+nm+' and weld plate \u2014 +'+heal+' hull.');save()}}])}
+  else if(ty=='D'){stopArrive(false);S.stop.auto=false; // a far node holds you until you choose
+   if(to.reg==0)showChoice('THE MOTHBALL YARDS','The old world\u2019s fleet, parked in rows to the horizon. The Yard-born watch you \u2014 they have never seen a train MOVE.',[
+    {label:'Salvage the rows',desc:'troops work the epic',fn:()=>{closeChoice();const g=Math.round(120+eff()*20+troops()*4);S.scrap+=g;log('THE YARDBORN trade you the pick of forty years of rust \u2014 +'+g+' scrap. They wave until you are a rumor.');stopDepart();save()}},
+    {label:'Leave the fleet sleeping',desc:'rep \u00b7 they remember',fn:()=>{closeChoice();S.rep.carav=Math.min(10,S.rep.carav+2);log('You take nothing. The Yard-born will tell this story for a generation.');stopDepart();save()}}]);
+   else if(to.reg==1)showChoice('THE FIRST ENGINE','Beneath the Fallen Ring: the Grand Terminal, and the first locomotive \u2014 polished, by no one anyone has met.',[
+    {label:'Light THE FIRST LANTERN',desc:'one quiet truth',fn:()=>{closeChoice();S.fuel=Math.min(tankCap(),S.fuel+10);log('The lantern takes the flame like it never went out. Scratched beneath: THE LINE DID NOT BREAK. IT WAS BROKEN. You ride out fueled and quieter.');stopDepart();save()}},
+    {label:'Stand a while',desc:'the most reverent beat',fn:()=>{closeChoice();S.hull=maxHull();log('You stand in the dark with the first of your kind. The hull forgets every wound on the walk back.');stopDepart();save()}}]);
+   else if(to.reg==2){if(S.farlight)showChoice('THE FAR LIGHT',S.farlight==1?'A dark tower. Your choice keeps.':'The light burns. The Keeper waves you through.',[{label:'Ride on',desc:'',fn:()=>{closeChoice();stopDepart()}}]);
+    else showChoice('THE FAR LIGHT','A light kept forty years, because \u201ca train always comes, eventually.\u201d THE KEEPER waits. This choice is PERMANENT.',[
+    {label:'Take THE KEEPER aboard',desc:'unique hero \u00b7 the light goes DARK forever',fn:()=>{closeChoice();S.farlight=1;grantHero('keeper','Forty years of waiting step onto your deck. Behind you, the light goes out \u2014 forever.');stopDepart();save()}},
+    {label:'Leave them keeping',desc:'a standing beacon \u00b7 Caravaneer trickle',fn:()=>{closeChoice();S.farlight=2;S.rep.carav=Math.min(10,S.rep.carav+2);log('You leave the light burning. Every crew on the ocean knows where north is because of you.');stopDepart();save()}}])}
+   else showChoice('THE WELLHEAD','The last true well, feeding ONE customer: THE TERMINUS. Raid it or deal with it \u2014 the fuel line is cut either way.',[
+    {label:'Raid the well',desc:'fuel + scrap \u00b7 the Seam remembers',fn:()=>{closeChoice();S.fuel=tankCap();S.scrap+=Math.round(150+eff()*15);log('You bleed the well dry into your own tanks. Somewhere east, a fortress engine notices the pressure drop.');stopDepart();save()}},
+    {label:'Cut the line and deal',desc:'rep + scrap \u00b7 quieter',fn:()=>{closeChoice();S.rep.disp=Math.min(10,S.rep.disp+2);S.scrap+=Math.round(90+eff()*10);log('You valve the line shut and sell the pressure to the Dispatchers. THE TERMINUS thins on the vine.');stopDepart();save()}}])}
   else if(ty=='B'){const g=Math.round(15+eff()*6);S.scrap+=g;log('The blockade lies burning behind you. '+nm+' is open rail again — you strip the wrecks for +'+g+' scrap.')}
   else if(ty=='G'){if(to.reg>=REGIONS.length-1&&to.col>=REGIONS[to.reg].cols-1)log(S.linebroken?'THE TERMINUS — yours now. The signals burn amber down the whole broken line. Depart to ride the loop home.':'THE TERMINUS. The last gate on the last line. Beyond the dead signals... something waits.');
    else log('The gate stands broken behind you. '+REGIONS[Math.min(REGIONS.length-1,to.reg+1)].name+' waits across the border — new country, worse company.')}}
@@ -779,7 +864,7 @@ if(type=='scrap'){const c=Math.round(12+idx*4),g=Math.round(40+idx*14);return{la
 if(type=='scavenge'){return{label:'Pick the wreck-stacks',desc:'free · gamble',can:()=>true,act:()=>{const r=Math.random();if(r<0.5){const g=Math.round(35+idx*13);S.scrap+=g;log('Scavenging paid off — +'+g+' scrap.')}else if(r<0.8){const g=Math.round(12+idx*5);S.food+=g;log('Found a food cache — +'+g+' food.')}else log('The stacks were already picked clean. Nothing here.')}}}
 if(type=='cache'){const g=Math.round(24+idx*10);return{label:'Supply cache',desc:'free · +'+g+' scrap',can:()=>true,act:()=>{S.scrap+=g;log('Cracked a supply cache — +'+g+' scrap.')}}}
 if(type=='patch'){const c=Math.round(20+idx*5);return{label:'Patch the breached tank',desc:'\u2212'+c+' scrap \u00b7 the leak stops',can:()=>!!S.leak&&S.scrap>=c,act:()=>{S.scrap-=c;S.leak=null;log('The yard crew sweats the tank seams tight. The leak is DONE weeping.')}}}
-if(type=='uncripple'){const c=Math.round(45+idx*12);return{label:'Repair a crippled car',desc:'\u2212'+c+' scrap \u00b7 back in the line',can:()=>S.crippled.length>0&&S.scrap>=c,act:()=>{const i=S.crippled.shift();S.scrap-=c;log('The yard raises the charred car and makes it a CAR again. She rejoins the line.')}}}
+if(type=='uncripple'){const c=Math.round(45+idx*12);return{label:'Repair a crippled car',desc:'\u2212'+c+' scrap \u00b7 back in the line',can:()=>S.crippled.length>0&&S.scrap>=c,act:()=>{const i=S.crippled.shift();if(S.slots[i])delete S.slots[i].crip;S.scrap-=c;log('The yard raises the charred car and makes it a CAR again. She rejoins the line.')}}}
 if(type=='guard'){return{label:'Walk the walls',desc:'free · troops earn their keep',can:()=>troops()>0,act:()=>{const g=Math.round(troops()*(6+eff()));S.scrap+=g;log('Your troops walk the walls for a night — +'+g+' scrap earned.')}}}
 if(type=='blessing'){const heal=Math.round(maxHull()*0.2);return{label:'Chapel of the Open Rail',desc:'free · the crew breathes',can:()=>true,act:()=>{S.hull=Math.min(maxHull(),S.hull+heal);S.food+=4;log('Lamp-smoke and quiet in the chapel car. The crew breathes — +'+heal+' hull, +4 food.')}}}
 return{label:'Black-market fixer',desc:'free · next upgrade ½ price',can:()=>!S.discount,act:()=>{S.discount=true;log('A fixer marks down your next upgrade to half price.')}}}
@@ -873,6 +958,7 @@ if(v=='train')cards();if(v=='crew')renderCrew();if(v=='map')renderMap();if(v=='l
 document.getElementById('tabs').addEventListener('click',e=>{const b=e.target.closest('.tab');if(b)showView(b.dataset.v)});
 // choosing the fork: the labeled Depart buttons and the map's lit nodes are the same choice (ratified decision 3)
 document.getElementById('nextdepot').addEventListener('click',e=>{const b=e.target.closest('.routecard');if(!b)return;S.sel=+b.dataset.e;document.getElementById('nextdepot')._h=null;upd()});
+document.getElementById('depot').addEventListener('click',e=>{const b=e.target.closest('button[data-ch]');if(!b||b.disabled||!S.choice)return;const o=S.choice.opts[+b.dataset.ch];if(o&&o.fn)o.fn()});
 document.getElementById('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;S.depotView=b.dataset.cv;S.depotMin=false;renderDepot()});
 document.getElementById('maplist').addEventListener('click',e=>{const g=e.target.closest('.mapsel');if(!g)return;S.sel=+g.getAttribute('data-e');document.getElementById('nextdepot')._h=null;renderMap();upd()});
 function applyLayout(){const land=S.layout=='landscape';appEl.classList.toggle('land',land);document.getElementById('lt').textContent=land?'▢ Mobile':'⛶ Desktop'}
@@ -901,12 +987,12 @@ const el=document.getElementById('maplist');if(!S.nav){el.innerHTML='';return}
 const mk=S.nav.seed+':'+S.nav.reg+':'+S.nav.col+':'+S.nav.row+':'+S.sel+':'+S.visited.length+':'+(S.linebroken?1:0);
 if(el._mk===mk)return;el._mk=mk; // re-render only when the map's state actually changes — never yank a tap target mid-frame
 const reg=S.nav.reg,R=REGIONS[reg],cols=R.cols,W=320,H=178;
-const pos=(c,rw)=>{const nr=navRows(reg,c);return[20+c*((W-40)/(cols-1)),94+(rw-(nr-1)/2)*48]};
+const pos=(c,rw)=>{if(rw===9)return[20+c*((W-40)/(cols-1)),160];const nr=navRows(reg,c);return[20+c*((W-40)/(cols-1)),94+(rw-(nr-1)/2)*48]};
 const fwd=nodeEdges(reg,S.nav.col,S.nav.row),fwdIn=fwd.filter(e=>e.reg==reg);
 const selE=fwd.length?fwd[Math.min(S.sel,fwd.length-1)]:null;
 let lines='',nodes='';
-for(let c=0;c<cols;c++){const nr=navRows(reg,c);
- for(let rw=0;rw<nr;rw++){
+for(let c=0;c<cols;c++){const nr=navRows(reg,c),rows=[];for(let r0=0;r0<nr;r0++)rows.push(r0);if(c===4)rows.push(9);
+ for(const rw of rows){
   const [x,y]=pos(c,rw),vk=navVK(reg,c,rw),ty=nodeType(reg,c,rw),isHere=(c==S.nav.col&&rw==S.nav.row),wasHere=S.visited.includes(vk),past=c<S.nav.col;
   const ei=fwdIn.findIndex(e=>e.col==c&&e.row==rw),isNext=ei>=0,isSel=isNext&&selE&&selE.col==c&&selE.row==rw;
   for(const e of nodeEdges(reg,c,rw)){if(e.reg!=reg)continue;const p2=pos(e.col,e.row);
@@ -915,8 +1001,8 @@ for(let c=0;c<cols;c++){const nr=navRows(reg,c);
   // fog of war: the line only names what it knows — you, your choices, the anchors, and where you have been
   const known=isHere||wasHere||isNext||c==0||c==cols-1;
   const fill=isHere?'#f2c560':isSel?'#e07b2a':isNext?'#c98f4a':wasHere?'#8a6a48':past?'#3a2f24':'#52432f';
-  const glyph=known?(ty=='S'?'\u25c9':ty=='E'?'?':ty=='H'?'~':ty=='B'?'\u2715':'\u265c'):'\u00b7';
-  const named=isHere||isNext||(known&&(c==0||c==cols-1));
+  const glyph=ty=='D'?'\u25c6':known?(ty=='S'?'\u25c9':ty=='E'?'?':ty=='H'?'~':ty=='B'?'\u2715':'\u265c'):'\u00b7';
+  const named=isHere||isNext||rw===9||(known&&(c==0||c==cols-1));
   nodes+='<g'+(isNext?' class="mapsel" data-e="'+ei+'"':'')+'>'
    +(isNext?'<circle cx="'+x+'" cy="'+y+'" r="17" fill="rgba(255,255,255,0.01)"/>':'')
    +(isSel?'<circle cx="'+x+'" cy="'+y+'" r="12.5" fill="none" stroke="#f2c560" stroke-width="2"/>':'')
@@ -926,7 +1012,9 @@ for(let c=0;c<cols;c++){const nr=navRows(reg,c);
    +(isHere?'<text x="'+x+'" y="'+(y-15)+'" text-anchor="middle" font-size="7.5" fill="#f2c560">\u25bc YOU</text>':'')
    +(isSel&&!isHere?'<text x="'+x+'" y="'+(y-16)+'" text-anchor="middle" font-size="7" fill="#f2c560">NEXT \u25b8</text>':'')
    +'</g>'}}
-let h='<div class="regstrip">REGION '+['I','II','III','IV'][reg]+' \u00b7 '+R.name+'</div>';
+let h='<div class="chartstrip">'+REGIONS.map((RG,i)=>{const vis=S.visited.filter(v=>v.startsWith(i+':')).length,tot=RG.cols+1;
+ return '<span class="cs'+(i===reg?' here':'')+(i>reg&&!S.linebroken&&i>reg?'':'')+'">'+(i===3?'\u25a0 ':'')+RG.name.replace('THE ','')+'<b>'+Math.min(99,Math.round(vis/tot*100))+'%</b></span>'}).join('<i>\u2500\u2500</i>')+'</div>';
+h+='<div class="regstrip">REGION '+['I','II','III','IV'][reg]+' \u00b7 '+R.name+'</div>';
 h+='<div class="routestrip">'+(fwd.length?(fwdIn.length>1?'\u26a0 the line forks \u2014 tap a lit stop \u00b7 heading: ':'heading: ')+'<b>'+(selE?nodeName(selE.reg,selE.col,selE.row):'')+'</b>':S.linebroken?'the loop home is open \u2014 Depart rides it':'the end of the line')+'</div>';
 h+='<svg class="navmap" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid meet">'+lines+nodes+'</svg>';
 h+='<div class="maplegend">\u25c9 station \u00b7 ? event \u00b7 ~ hazard \u00b7 \u2715 blockade \u00b7 \u265c gate \u00b7 unmarked rail is country nobody has ridden</div>';
@@ -982,9 +1070,9 @@ else{const _s=_edges[Math.min(S.sel,_edges.length-1)],_c=legCost(_s);b.disabled=
   h='<div class="rbhd">'+(fork?'\u26a0 THE LINE FORKS \u2014 choose your heading':'NEXT STOP')+'</div>'
    +_edges.map((e,i)=>{const t=nodeType(e.reg,e.col,e.row),sel=i==S.sel,cross=e.reg!=S.nav.reg;
     const rt=cross?(e.reg<S.nav.reg?'the loop home \u00b7 '+REGIONS[e.reg].name:'across the border \u00b7 '+REGIONS[e.reg].name)
-     :t=='S'?'station \u00b7 trade &amp; repair':t=='E'?'event \u00b7 unknown':t=='H'?'hazard \u00b7 heavy raids':t=='B'?'BLOCKADE \u00b7 elite warband':'GATE \u00b7 warlord crossing';
+     :t=='D'?'DARK WATER \u00b7 a legend \u00b7 TWO-OIL COUNTRY':t=='S'?'station \u00b7 trade &amp; repair':t=='E'?'event \u00b7 unknown':t=='H'?'hazard \u00b7 heavy raids':t=='B'?'BLOCKADE \u00b7 elite warband':'GATE \u00b7 warlord crossing';
     const pr=edgeProfile(S.nav,e);
-    return '<button class="routecard'+(sel?' sel':'')+'" data-e="'+i+'"><span class="rg">'+(t=='S'?'\u25c9':t=='E'?'?':t=='H'?'~':t=='B'?'\u2715':'\u265c')+'</span><span class="rn">'+nodeName(e.reg,e.col,e.row)+'</span><span class="rt">'+rt+'<br><b class="rfuel">'+legCost(e)+' fuel \u00b7 '+'\u2757'.repeat(pr.danger)+(pr.dry?' \u00b7 dry rail':'')+'</b></span></button>'}).join('')
+    return '<button class="routecard'+(sel?' sel':'')+'" data-e="'+i+'"><span class="rg">'+(t=='D'?'\u25c6':t=='S'?'\u25c9':t=='E'?'?':t=='H'?'~':t=='B'?'\u2715':'\u265c')+'</span><span class="rn">'+nodeName(e.reg,e.col,e.row)+'</span><span class="rt">'+rt+'<br><b class="rfuel">'+legCost(e)+' fuel \u00b7 '+'\u2757'.repeat(pr.danger)+(pr.dry?' \u00b7 dry rail':'')+'</b></span></button>'}).join('')
    +'<div class="rbkm">'+km+(fork?' \u00b7 tap a card, then Depart':'')+(S.discount?' \u00b7 <span style="color:#e0a33a">\u00bd upgrade ready</span>':'')+'</div>'}
  if(nd._h!==h){nd._h=h;nd.innerHTML=h}}
 document.querySelector('#tabs .tab[data-v="travel"]').classList.toggle('alert',docked);
@@ -1252,6 +1340,14 @@ const plX=sbX,plBot=eb-1;
 for(let r=0;r<17;r++){const hh=18-r;if(hh<2)continue;const xx=plX+r;
 px(xx,plBot-hh,1,hh,r<2?em[0]:(r%2?em[2]:em[1]));px(xx,plBot-hh,1,1,em[4])}
 px(plX,plBot,17,2,'#1c140d');px(plX,plBot-18,2,1,'#9a8a74');
+if(!S.prow||S.prow.fit=='ram'){ // RAM PLOW — the level-1 bow IS the classic cowcatcher (pixels honored); teeth arrive with reinforcement
+ if(S.prow&&S.prow.lvl>=2){const pl2=Math.min(4,Math.floor(S.prow.lvl/2)+1);
+ for(let tt=0;tt<pl2;tt++)px(plX+4+tt*4,plBot-2,2,2,'#16110b');px(plX+2,plBot-12,13,2,MAT[1][1]);px(plX+2,plBot-12,13,1,MAT[1][3]);px(plX+15,plBot-13,3,3,MAT[1][0])} // reinforcing wale + brow
+ if(S.prow&&S.prow.lvl>=4)px(plX+6,plBot-16,10,1,'#e0a33a')}
+else{ // SHIELD PLATE — a riveted wall on the leading face
+ const sh=Math.min(16,10+S.prow.lvl);px(plX+13,plBot-sh,4,sh,MAT[1][1]);px(plX+13,plBot-sh,4,1,MAT[1][3]);px(plX+16,plBot-sh,1,sh,MAT[1][0]);
+ for(let rv2=plBot-sh+2;rv2<plBot-1;rv2+=3)px(plX+14,rv2,1,1,MAT[1][4]);
+ if(S.prow.lvl>=3){px(plX+12,plBot-sh-2,5,2,MAT[1][2]);px(plX+12,plBot-sh-2,5,1,MAT[1][3])}}
 // --- engine tiers (color bands + SILHOUETTE growth: the rank reads across the yard) ---
 if(et>=1){px(boX,boT+Math.floor(boH/2),boW,1,'#e0a33a');
  px(cabX-1,cabT-2,12,2,em[1]);px(cabX-1,cabT-3,12,1,em[3])}                                     // armored brow over the cab
@@ -1546,7 +1642,10 @@ const blink=Math.floor(S.T*2)%2==0;
 px(cx+1,BASE-9,3,3,blink?'#ffd23e':'#8a5a1a');
 px(cx,DECK+1,1,9,'#241a12');const cfw=Math.round(Math.sin(S.T*6)),cfl=7+ct*2;px(cx-cfl,DECK+2,cfl,4,'#8a2a22');px(cx-cfl,DECK+2,cfl,1,'#a8412f');px(cx-cfl-cfw,DECK+3,2,2,'#6e2018');
 if(ct>=1){px(cx+7,DECK+3,1,CARH-6,'#4a1c16');px(cx+16,DECK+3,1,CARH-6,'#4a1c16');px(cx+1,DECK,cbW-2,1,'#c2452f')}
-if(ct>=2){px(cx,DECK+1,2,CARH-3,'#3a1610');px(cx+cbW-2,DECK+1,2,CARH-3,'#3a1610')}
+if(ct>=2){px(cx,DECK+1,2,CARH-3,'#3a1610');px(cx+cbW-2,DECK+1,2,CARH-3,'#3a1610');
+ for(let cr2=cx+6;cr2<cx+cbW-4;cr2+=4)px(cr2,DECK-8,2,2,'#6e2c24');                       // the keep's crenellated parapet
+ px(cx+3,DECK+7,4,2,'#0e0a06');px(cx+cbW-7,DECK+7,4,2,'#0e0a06');                          // windows become gun slits
+ px(cx+10,DECK-9,4,3,'#241a12');px(cx+11,DECK-8,2,1,Math.floor(S.T*2)%2?'#ffd23e':'#8a5a1a')} // the garrison lamp, kept burning
 if(ct>=3){px(cx,DECK-1,cbW,1,'#e0a33a');if(Math.floor(S.T*3)%2==0)px(cx+2,DECK,cbW-4,1,'rgba(255,210,90,0.4)')}
 wheel(cx+2,BASE-8,WHR);wheel(cx+13,BASE-8,WHR);
 // --- crane jib + hook (drawn last so the arm reaches over the cars) ---
@@ -2531,6 +2630,7 @@ let lt=0;
 function tick(ts){
 const dt=Math.min(0.05,(ts-lt)/1000||0.016);lt=ts;S.T+=dt;S.dt=dt;
 let spd=S.mode=='run'?((S.boss&&S.boss.set&&!S.boss.dead)?0:110):14;
+if(S.adrift)spd=0; // adrift: the world stops with you
 // THE STOP — the reusable arrival/departure choreography. Every node-stop shares this grammar:
 // arriving = linear decel to rest (station glides in on its exact integral and settles as the wheels do);
 // docked = the world at rest; departing = ease-in spin-up (the station slides away west).
@@ -2557,6 +2657,16 @@ S.off+=spd*dt;
  if(S.panHintT>0)S.panHintT-=dt;}
 S.food+=farm()*dt;
 S.fuel=Math.min(tankCap(),S.fuel+oilProd()*dt); // regen fills to the tanks the rig actually carries
+if(S.leak&&S.mode=='run'&&S.navT&&S.navT.prof){S.fuel=Math.max(0,S.fuel-S.leak.rate*(S.navT.prof.len/S.dur)*dt); // the breach weeps per mile, live
+ if(S.fuel<=0&&!S.adrift&&!S.boss){S.adrift={t:0,wv:0};S.mode='idle';S.raiders=[];log('THE TANK IS DRY. The drivers spin down on open rail. This is the wrong silence.');
+  showChoice('ADRIFT ON THE OCEAN','Dead on the rail, miles from any lamp. They will find you. Choose.',[
+   {label:'Jury-rig the reserve',desc:'\u2212'+(40+eff()*8)+' scrap \u00b7 limp to the next stop',can:()=>S.scrap>=40+eff()*8,fn:()=>{S.scrap-=40+eff()*8;S.fuel=Math.min(tankCap(),16);S.leak=null;S.adrift=null;S.mode='run';closeChoice();log('Wire, spit and a fuel drum \u2014 she breathes again. BARELY.');save()}},
+   {label:'Distress flare',desc:'Caravaneers \u2605\u2605+ \u00b7 they gouge, they tow',can:()=>S.rep.carav>=2,fn:()=>{const g=Math.round(S.scrap*0.4);S.scrap-=g;S.adrift=null;S.leak=null;closeChoice();log('A red star over the wastes. The Caravaneers come \u2014 and take '+g+' scrap for the trouble.');finish();}},
+   {label:'Stand and fight',desc:'hold until they stop coming',fn:()=>{closeChoice();S.adrift.stand=true;log('You kill the lamps, man the guns, and let the ocean come.')}}])}}
+if(S.adrift){S.adrift.t+=dt; // adrift: the waves escalate until an out is taken (losing here is the heaviest overrun)
+ if(S.adrift.stand&&S.adrift.t>4){S.adrift.t=0;S.adrift.wv++;
+  if(S.adrift.wv>=4){S.adrift=null;S.fuel=Math.min(tankCap(),14);S.leak=null;log('The last wave breaks and does not re-form. You strip their fuel \u2014 enough to crawl on.');save()}
+  else{wave();log('They come again out of the dark \u2014 wave '+S.adrift.wv+' of 4.')}}}
 {const hr=crewBuffs().hullRegen;if(hr>0&&S.hull<maxHull())S.hull=Math.min(maxHull(),S.hull+hr*dt);}
 if(S.mode=='idle'&&S.hull<maxHull())S.hull=Math.min(maxHull(),S.hull+1.3*dt);
 S.smT-=dt;
@@ -2616,7 +2726,7 @@ else{const dps=gunVs(pt.elite?'armored':'light')*markMult('ptrain')+troops()*1.5
 if(pt.boarder){pt.board=Math.max(0,Math.min(1,pt.board+dt*(0.085+eff()*0.003)-dt*(troops()*0.011+rgGarrison()*0.004))); // the boarding meter: their grapples vs your manpower
  if(pt.board>0.5&&!pt.bLog){pt.bLog=1;log('Grapples bite the hull \u2014 REPEL BOARDERS! (troops hold the meter down)')}
  if(pt.board>=1){const steal=Math.round(base()*0.4);S.scrap=Math.max(0,S.scrap-steal);hurt(8+eff());pt.dead=false;pt.state='out';S.flash=1.4;log('BOARDED! They cut a hold open and swing away with '+steal+' scrap.');cards();save()}}
-pt.atkT-=dt;if(pt.atkT<=0){pt.atkT=pt.elite?(pt.boarder?1.6:1.1):1.4;pt.muzzle=0.18;const dmg=pt.elite?Math.max(2,Math.round((6+eff()*1.5-troops()*0.4)*(1+(pt.guns||0)*0.2)*(pt.boarder?0.5:1))):Math.max(1,Math.round(4+eff()-troops()*0.4));hurt(dmg);S.flash=1.0;S.booms.push({x:165,y:126,t:0.08});if(S.hull<=0){const r=Math.round(base()*0.25);S.scrap+=r;S.hull=Math.round(maxHull()*0.4);S.ptrain=null;S.mode='idle';S.raiders=[];S.tracers=[];navFail();log((pt.elite?'The elite warband raked your rig apart':'The raider train shot your boiler out')+' — you limp home with '+r+' scrap.');cards();save()}}
+pt.atkT-=dt;if(pt.atkT<=0){pt.atkT=pt.elite?(pt.boarder?1.6:1.1):1.4;pt.muzzle=0.18;const dmg=Math.round((pt.elite?Math.max(2,Math.round((6+eff()*1.5-troops()*0.4)*(1+(pt.guns||0)*0.2)*(pt.boarder?0.5:1))):Math.max(1,Math.round(4+eff()-troops()*0.4)))*(1-prowMit('frontal')));hurt(dmg);if(pt.elite&&Math.random()<0.06)springLeak();S.flash=1.0;S.booms.push({x:165,y:126,t:0.08});if(S.hull<=0){theOverrun(pt.elite?'blockade':'swarm');return}}
 if(S.ptrain&&pt.hp<=0){if(pt.elite){const r=Math.round(base()*1.6*crewBuffs().scrapMult);S.scrap+=r;for(let i=0;i<8;i++)S.booms.push({x:pt.x+i*8,y:96+(i%3)*6,t:0.04+i*0.05});log('ELITE WARBAND WRECKED! You strip the convoy for '+r+' scrap as it derails in flames.');if(Math.random()<(pt.boarder?0.75:0.5))recruitHero('war');else{const b=Math.round(25+eff()*7);S.scrap+=b;log('You salvage another '+b+' scrap from the burning cars.')}}else{const r=Math.round(base()*0.8);S.scrap+=r;for(let i=0;i<5;i++)S.booms.push({x:pt.x+i*9,y:98+(i%2)*6,t:0.05+i*0.05});log('Raider train wrecked! You strip it for '+r+' scrap as it derails.')}pt.dead=true;pt.state='out'}
 else if(S.ptrain&&!pt.elite&&pt.t>3.6&&pt.state=='pace'){pt.state='out';log('The raider train breaks off and falls behind.')}}}
 else if(pt.state=='out'){pt.x+=(pt.dead?70:165)*dt;if(pt.x>384)S.ptrain=null}}
