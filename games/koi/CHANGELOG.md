@@ -1,6 +1,28 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-03 — C.7: the composer update (§10, human's live read)
+DECIDED (human): a pass at the top UI for intuitiveness; more plant/rock headroom for composers; four new theme-true flora/decorations; the lantern generates at one size. Engine v3.5.1 → **v3.6**.
+
+CHANGED — top UI (intuitive, still calm):
+- Buttons renamed to plain nouns: **plants ▾ / stones ▾** (was plant/place); the open tray's button now holds an **accent open-state** instead of a bare opacity change.
+- **Live capacity readout** in the tray — a quiet dashed chip ("12 of 64 placed") so composers can see their headroom; chips still disable silently at cap (no error states, ever).
+- Armed hint now teaches the exit too: "tap the water to place it · tap the chip again to cancel."
+
+CHANGED — capacity ledger re-ratified (human's call): **plants 36 → 64, rocks 12 → 28.** A/B suite ledger assertions updated to the new constitution.
+
+CHANGED — four new items, all skin-correct via roles (contract v2), all **sold fully mature** (instant beauty):
+- **Horsetail** (flora, 11❀): vertical segmented stems with node rings + dark strobilus tips — the pond's most architectural plant. Dragonflies perch on it, fireflies anchor to it, koi steer around it.
+- **Water hyacinth** (flora, 14❀): a floating rosette of glossy leaves around its buoyant float, crowned with a lavender bloom (reads through `bloomAlt` roles; feeds `Eco.bloom`). Floats and drifts like a pad.
+- **Bamboo spout / shishi-odoshi** (hardscape, 34❀): baked stand (basin + upright culm) with a **live tipping arm** — fills, tips once per ~12–16s (seeded period), pours with a real ripple + sparkles. Stateless cycle (pure function of time+seed, fps-independent); sim-side spill in `step()`, pure draw in render. Slower under reduced-motion. Bamboo never mosses.
+- **Stepping stones** (hardscape, 26❀): three worn flats in a short seeded arc — an invitation across the water. Koi steer around them.
+- **Lantern (and spout) generate at ONE size** — built things are consistent; nature keeps varying.
+
+TRIED / VERIFIED: new C.7 gate suite (16/16 — lanterns/spouts all size 1 while stones still vary; caps 64/28; new items round-trip the save with stable seeds, arrive mature, hyacinth blooms and feeds ecology; the spout spills exactly once per cycle over 3 cycles; all four skins render the full set clean; reduced-motion spout still lives). Full sweep **152/152**. REAL-BROWSER: composed pond caught the spout MID-POUR with its ripple; tray screenshot shows the new buttons, open-state, and capacity readout. Screenshots shared.
+
+OPEN: prices are still Phase-D placeholders; hyacinth leaf tone is a director taste dial; the spout wants its bamboo *clack* when audio arrives (noted for the sound pass).
+
+
 ## 2026-07-03 — C.6.1: metal koi tail fins — foil, not wedges (§10 micro-loop, human's live read)
 DECIDED (human, from the C.6 metal screenshot): "ensure there are no bugs with the tails of the koi in that environment." Engine v3.5 → **v3.5.1**. Two layered problems, one cosmetic and one structural:
 
