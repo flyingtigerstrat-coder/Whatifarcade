@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-07-03 · session 15 — human playtest pass 2: both orientations, the dual-path gun car, distinct prow buffs
+DECIDED: Four findings from the human's landscape testing, all fixed. (1) STATION UI IN BOTH ORIENTATIONS — chips are now letterbox-aware (placed via the pointer-mapping math, so landscape's pillarboxed canvas anchors them correctly) and lifted clear of the landscape bottom bars; verified by screenshot in both orientations. (2) BANNER COLLISIONS — the landscape ticker moves below the route board (top 150), cards compact in landscape, and route-card names ellipsize so the leg info never overprints them. (3) THE GUN CAR UN-REGRESSED — turret and hull ports are now TWO components: each independently customizable (cycle cannon/rocket/mortar up top, autocannon/flak/flamer below — as before) AND independently upgradable (s.lvl turret + s.plvl ports, two ▲ buttons per card); ports draw their own casemate/twin tier ladder and fire rate from plvl; old saves normalize plvl=lvl so no rig loses power. (4) PROW FITS DIVERGE — RAM PLOW shoves the duel (+2.5%/lvl boss/elite damage, cap 15%); SHIELD PLATE blunts every blow (−2%/lvl damage taken, cap 12% — law 8's cap discipline). Cargo/coach art tightened (seated window band, slimmed door seams, single-baseline crates).
+TRIED: One comment nearly swallowed hurt()'s body (inline // before the rest of the line) — parse check caught it instantly.
+PARKED: —
+CHANGED: gun()/dtMix()/statLine/cards/handlers learn plvl; hurt() and the boss duel learn the prow's temper; chips placed in px via _fit(); harness still green (121).
+OPEN: Human re-test both orientations at a busy station + the two-path gun car economy (turret vs ports pacing).
+FEELING: A gun car with two ladders to climb is twice the reason to come home heavy.
+
 ## 2026-07-03 · session 14 (cont.) — v1.6 Wave 5 · THE LAWS ENFORCED: ladders drawn, the sprint closes
 DECIDED: The bow and the stern read as the rig's hard ends (law 5). THE PROW'S LADDER: level 1 IS the classic cowcatcher untouched (pixels honored — the byte-identity check caught one stray tooth and it was removed); RAM PLOW grows teeth + a reinforcing wale + an amber crown by level; SHIELD PLATE stands a riveted gunmetal wall on the leading face. THE REARGUARD'S FORTRESS LADDER: red caboose → plated (strips + iron rails) → KEEP-ON-WHEELS (crenellated parapet, gun slits, the garrison lamp kept burning) — the human's ratified ask, delivered. Balance: the laws hold in tests, not prose — deep = two-oil by construction (law 6), prow capped at 66% with four bypass classes (law 8), the overrun floor + work-back contracts (law 7), deep EV pays through far-node reward tables (law 4). Targets live in the DESIGN.md gazetteer; fine-tuning belongs to the human's playtest.
 TRIED: 121 harness assertions green end-to-end; THE RAILHEAD byte-identical through all six waves of the sprint.
