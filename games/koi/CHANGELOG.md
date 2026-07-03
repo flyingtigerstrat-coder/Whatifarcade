@@ -1,6 +1,21 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-03 — C.3: the feeding frenzy (§10 micro-loop, human's live read)
+DECIDED (human): eating should LOOK like eating, and koi should swarm a thrown handful the way a real pond does. Engine v3.3.2 → **v3.4**.
+
+CHANGED (the pond's most alive moment, built honest — excitement, not urgency):
+- **The splash is felt pond-wide:** feed() now excites every koi (`excite`, transient — never saved), scaled by distance and hunger. Excited fish sense food from across the water (280px → up to ~710px), steer hard for it, and **surge up to ~2.5×** with a sharper allowed turn-in (the C.1 curvature clamp still guards the spine — no ball-curls). They **brake in the last stretch** so the crowd gathers AT the food instead of overshooting.
+- **The crowd is a crowd:** shoulder-to-shoulder jostling near the food (soft separation + churn ripples), and each fish targets the nearest **unclaimed** pellet so the swarm spreads across the throw instead of stacking on one pellet.
+- **Eating is visible:** a claimed pellet is **drawn into the working mouth** and gulped; the final slurp pops a small ring other koi rush to (fish follow fish). New engine-level `drawGulps` renders the classic top-down **"O" mouth cycling open-shut** over any skin's koi (all four skins). Crowded fish gasp at the surface even between pellets.
+- **The meal shares itself:** handling time (a fish finishes its gulp + a short chew before claiming the next pellet) and fed fish pressing slightly less hard — one quick fish can't hoover the whole throw. Slowest fish can still miss a small throw; you throw again, and hunger-scaled excitement gives the unfed ones the edge.
+- **Frenzy holds, calm returns:** while a pellet is in sight excitement floors at .45 (real koi don't lose interest mid-rush); the moment the water is empty it decays away in ~2s and the pond is a pond again. Pellets now bob/drift on the surface (life 18–24s) instead of freezing in place. Reduced-motion: the surge is tempered, the gathering still happens.
+
+TRIED / VERIFIED: new C.3 gate suite (17/17, 10/10 stable runs — 8 edge-ringed koi ALL excited by one splash, ≥7 of 8 converge <120px from ~300px out vs. control (no feed → no convergence, zero excitement); 3s rush displacement >1.5× base drift; most pellets EATEN not expired; two handfuls feed ≥5 of 8; excitement and mouths fully settle after; nothing transient saved; all four skins render mid-frenzy clean; reduced-motion still gathers). A/B/C/C.2 suites re-run green (76/76). REAL-BROWSER: click-feed → rush frame (all 8 turned in, mid-surge) + crowd frame (tight ring around bobbing pellets, open mouths visible) — screenshots shared.
+
+OPEN: mouth "O" size/alpha is a taste dial for the director; a possible splash SOUND when audio arrives; whether elders should join the rush at all (currently statelier but present).
+
+
 ## 2026-07-02 — C.2: seeded per-instance variety (§10 micro-loop, human's live read)
 DECIDED (human): driftwood needs 2–3 variants; other flora gets slight within-subclass variety; rocks get variety too. Engine v3.3.1 → **v3.3.2**.
 
