@@ -790,7 +790,7 @@ function localSpeak(){const d=S.depot;if(!d)return;
    {label:'Sell '+held+' '+GOODS[need].nm,desc:'+'+(px2*held)+' scrap \u00b7 1.6\u00d7 spot',fn:()=>{closeChoice();S.scrap+=px2*held;S.cargo[need]=0;S.rep.carav=Math.min(10,S.rep.carav+1);log('The whole town turns out to unload it. +'+(px2*held)+' scrap, and they will remember this.');save()}},
    {label:'Keep the hold',desc:'the need keeps',fn:()=>{closeChoice();log('You tip your hat and keep your manifest.')}}])}}
 function houseGossip(){const d=S.depot;if(!d)return;
- const v=famOf(d.key),rl=RUMORS[S.nav.reg];
+ const v=S.fam[d.key]|0,rl=RUMORS[S.nav.reg];
  const bits=[];
  if(S.prizes.length)bits.push('Word is a clan camp is flying '+(S.prizes[0].k==='car'?'a stolen car\u2019s colors':'a captive\u2019s name')+' out there. Your colors, they say.');
  bits.push('Rumor \u2014 '+rl[Math.floor(Math.random()*rl.length)]);
@@ -818,9 +818,8 @@ function navEvent(nm){const r=Math.random(),tp=troops(); // troops are manpower:
  else{let dmg=Math.round(4+eff());if(tp>0){dmg=Math.max(1,Math.round(dmg*Math.max(0.4,1-tp*0.03)));S.hull=Math.max(Math.round(maxHull()*0.3),S.hull-dmg);S.flash=1.1;log('At '+nm+', the siding is mined — your troops clear the worst of it; hull takes '+dmg+'.')}
  else{S.hull=Math.max(Math.round(maxHull()*0.3),S.hull-dmg);S.flash=1.1;log('At '+nm+', the siding is mined — hull takes '+dmg+' before you clear it.')}}}
 function navArrive(){ // every completed leg lands here: move the rig on the map, then let the node speak
- const to=S.navT&&S.navT.to;S.navT=null;
+ const to=S.navT&&S.navT.to,_mi=(S.navT&&S.navT.prof)?S.navT.prof.len:4;S.navT=null; // read the leg BEFORE the record dies
  if(!to){cards();save();return}
- const _mi=(S.navT&&S.navT.prof)?S.navT.prof.len:4;
  S.dist+=_mi;
  {if(S.leak){S.leak.t-=1+stokerRank()*0.5;if(S.leak.t<=0){S.leak=null;log('The stoker\u2019s patch holds. The tank is TIGHT again.')}else log('The tank still weeps \u2014 the stoker needs '+Math.ceil(S.leak.t)+' more leg'+(Math.ceil(S.leak.t)>1?'s':'')+' (a YARD does it now).')}}
  S.nav={seed:S.nav.seed,reg:to.reg,col:to.col,row:to.row};
@@ -1068,11 +1067,12 @@ h+='<svg class="navmap" viewBox="0 0 '+W+' '+H+'" preserveAspectRatio="xMidYMid 
 h+='<div class="maplegend">\u25c9 station \u00b7 ? event \u00b7 ~ hazard \u00b7 \u2715 blockade \u00b7 \u265c gate \u00b7 unmarked rail is country nobody has ridden</div>';
 el.innerHTML=h;}
 function renderLog(){document.getElementById('loglist').innerHTML=S.logHist.map(l=>'<div class="ln">'+l+'</div>').join('')}
-function renderTravelStatus(){const el=document.getElementById('travelstatus');if(!el)return;if(S.mode=='depot'){el.innerHTML='';return}
-if(S.origin&&S.stop&&S.stop.ph=='docked'){el.innerHTML=S.layout=='landscape'?'<b>THE RAILHEAD</b> · at rest':'Docked at <b>THE RAILHEAD</b> · the rig at rest<br>hull '+Math.max(0,Math.round(S.hull))+'/'+maxHull();return}
-const wl=(wBlend<0.5?wCur:wNext).label,rn=REGIONS[S.nav?S.nav.reg:0].name;
-if(S.layout=='landscape'){el.innerHTML='<b>'+rn+'</b>'+(wl?' · '+wl:'')}
-else el.innerHTML='Rolling through <b>'+rn+'</b>'+(wl?' · <b>'+wl+'</b>':'')+'<br>hull '+Math.max(0,Math.round(S.hull))+'/'+maxHull();}
+function renderTravelStatus(){const el=document.getElementById('travelstatus');if(!el)return;let h;
+if(S.mode=='depot')h='';
+else if(S.origin&&S.stop&&S.stop.ph=='docked')h=S.layout=='landscape'?'<b>THE RAILHEAD</b> · at rest':'Docked at <b>THE RAILHEAD</b> · the rig at rest<br>hull '+Math.max(0,Math.round(S.hull))+'/'+maxHull();
+else{const wl=(wBlend<0.5?wCur:wNext).label,rn=REGIONS[S.nav?S.nav.reg:0].name;
+ h=S.layout=='landscape'?'<b>'+rn+'</b>'+(wl?' · '+wl:''):'Rolling through <b>'+rn+'</b>'+(wl?' · <b>'+wl+'</b>':'')+'<br>hull '+Math.max(0,Math.round(S.hull))+'/'+maxHull()}
+if(el._h!==h){el._h=h;el.innerHTML=h}}
 let _pd=false,_pdrag=false,_psx=0,_ppan=0;
 // map a pointer event to logical 320x180, accounting for object-fit:contain letterboxing (landscape)
 const _fit=()=>{const r=cv.getBoundingClientRect(),ca=640/360,ra=r.width/r.height;let dw=r.width,dh=r.height,ox=0,oy=0;if(ra>ca){dw=r.height*ca;ox=(r.width-dw)/2}else{dh=r.width/ca;oy=(r.height-dh)/2}return{r,dw,dh,ox,oy};};
@@ -1101,19 +1101,26 @@ cv.addEventListener('pointerup',e=>{const ix=_lx(e),iy=_ly(e);if(_pd&&Math.abs(i
    S.inspI=i;S.inspT=1.6;break}}}}}
 _pd=false;_pdrag=false;try{cv.releasePointerCapture(e.pointerId)}catch(_){}});
 cv.addEventListener('pointercancel',()=>{_pd=false;_pdrag=false;});
+/* upd() runs every frame — refs resolved once, and every write goes through a changed-check
+   (the same _h pattern the route board proved). Phones stop paying layout tax for identical frames. */
+const EL={scrap:document.getElementById('s-scrap'),food:document.getElementById('s-food'),fuel:document.getElementById('s-fuel'),hull:document.getElementById('s-hull'),hullbox:document.getElementById('hullbox'),go:document.getElementById('go'),nd:document.getElementById('nextdepot'),chips:document.getElementById('chips'),travTab:document.querySelector('#tabs .tab[data-v="travel"]'),crewTab:document.querySelector('#tabs .tab[data-v="crew"]')};
+EL.fuelbox=EL.fuel&&EL.fuel.parentNode;
+const _setT=(el,v)=>{if(el&&el._v!==v){el._v=v;el.textContent=v}};
+const _setC=(el,v)=>{if(el&&el._c!==v){el._c=v;el.className=v}};
 function upd(){
-document.getElementById('s-scrap').textContent=Math.floor(S.scrap);
-document.getElementById('s-food').textContent=Math.floor(S.food);
-document.getElementById('s-fuel').textContent=Math.floor(S.fuel)+'/'+tankCap();
-document.getElementById('s-fuel').parentNode.className='st'+(S.leak?' warn':'');
-document.getElementById('s-hull').textContent=Math.max(0,Math.round(S.hull))+'/'+maxHull();
-document.getElementById('hullbox').className='st'+(S.hull<maxHull()*0.35?' warn':'');
-const b=document.getElementById('go'),nd=document.getElementById('nextdepot'),docked=S.mode=='depot';
+_setT(EL.scrap,''+Math.floor(S.scrap));
+_setT(EL.food,''+Math.floor(S.food));
+_setT(EL.fuel,Math.floor(S.fuel)+'/'+tankCap());
+_setC(EL.fuelbox,'st'+(S.leak?' warn':''));
+_setT(EL.hull,Math.max(0,Math.round(S.hull))+'/'+maxHull());
+_setC(EL.hullbox,'st'+(S.hull<maxHull()*0.35?' warn':''));
+const b=EL.go,nd=EL.nd,docked=S.mode=='depot';
 b.classList.toggle('docked',docked);
 const _edges=(S.mode!='run')?nodeEdges(S.nav.reg,S.nav.col,S.nav.row):null,atEnd=_edges&&!_edges.length;
-if(S.mode=='run'){b.disabled=true;b.textContent='Crossing the rail ocean...'}
-else if(atEnd){b.disabled=true;b.textContent='The end of the line'}
-else{const _s=_edges[Math.min(S.sel,_edges.length-1)],_c=legCost(_s);b.disabled=S.fuel<_c;b.textContent='Depart \u25b8 '+nodeName(_s.reg,_s.col,_s.row)+' \u00b7 '+_c+' fuel'}
+{let _dis,_lbl;if(S.mode=='run'){_dis=true;_lbl='Crossing the rail ocean...'}
+else if(atEnd){_dis=true;_lbl='The end of the line'}
+else{const _s=_edges[Math.min(S.sel,_edges.length-1)],_c=legCost(_s),_short=S.fuel<_c;_dis=_short;_lbl=_short?'Need '+_c+' fuel \u00b7 tank '+Math.floor(S.fuel)+' \u2014 '+nodeName(_s.reg,_s.col,_s.row)+' waits':'Depart \u25b8 '+nodeName(_s.reg,_s.col,_s.row)+' \u00b7 '+_c+' fuel'}
+if(b._d!==_dis){b._d=_dis;b.disabled=_dis}_setT(b,_lbl)}
 {const km='<span style="color:#cdb894">'+Math.floor(S.dist)+' km</span>';let h;
  if(S.mode=='run'){const t=S.navT&&S.navT.to;h=km+' \u00b7 crossing to <span style="color:#cdb894">'+(t?nodeName(t.reg,t.col,t.row):'the far shore')+'</span>\u2026'}
  else if(atEnd)h=km+' \u00b7 THE TERMINUS \u2014 the last gate stands broken behind you';
@@ -1126,11 +1133,11 @@ else{const _s=_edges[Math.min(S.sel,_edges.length-1)],_c=legCost(_s);b.disabled=
     return '<button class="routecard'+(sel?' sel':'')+'" data-e="'+i+'"><span class="rg">'+(t=='D'?'\u25c6':t=='S'?'\u25c9':t=='E'?'?':t=='H'?'~':t=='B'?'\u2715':'\u265c')+'</span><span class="rn">'+nodeName(e.reg,e.col,e.row)+'</span><span class="rt">'+rt+'<br><b class="rfuel">'+legCost(e)+' fuel \u00b7 '+'\u2757'.repeat(pr.danger)+(pr.dry?' \u00b7 dry rail':'')+'</b></span></button>'}).join('')
    +'<div class="rbkm">'+km+(fork?' \u00b7 tap a card, then Depart':'')+(S.discount?' \u00b7 <span style="color:#e0a33a">\u00bd upgrade ready</span>':'')+'</div>'}
  if(nd._h!==h){nd._h=h;nd.innerHTML=h}}
-document.querySelector('#tabs .tab[data-v="travel"]').classList.toggle('alert',docked);
+EL.travTab.classList.toggle('alert',docked);
 {let cr=false;for(const s of S.slots){if(s){const c=activeCrew(s);if(c.rank<MAXRANK&&S.scrap>=crewRankCost(c.rank)){cr=true;break}}}if(S.heroes.length)cr=true;
-document.querySelector('#tabs .tab[data-v="crew"]').classList.toggle('alert',cr&&S.view!='crew');}
+EL.crewTab.classList.toggle('alert',cr&&S.view!='crew');}
 appEl.classList.toggle('vopen',S.view!='travel'||docked);
-if(S.mode!='depot'){const ch=document.getElementById('chips');if(ch&&ch.style.display!='none'){ch.style.display='none';ch.innerHTML=''}}
+if(S.mode!='depot'){const ch=EL.chips;if(ch&&ch.style.display!='none'){ch.style.display='none';ch.innerHTML=''}}
 renderTravelStatus();
 if(S.view=='map')renderMap();
 }
@@ -2015,7 +2022,7 @@ function drawPElite(x,y,p){
  px(ex+2,y+1,3,3,m[0]);px(ex+10,y+1,3,3,m[0]);
  const bw=Math.min((n+1)*15,76),hp=Math.max(0,p.hp/p.max);
  px(x-1,y-27,bw,4,'#241a12');px(x,y-26,bw-2,2,'#5a1f18');px(x,y-26,Math.round((bw-2)*hp),2,'#d23a2a');
- if(p.state=='pace'&&!p.dead){const rem=Math.max(0,1-p.t/(p.wnd||16));px(x,y-22,Math.round((bw-2)*rem),1,'#cdb894')} // the window drains — when the cream line dies, they run
+ if(p.state=='pace'&&!p.dead){const rem=Math.max(0,1-p.t/(p.wnd||16));px(x,y-22,Math.round((bw-2)*rem),2,'#cdb894')} // the window drains — when the cream line dies, they run
  ctx.globalAlpha=1;
 }
 const GHOSTM=['#2c3a44','#3c4e5a','#4c5e6c','#8fb4c0','#243038']; // the Ghost Hauler's cold ramp
@@ -2721,6 +2728,18 @@ if(S.adrift){S.adrift.t+=dt; // adrift: the waves escalate until an out is taken
  if(S.adrift.stand&&S.adrift.t>4){S.adrift.t=0;S.adrift.wv++;
   if(S.adrift.wv>=4){S.adrift=null;S.fuel=Math.min(tankCap(),14);S.leak=null;S.mode='run';log('The last wave breaks and does not re-form. You strip their fuel \u2014 enough to crawl on.');save()}
   else{wave();log('They come again out of the dark \u2014 wave '+S.adrift.wv+' of 4.')}}}
+// THE STRANDING — immobile at a node, no oil car breathing, no heading payable: the ocean names a price, never a wall (a run can always move)
+if(S.mode=='idle'&&!S.choice&&!S.adrift&&!S.stop&&!S.boss&&!S.navT){
+ const _es=nodeEdges(S.nav.reg,S.nav.col,S.nav.row);
+ const _need=_es.length?Math.min.apply(null,_es.map(e=>legCost(e))):0;
+ if(_es.length&&oilProd()<=0&&S.fuel<_need){
+  S.strandT=(S.strandT||0)+dt;
+  if(S.strandT>4&&S.strandT<900){S.strandT=999;
+   const twc=Math.round(35+eff()*7);
+   showChoice('STRANDED ON THE LINE','No oil car breathes and the tank will not make any heading. The ocean notices stopped things.',[
+    {label:'Flag a Caravaneer tow',desc:'\u2212'+twc+' scrap \u00b7 they fill the tank \u00b7 rep',can:()=>S.scrap>=twc,fn:()=>{closeChoice();S.scrap-=twc;S.fuel=Math.min(tankCap(),_need+10);S.rep.carav=Math.min(10,S.rep.carav+1);log('A Caravaneer hauler answers the flag \u2014 drums roll across and the tank drinks. They remember who pays.');save()}},
+    {label:'Bleed the rig',desc:'\u221215% hull \u00b7 wring a drum from her bones',fn:()=>{closeChoice();S.hull=Math.max(1,S.hull-Math.round(maxHull()*0.15));S.fuel=Math.min(tankCap(),_need+2);S.flash=1.2;log('You drain the bearing oil and burn the spare timbers \u2014 ONE drum, wrung from her bones. She limps, but she MOVES.');save()}}])}
+ }else S.strandT=0;}
 {const hr=crewBuffs().hullRegen;if(hr>0&&S.hull<maxHull())S.hull=Math.min(maxHull(),S.hull+hr*dt);}
 if(S.mode=='idle'&&S.hull<maxHull())S.hull=Math.min(maxHull(),S.hull+1.3*dt);
 if(S.mode=='depot'&&S.stop&&S.stop.ph=='docked'){if(S.hull<maxHull())S.hull=Math.min(maxHull(),S.hull+2.6*dt);S.food=Math.min(999,S.food+0.05*dt)} // warm bunks, warm meals — lingering at a stop is worth something

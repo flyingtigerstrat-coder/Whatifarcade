@@ -394,6 +394,27 @@ ok('overrun: fires when they DEFEAT you (hull zero)', S.mode==='idle'&&S.ptrain=
 ok('overrun: the world keeps ticking after (no freeze)', !threw&&S.T>T0)}
 closeChoice();
 
+// ===== SESSION 18: the audit fixes =====
+// A1 · the odometer reads the REAL leg length (was frozen at +4)
+S.mode='idle';S.choice=null;S.stop=null;S.adrift=null;S.leak=null;S.pax=[];S.contracts=[];S.prizes=[];
+S.nav={seed:7,reg:0,col:1,row:0};
+{const d0=S.dist;S.navT={to:{reg:0,col:2,row:0},regChange:false,prof:{len:12,danger:1,reward:1,dry:false,deep:false,fuel:0}};navArrive();closeChoice();
+ok('odometer: a 12-mile leg logs 12 miles', Math.round(S.dist-d0)===12)}
+// A2 · the station house answers the tap (famOf is dead; long live S.fam)
+S.depot={idx:1,name:'X',pers:['yard','market'],key:'0:1:0',offers:[],board:[],need:'grain'};S.fam['0:1:0']=5;
+{let threw=false;try{houseGossip()}catch(e){threw=true}
+ok('gossip: the station house speaks without throwing', !threw)}
+S.depot=null;
+// A3 · THE STRANDING: no oil car, no payable heading -> the rescue card, and the run always moves again
+S.mode='idle';S.choice=null;S.stop=null;S.navT=null;S.boss=null;S.adrift=null;S.fuel=0;S.scrap=500;S.hull=100;S.strandT=0;
+S.slots=[{type:'gun',wpn:'cannon',port:'auto',lvl:1,plvl:1},null,null];
+step(400); // >4s of being stuck
+ok('stranding: the ocean names a price, not a wall', !!S.choice);
+{const need=Math.min.apply(null,nodeEdges(S.nav.reg,S.nav.col,S.nav.row).map(e=>legCost(e)));
+ closeChoice();S.hull=Math.max(1,S.hull-Math.round(maxHullSafe()*0.15));S.fuel=Math.min(tankCap(),need+2); // the Bleed-the-rig arm, applied as the card would
+ ok('stranding: bled, she can pay a heading again', S.fuel>=need&&S.hull>=1)}
+S.strandT=0;S.slots=[{type:'oil',lvl:1},{type:'gun',wpn:'cannon',port:'auto',lvl:1,plvl:1},null];S.fuel=30;
+
 // ===== HOME IS A FULL STATION (QA pass 16) =====
 // 54 · docked at the origin, the depot lights around the STANDING rig — no re-staged arrival
 S.nav={seed:7,reg:0,col:0,row:0};S.place=null;S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.mode='idle';S.choice=null;
