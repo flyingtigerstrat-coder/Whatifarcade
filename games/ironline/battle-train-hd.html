@@ -50,6 +50,7 @@ canvas{width:100%;display:block;image-rendering:pixelated;background:#d9a05e}
 #chips .chip .cg{color:#f2c560;margin-right:4px}
 #chips .chip.sign{background:rgba(34,24,14,0.92);border-color:#5f4d38;border-top-color:#8a5a1a;box-shadow:0 3px 8px rgba(0,0,0,0.45)}
 #chips .chip.sign::after{content:'';position:absolute;left:50%;top:100%;transform:translateX(-50%);border:5px solid transparent;border-top-color:#8a5a1a}
+#chips .chip.sign.nost::after{display:none}
 #chips .chip.plat{border-color:#6b4a2e}
 #depot{display:none;position:absolute;z-index:40;left:0;right:0;bottom:0;top:auto;max-height:62dvh;overflow-y:auto;background:rgba(18,14,10,0.97);border-top:3px solid #8a5a1a;padding:10px 12px 12px;box-shadow:0 -8px 26px rgba(0,0,0,0.55);scrollbar-width:thin;scrollbar-color:#6b4a2e #1a1410}
 #depot.show{display:block;animation:sheetup 0.22s ease}
@@ -945,14 +946,16 @@ if(homes.has('chapel')&&hasB(bBellShack))items.push({cv:'chapel',g:'\u2626',t:'C
 if(homes.has('outpost')&&hasB(bWatchpost))items.push({cv:'outpost',g:'\u265f',t:'Watch',x:at(bWatchpost,100)});
 if(caps)items.push({cv:'keeper',g:'\u265a',t:KEEPERS[S.nav.reg].nm.split(' ').pop(),x:at(bTrainShed,-6)});
 if(tier!='halt')items.push({cv:'board',g:'\u270e',t:'Board',plat:true,x:118}); // the Board lives on the PLATFORM, with the people
-const f=_fit(),land=appEl.classList.contains('land'),maxX=land?f.r.width*0.5:f.r.width-30;
-items.forEach(it=>{it.px=Math.max(30,Math.min(maxX,Math.round(f.ox+((sx+it.x)/320)*f.dw)))});
+const f=_fit(),land=appEl.classList.contains('land');
+const sheetL=land&&S.depotView?f.r.width-Math.min(400,f.r.width*0.44):null; // the landscape depot sheet owns the right 44% while open
+const maxX=land?Math.round((sheetL!=null?sheetL:Math.min(f.r.width,f.ox+f.dw))-64):f.r.width-30;
+items.forEach(it=>{it.raw=Math.round(f.ox+((sx+it.x)/320)*f.dw);it.px=Math.max(30,Math.min(maxX,it.raw))});
 items.sort((a,b)=>a.px-b.px);
-let last=-999,row=0;items.forEach(it=>{if(!it.plat&&it.px-last<88){row=1-row;if(row===0)it.px=Math.min(maxX,last+88)}else if(!it.plat)row=0;if(!it.plat)last=it.px;it.row=row});
+let last=-999,row=0;items.forEach(it=>{if(!it.plat&&it.px-last<88){row=1-row;if(row===0)it.px=Math.min(maxX,last+88)}else if(!it.plat)row=0;if(!it.plat)last=it.px;it.row=row;it.nost=!it.plat&&Math.abs(it.px-it.raw)>24}); // a shoved sign drops its stem — a stem pointing at nothing is a lie
 const skyY=Math.round(f.oy+(40/180)*f.dh),platB=Math.max(4,Math.round(f.r.height-(f.oy+f.dh)))+6+(land?96:0);
 el.innerHTML=items.map(it=>it.plat
  ?'<button class="chip plat" data-cv="'+it.cv+'" style="left:'+it.px+'px;bottom:'+platB+'px"><span class="cg">'+it.g+'</span>'+it.t+'</button>'
- :'<button class="chip sign" data-cv="'+it.cv+'" style="left:'+it.px+'px;top:'+(skyY+it.row*30)+'px"><span class="cg">'+it.g+'</span>'+it.t+'</button>').join('');
+ :'<button class="chip sign'+(it.nost?' nost':'')+'" data-cv="'+it.cv+'" style="left:'+it.px+'px;top:'+(skyY+it.row*30)+'px"><span class="cg">'+it.g+'</span>'+it.t+'</button>').join('');
 el.style.display='block'}
 function renderDepot(){const d=S.depot,el=document.getElementById('depot');renderChips();
 if(S.choice)return; // never wipe a live choice card
@@ -1008,7 +1011,7 @@ document.getElementById('nextdepot').addEventListener('click',e=>{const b=e.targ
 document.getElementById('depot').addEventListener('click',e=>{const b=e.target.closest('button[data-ch]');if(!b||b.disabled||!S.choice)return;const o=S.choice.opts[+b.dataset.ch];if(o&&o.fn)o.fn()});
 document.getElementById('chips').addEventListener('click',e=>{const b=e.target.closest('.chip');if(!b)return;S.depotView=b.dataset.cv;S.depotMin=false;renderDepot()});
 document.getElementById('maplist').addEventListener('click',e=>{const g=e.target.closest('.mapsel');if(!g)return;S.sel=+g.getAttribute('data-e');document.getElementById('nextdepot')._h=null;renderMap();upd()});
-function applyLayout(){const land=S.layout=='landscape';appEl.classList.toggle('land',land);document.getElementById('lt').textContent=land?'▢ Mobile':'⛶ Desktop'}
+function applyLayout(){const land=S.layout=='landscape';appEl.classList.toggle('land',land);document.getElementById('lt').textContent=land?'▢ Mobile':'⛶ Desktop';renderChips()}
 function autoLayout(){if(S.layoutManual)return false;const want=(window.innerWidth>=820||window.innerWidth>window.innerHeight*1.3)?'landscape':'portrait';if(want!=S.layout){S.layout=want;return true}return false}
 window.addEventListener('resize',()=>{if(autoLayout())applyLayout()});
 document.getElementById('lt').addEventListener('click',()=>{S.layout=(S.layout=='landscape')?'portrait':'landscape';S.layoutManual=true;applyLayout();save()});
