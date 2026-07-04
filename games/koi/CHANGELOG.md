@@ -1,6 +1,22 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-04 — C.8: realistic proportions (§10, human's live read)
+DECIDED (human, from a live composed-pond screenshot): "the koi are giants compared to them" — stepping stones, lanterns, the bamboo spout, and boulders were trinket-scale next to the fish. Sized everything against an adult koi (~100–150px ≈ a real 50cm fish). Engine v3.6 → **v3.7**.
+
+CHANGED (features, not trinkets):
+- **Stone lantern**: draw scale 1.25 → **2.6** (a real tōrō is 1.2–1.8m — it now stands about a koi-length tall with real presence); footprint radius 22 → 40; night glow scaled to match.
+- **Bamboo spout**: scale 1.0 → **2.0** (a shishi-odoshi is a garden fixture); stand, live arm, and the spill point all scale together; footprint 24 → 44; pour ripple reaches farther.
+- **Stepping stones**: base radius 30 → **48**, each flat now ~.34–.41R (near koi-width — a stone you could stand on) and spaced **a stride apart** (.85R centers) so the walking gaps read.
+- **Boulder**: base radius 34 → **52** — it dwarfs a fish the way pond boulders do. And per the human's suggestion, boulders now wear a **moss blanket as decoration**: seeded (~65% come mossy, some bare), hugging the lit upper shoulder, deepening further as the pond ages.
+- Sprite slots resized to the new extents (lantern 88 / spout 78 / steps 80 / boulder 76 half-sizes); koi steering, ripple foam, drag, and shadows all inherit the new footprints automatically through `rockR`.
+- **Existing saves scale up in place** — the size multiplier is saved, the per-form base grew, so every already-placed lantern/boulder/steps gains the new proportions on next load. Nothing re-rolls.
+
+TRIED / VERIFIED: all ten suites green (152/152 — C.7's one-size and cycle gates still hold at the new scales); real-Chromium composed pond with koi beside every rescaled feature — lantern ≈ koi-length tall, spout pouring at fixture scale, ogon gliding past near-koi-width stepping stones, mossy and bare boulders anchoring the frame. Screenshot shared.
+
+OPEN: slate/driftwood kept their scale (they read fine against fish) — flag if they now feel small next to the grown boulders; steps' generic ring-moss can fall between stones at high age (minor, director's eye).
+
+
 ## 2026-07-03 — C.7: the composer update (§10, human's live read)
 DECIDED (human): a pass at the top UI for intuitiveness; more plant/rock headroom for composers; four new theme-true flora/decorations; the lantern generates at one size. Engine v3.5.1 → **v3.6**.
 

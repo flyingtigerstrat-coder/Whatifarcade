@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v3.6 (living pond, C.7: composer update — clearer tend UI, caps 64/28, horsetail · hyacinth · bamboo spout · stepping stones, one-size lantern) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.7 (living pond, C.8: realistic proportions — lanterns/spouts stand tall, steps stride apart, boulders dwarf the fish and wear moss) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
@@ -282,7 +282,9 @@ function makeRock(form,x,y,sd){sd=sd??(Math.random()*1e4|0);const rnd=srand(sd);
   // the lantern (and the spout) are BUILT things — one consistent size; nature varies
   const size=(form==='lantern'||form==='spout')?1:.75+rnd()*.5;
   return {form,sd,x,y,size,rot:(form==='lantern'||form==='spout')?0:rnd()*TAU,grow:0};}
-function rockR(r){return (r.form==='boulder'?34:r.form==='slate'?30:r.form==='driftwood'?40:r.form==='lantern'?22:r.form==='spout'?24:r.form==='steps'?30:24)*r.size;}
+// C.8 proportions — sized against an adult koi (~100-150px): a lantern stands taller
+// than a koi is long, a boulder dwarfs one, stepping stones are near-koi-width flats
+function rockR(r){return (r.form==='boulder'?52:r.form==='slate'?30:r.form==='driftwood'?40:r.form==='lantern'?40:r.form==='spout'?44:r.form==='steps'?48:24)*r.size;}
 
 // dev lifecycle harness (?dev=1): drives the WHOLE player journey on demand.
 // Warps call the REAL idleReturn() path with the cap lifted — testing exercises
@@ -807,7 +809,7 @@ function drawPlant(c,p,pal,opts){switch(p.type){
 function drawRockVec(c,r){const RL=ROLES(),R=rockR(r),rnd=srand(r.sd||0);   // seeded: every rock is its own individual
   c.save();c.translate(r.x,r.y);
   // (waterline shadow moved OUT of the bake — drawRock draws the shape-matched soft one live)
-  if(r.form==='lantern'){const s=r.size*1.25;                                                // stone toro — squat, grounded; kasa OVERHANGS the light box
+  if(r.form==='lantern'){const s=r.size*2.6;   // C.8: stands taller than a koi is long                                                // stone toro — squat, grounded; kasa OVERHANGS the light box
     c.fillStyle=RL.stone[1];c.beginPath();c.ellipse(0,2*s,11*s,4.5*s,0,0,TAU);c.fill();      // base stone
     c.fillStyle=RL.stone[2];c.fillRect(-4.5*s,-9*s,9*s,11*s);                                // short, thick post
     c.fillStyle=RL.stone[1];c.fillRect(-8*s,-12*s,16*s,3.4*s);                               // chudai (platform)
@@ -877,7 +879,7 @@ function drawRockVec(c,r){const RL=ROLES(),R=rockR(r),rnd=srand(r.sd||0);   // s
   }else if(r.form==='spout'){
     // shishi-odoshi STAND (baked): basin stone + upright bamboo. The tipping arm draws
     // LIVE in drawRock — a built thing, kept one consistent size (like the lantern)
-    const s2=r.size,bam=RL.wood;
+    const s2=r.size*2.0,bam=RL.wood;   // C.8: a real garden fixture, not a trinket
     c.fillStyle=RL.stone[1];c.beginPath();c.ellipse(0,12*s2,13*s2,5*s2,0,0,TAU);c.fill();          // basin
     c.fillStyle=shade(RL.stone[0],1.05);c.beginPath();c.ellipse(0,11*s2,9*s2,3.4*s2,0,0,TAU);c.fill();
     c.fillStyle='rgba(130,185,195,.32)';c.beginPath();c.ellipse(0,11*s2,7*s2,2.5*s2,0,0,TAU);c.fill(); // held water
@@ -889,8 +891,8 @@ function drawRockVec(c,r){const RL=ROLES(),R=rockR(r),rnd=srand(r.sd||0);   // s
     c.strokeStyle='rgba(255,255,255,.14)';c.beginPath();c.moveTo(-1.6*s2,-21*s2);c.lineTo(-1.6*s2,9*s2);c.stroke(); // wet sheen
   }else if(r.form==='steps'){c.rotate(r.rot);
     // stepping stones — three worn flats in a short seeded arc, an invitation across the water
-    for(let i=0;i<3;i++){const a2=(i-1)*.45+(rnd()-.5)*.24,d=R*.62*(i-1)+(rnd()-.5)*R*.12;
-      const sy=(rnd()-.5)*R*.3,rr2=R*(.28+rnd()*.09),tn2=.95+rnd()*.14;
+    for(let i=0;i<3;i++){const a2=(i-1)*.45+(rnd()-.5)*.24,d=R*.85*(i-1)+(rnd()-.5)*R*.08;   // C.8: a stride apart — real walking gaps
+      const sy=(rnd()-.5)*R*.22,rr2=R*(.34+rnd()*.07),tn2=.95+rnd()*.14;
       c.save();c.translate(d,sy);c.rotate(a2);
       c.fillStyle=shade(RL.stone[2],tn2);c.beginPath();c.ellipse(1,1.6,rr2,rr2*.72,0,0,TAU);c.fill();     // riser side
       c.fillStyle=shade(RL.stone[1],tn2);c.beginPath();c.ellipse(0,0,rr2,rr2*.72,0,0,TAU);c.fill();
@@ -911,7 +913,15 @@ function drawRockVec(c,r){const RL=ROLES(),R=rockR(r),rnd=srand(r.sd||0);   // s
     c.fillStyle='rgba(255,255,255,.09)';c.beginPath();c.ellipse(0,-R*(.02+rnd()*.14),R,R*(.09+rnd()*.08),-.12+(rnd()-.5)*.5,0,TAU);c.fill();   // sediment band
     c.fillStyle='rgba(255,255,255,.13)';c.beginPath();c.ellipse(-R*.3,-R*.28,R*.34,R*.2,.6,0,TAU);c.fill(); // wet sheen
     c.restore();}
-  if(r.grow>0.05&&r.form!=='spout'){c.globalAlpha=.36*r.grow;c.fillStyle=RL.moss;            // moss creeps with age — hugging the FORM (bamboo stays clean)
+  // boulders wear a moss BLANKET as decoration (seeded — some come mossy, some bare),
+  // deepening as the pond ages; it hugs the lit upper shoulder
+  const mg=r.form==='boulder'?Math.min(1,(srand((r.sd||0)+13)()<.65?.5:0)+r.grow):0;
+  if(r.form==='boulder'&&mg>0.05){const rn2=srand((r.sd||0)+29);
+    c.globalAlpha=.34+.2*mg;c.fillStyle=RL.moss;
+    for(let i=0;i<5;i++){const a3=-2.4+i*.5+(rn2()-.5)*.3,d3=R*(.42+rn2()*.28);
+      c.beginPath();c.ellipse(Math.cos(a3)*d3,Math.sin(a3)*d3*.7,R*(.16+.1*mg)*(.7+rn2()*.5),R*.1+1.5,a3,0,TAU);c.fill();}
+    c.globalAlpha=1;}
+  if(r.grow>0.05&&r.form!=='spout'&&r.form!=='boulder'){c.globalAlpha=.36*r.grow;c.fillStyle=RL.moss;            // moss creeps with age — hugging the FORM (bamboo stays clean)
     const rn=srand((r.sd||0)+7);
     if(r.form==='driftwood'){const L=R,Wd=R*.24;                  // moss lies ALONG the grain, inside the wood silhouette
       for(let i=0;i<3;i++){const mx=(rn()-.5)*L*1.1,my=(rn()-.5)*Wd*.7;
@@ -926,12 +936,12 @@ function drawRockVec(c,r){const RL=ROLES(),R=rockR(r),rnd=srand(r.sd||0);   // s
 function spoutPhase(r){const T=(12+((r.sd||0)%5))*(REDUCE?1.7:1),tt=((Pond._t+(r.sd||0))%T)/T;
   const pulse=(tt>.78&&tt<.97)?Math.sin((tt-.78)/.19*Math.PI):0;
   return {a:-.2+.06*Math.min(1,tt/.78)+.95*pulse*pulse,pulse,cyc:Math.floor((Pond._t+(r.sd||0))/T)};}
-function updateSpout(r){const sp=spoutPhase(r);                       // sim side: the SPILL (once per cycle)
+function updateSpout(r){const sp=spoutPhase(r),s2=r.size*2.0;         // sim side: the SPILL (once per cycle)
   if(sp.pulse>.8&&r._tipC!==sp.cyc){r._tipC=sp.cyc;
-    const mx=r.x+Math.cos(sp.a)*16*r.size,my=r.y-14*r.size+Math.sin(sp.a)*16*r.size;
-    Pond.ripples.push({x:mx,y:Math.max(my,r.y+6*r.size),r:2,max:46,age:0,life:1.2,s:1});
+    const mx=r.x+Math.cos(sp.a)*16*s2,my=r.y-14*s2+Math.sin(sp.a)*16*s2;
+    Pond.ripples.push({x:mx,y:Math.max(my,r.y+6*s2),r:2,max:56,age:0,life:1.3,s:1});
     Pond.sparkles.push({x:mx,y:my,age:0,life:.4,mag:.7});Pond.sparkles.push({x:mx+2,y:my+4,age:0,life:.35,mag:.55});}}
-function drawSpoutArm(c,r){const RL=ROLES(),s2=r.size,sp=spoutPhase(r),bam=RL.wood;
+function drawSpoutArm(c,r){const RL=ROLES(),s2=r.size*2.0,sp=spoutPhase(r),bam=RL.wood;
   c.save();c.translate(r.x,r.y-14*s2);c.rotate(sp.a);
   const g5=c.createLinearGradient(0,-2*s2,0,2*s2);
   g5.addColorStop(0,shade(bam[0],1.35));g5.addColorStop(.5,shade(bam[1],1.2));g5.addColorStop(1,bam[2]);
@@ -980,7 +990,7 @@ function drawRock(c,r){                                  // rocks are static exc
   else if(r.form==='spout'){rx=R*.6;ry=R*.3;sa=.5;}              // basin footprint only
   else if(r.form==='steps'){rx=R*1.08;ry=R*.46;ro=r.rot;sa=.45;} // a low flat run
   drawShadow(c,r.x,r.y,rx,ry,ro,sa);
-  const half=r.form==='driftwood'?58:(r.form==='lantern'||r.form==='spout')?62:52;
+  const half=r.form==='driftwood'?58:r.form==='lantern'?88:r.form==='spout'?78:r.form==='steps'?80:r.form==='boulder'?76:52;
   const key=`${skin}|${bkt(r.grow,10)}`;
   const s=entitySprite(r,key,half,g=>drawRockVec(g,{...r,x:0,y:0}));
   c.drawImage(s,r.x-half,r.y-half,half*2,half*2);
@@ -1543,7 +1553,7 @@ function dayTint(c){if(skin==='ink')return;const m=dayMix();          // ink: an
     c.globalCompositeOperation='screen';c.fillStyle=`rgba(255,214,214,${.07*m.dawn})`;c.fillRect(0,0,W,H);}
   const glow=m.dusk+m.night;
   if(glow>.25){c.globalCompositeOperation='screen';                   // the lantern earns its place at dusk
-    for(const r of Pond.rocks)if(r.form==='lantern'){const sz=r.size*1.25,gx=r.x,gy=r.y-17*sz;
+    for(const r of Pond.rocks)if(r.form==='lantern'){const sz=r.size*2.6,gx=r.x,gy=r.y-17*sz;
       const gl=c.createRadialGradient(gx,gy,0,gx,gy,26*sz);gl.addColorStop(0,`rgba(255,206,120,${.5*Math.min(1,glow)})`);gl.addColorStop(1,'transparent');
       c.fillStyle=gl;c.beginPath();c.arc(gx,gy,26*sz,0,TAU);c.fill();}}
   c.globalCompositeOperation='source-over';}
@@ -1695,7 +1705,7 @@ kcSwim.addEventListener('click',()=>{if(!sel)return;
 function devWarp(days){Pond.eco.lastSeen=Date.now()-days*864e5;idleReturn(true);persist();}
 let devFps=null;
 if(DEV){const dtr=document.getElementById('devtray');dtr.style.display='flex';
-  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.6 · … fps';dtr.appendChild(devFps);
+  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.7 · … fps';dtr.appendChild(devFps);
   const acts=[['+1d',()=>devWarp(1)],['+7d',()=>devWarp(7)],['+30d',()=>devWarp(30)],
     ['+200❀',()=>{Pond.econ.serenity+=200;}],
     ['mature flora',()=>{for(const p of Pond.plants){p.grow=1;if(p.type==='lotus'||p.type==='iris'||p.type==='pad')p.bloom=1;}for(const r of Pond.rocks)r.grow=1;persist();}],
@@ -1771,7 +1781,7 @@ function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;retu
   if(_adT>=5){const f=_adN/_adT;_adN=0;_adT=0;
     if(f<22&&_shed<2){_shed++;DPR_CAP=_shed===1?1.5:1;WS=_shed===1?.45:.4;resize();
       try{localStorage.setItem('koipond_q',String(_shed));}catch(e){}}}
-  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.6 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
+  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.7 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
   saveT+=dt;if(saveT>5){saveT=0;persist();}}
 addEventListener('beforeunload',persist);
 
