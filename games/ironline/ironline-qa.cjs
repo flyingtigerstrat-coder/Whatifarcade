@@ -371,6 +371,15 @@ S.ptFled=false;const jt0=S.jt;step(10);
 ok('warband: outlast the window and they GET AWAY (no overrun)', !!S.ptrain&&S.ptrain.state==='out'&&S.ptFled===true&&S.mode==='run');
 step(30);
 ok('warband fled: the leg clock resumes', S.jt>jt0);
+// the window scales with the prize: spawned via the REAL spawn path, wnd = 10 + guns*3
+S.ptrain=null;S.ptrainElite=true;S.ptrainBoard=false;S.ptrainAt=0.05;S.jt=0;S.hull=200;S.choice=null;S.mode='run';step(8);
+ok('window: scales with the warband (wnd = 10 + guns*3)', !!S.ptrain&&S.ptrain.wnd===10+S.ptrain.guns*3&&S.ptrain.wnd>=16);
+// a 3-gun warband holds the rail past the old flat 16s
+S.ptrain.state='pace';S.ptrain.guns=3;S.ptrain.wnd=19;S.ptrain.t=17;S.ptrain.atkT=99;step(5);
+ok('window: a heavy warband is still engaged at 17s', S.ptrain&&S.ptrain.state==='pace');
+S.ptrain.t=19.2;step(3);
+ok('window: ...and flees when ITS window closes', !!S.ptrain&&S.ptrain.state==='out');
+S.ptrain=null;S.ptrainAt=-1;S.ptrainElite=false;
 // the parting shot + bleeding flee: an insult, never a kill; a wounded escape half-pays
 S.ptrain={kind:'raider',elite:true,boarder:false,board:0,bLog:0,cars:[{wpn:'cannon'}],guns:1,x:150,state:'pace',t:16.5,gave:false,atkT:99,muzzle:0,hp:100,max:400,dead:false};
 S.ptFled=false;S.hull=2;{const sc0=S.scrap;step(3);

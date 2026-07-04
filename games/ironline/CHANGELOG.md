@@ -9,6 +9,14 @@ phase: in-code
 
 ---
 
+## 2026-07-04 · session 17 (cont.) — the window scales, and the hunt reads on screen (1 + 2, ratified)
+DECIDED: Two ratified recommendations built. THE WINDOW SCALES WITH THE PRIZE: a warband's engagement window is now 10s + 3s per gun car — a 2-gun raiding party gives you 16 seconds, a 3-gun heavy convoy 19 — so the richest hunts linger longest and the math stays fair (more hull to chew through, more time to chew it). THE HUNT READS AT A GLANCE: a cream WINDOW STRIP drains in two places — a 1px line under the convoy's own hp bar, and a 2px strip riding over the bottom duel bar (red rises = kill progress; cream falls = time left). The read the mechanic asks for — "can I finish this, or do I let them go?" — is now on the screen, not in the log.
+TRIED: Harness 135 green (wnd set by the REAL spawn path = 10+guns*3; a heavy warband still engaged at 17s; flees when ITS window closes). Playwright mid-hunt and window-closing stills — the closing frame reads perfectly: red bar two-thirds up, cream sliver almost gone. One parse scare: an inline // comment dropped mid-single-line spawn statement swallowed its tail — same class as the old hurt() bug; caught by the parse check in seconds.
+PARKED: The mark-holds-them tweak (+3s for a marked convoy); THE ONE THAT GOT AWAY (grudge warbands persisting in the save) — the flagship, awaiting the human's call for its own session.
+CHANGED: elite spawn gains wnd; escape check honors it; drawPElite + the duel bar gain the draining strip.
+OPEN: Human eyes on the strips in motion at phone scale — is 1px over the convoy enough, or should it thicken?
+FEELING: You watch two lines race — their hull falling, your window closing — and the whole hunt is that race, legible at arm's length.
+
 ## 2026-07-04 · session 17 (cont.) — the parting shot + fled bleeding (both ratified)
 DECIDED: The human liked both parked ideas — built. THE PARTING SHOT: a fleeing warband cracks one last round off the plate as it pulls ahead — real damage, real flash, but floored at 1 hull, because the law holds: the fight is OVER and only a fight they finish can overrun you. An insult, not a wound. FLED BLEEDING: a warband that escapes below 35% hp sheds a burning car on the way out — you strip it at speed for ~70% of a leg's base scrap. The hunt half-pays even when the quarry lives, so pouring fire into a fight you can't finish is never wasted.
 TRIED: Harness 132 green — the two new laws asserted (parting shot floors at 1, never raises the overrun; bleeding flee pays).

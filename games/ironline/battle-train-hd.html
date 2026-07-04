@@ -2015,6 +2015,7 @@ function drawPElite(x,y,p){
  px(ex+2,y+1,3,3,m[0]);px(ex+10,y+1,3,3,m[0]);
  const bw=Math.min((n+1)*15,76),hp=Math.max(0,p.hp/p.max);
  px(x-1,y-27,bw,4,'#241a12');px(x,y-26,bw-2,2,'#5a1f18');px(x,y-26,Math.round((bw-2)*hp),2,'#d23a2a');
+ if(p.state=='pace'&&!p.dead){const rem=Math.max(0,1-p.t/(p.wnd||16));px(x,y-22,Math.round((bw-2)*rem),1,'#cdb894')} // the window drains — when the cream line dies, they run
  ctx.globalAlpha=1;
 }
 const GHOSTM=['#2c3a44','#3c4e5a','#4c5e6c','#8fb4c0','#243038']; // the Ghost Hauler's cold ramp
@@ -2667,7 +2668,8 @@ if(S.mark){const pu=0.5+0.5*Math.sin(S.T*6);let mx=null,my=0;
 drawOverlays();
 if((S.origin||S.place)&&(S.immersive||S.layout!='landscape'))drawRailheadBanner(S.origin?'THE RAILHEAD':S.place.name); // canvas banner only where the DOM chrome isn't announcing the place (portrait / immersive); landscape's status pill carries it
 drawPanHint();
-if(S.mode=='run'){const bf=S.boss&&!S.boss.dead,eD=S.ptrain&&S.ptrain.elite&&!S.ptrain.dead&&S.ptrain.state!='out',bc=(bf||eD)?'#d23a2a':'#e0a33a',prog=bf?(1-Math.max(0,S.boss.hp)/S.boss.max):eD?(1-Math.max(0,S.ptrain.hp)/S.ptrain.max):(S.jt/S.dur);px(14,174,292,4,'#5a4632');px(14,174,Math.round(292*prog),4,bc);px(14,174,Math.round(292*prog),1,'#f2c560')}
+if(S.mode=='run'){const bf=S.boss&&!S.boss.dead,eD=S.ptrain&&S.ptrain.elite&&!S.ptrain.dead&&S.ptrain.state!='out',bc=(bf||eD)?'#d23a2a':'#e0a33a',prog=bf?(1-Math.max(0,S.boss.hp)/S.boss.max):eD?(1-Math.max(0,S.ptrain.hp)/S.ptrain.max):(S.jt/S.dur);px(14,174,292,4,'#5a4632');px(14,174,Math.round(292*prog),4,bc);px(14,174,Math.round(292*prog),1,'#f2c560');
+ if(eD&&S.ptrain.state=='pace'){const rem=Math.max(0,1-S.ptrain.t/(S.ptrain.wnd||16));px(14,171,Math.round(292*rem),2,'#cdb894')}} // the hunt clock over the kill bar: cream falls, red rises
 }
 function drawPanHint(){
 if(S.maxPan<=3||S.boss||S.raiders.length)return;
@@ -2767,7 +2769,7 @@ if(S.boss&&S.boss.hp<=0)bossKill();
 if(!S.boss){
 if(S.wi<S.waves.length&&S.jt>=S.waves[S.wi]){S.wi++;wave()}
 if(S.crateAt>0&&S.jt>=S.crateAt&&!S.crate){S.crate={x:340,y:150,grabbed:false};S.crateAt=-1}
-if(S.ptrainAt>0&&S.jt>=S.ptrainAt&&!S.ptrain){if(S.ptrainElite){const guns=Math.min(3,2+Math.floor(eff()/14)),wp=['cannon','rocket','mortar'],cars=[];for(let g=0;g<guns;g++)cars.push({wpn:wp[g%3]});const m=Math.round((42+eff()*15)*(1+guns*0.25));const brd=S.ptrainBoard&&eff()>=6;S.ptrain={kind:'raider',elite:true,boarder:brd,board:0,bLog:0,cars,guns,x:-96,state:'in',t:0,gave:false,atkT:1.2,muzzle:0,hp:m,max:m,dead:false};S.ptrainBoard=false;log(brd?'A BOARDER WAGON of '+CLANS[S.nav.reg].nm+' surges alongside \u2014 grapples ready. Your troops to the rails!':'A heavy raider convoy of '+CLANS[S.nav.reg].nm+' thunders onto the parallel rail \u2014 ELITE WARBAND, guns bristling.')}else if(S.ptrainKind=='ghost'){S.ptrain={kind:'ghost',x:-64,state:'in',t:0,gave:false,atkT:99,muzzle:0,hp:999,max:999,dead:false};log('A pale train runs the far rail without a sound. The old-timers call it the GHOST HAULER.')}else{const m=Math.round(30+eff()*10);S.ptrain={kind:S.ptrainKind,x:-64,state:'in',t:0,gave:false,atkT:1.0,muzzle:0,hp:m,max:m,dead:false};log(S.ptrainKind=='trader'?'A survivor train eases onto the parallel rail — they signal peace.':'A raider train of '+CLANS[S.nav.reg].nm+' swings onto the parallel rail, guns up!')}S.ptrainAt=-1}
+if(S.ptrainAt>0&&S.jt>=S.ptrainAt&&!S.ptrain){if(S.ptrainElite){const guns=Math.min(3,2+Math.floor(eff()/14)),wp=['cannon','rocket','mortar'],cars=[];for(let g=0;g<guns;g++)cars.push({wpn:wp[g%3]});const m=Math.round((42+eff()*15)*(1+guns*0.25));const brd=S.ptrainBoard&&eff()>=6;S.ptrain={kind:'raider',elite:true,boarder:brd,board:0,bLog:0,cars,guns,wnd:10+guns*3,x:-96,state:'in',t:0,gave:false,atkT:1.2,muzzle:0,hp:m,max:m,dead:false};S.ptrainBoard=false;log(brd?'A BOARDER WAGON of '+CLANS[S.nav.reg].nm+' surges alongside \u2014 grapples ready. Your troops to the rails!':'A heavy raider convoy of '+CLANS[S.nav.reg].nm+' thunders onto the parallel rail \u2014 ELITE WARBAND, guns bristling.')}else if(S.ptrainKind=='ghost'){S.ptrain={kind:'ghost',x:-64,state:'in',t:0,gave:false,atkT:99,muzzle:0,hp:999,max:999,dead:false};log('A pale train runs the far rail without a sound. The old-timers call it the GHOST HAULER.')}else{const m=Math.round(30+eff()*10);S.ptrain={kind:S.ptrainKind,x:-64,state:'in',t:0,gave:false,atkT:1.0,muzzle:0,hp:m,max:m,dead:false};log(S.ptrainKind=='trader'?'A survivor train eases onto the parallel rail — they signal peace.':'A raider train of '+CLANS[S.nav.reg].nm+' swings onto the parallel rail, guns up!')}S.ptrainAt=-1}
 }
 const pt=S.ptrain;
 if(pt){pt.t+=dt;if(pt.muzzle>0)pt.muzzle-=dt;
@@ -2781,7 +2783,7 @@ if(pt.boarder){pt.board=Math.max(0,Math.min(1,pt.board+dt*(0.085+eff()*0.003)-dt
  if(pt.board>=1){const steal=Math.round(base()*0.4);S.scrap=Math.max(0,S.scrap-steal);hurt(8+eff());pt.dead=false;pt.state='out';S.flash=1.4;log('BOARDED! They cut a hold open and swing away with '+steal+' scrap.');cards();save()}}
 pt.atkT-=dt;if(pt.atkT<=0){pt.atkT=pt.elite?(pt.boarder?1.6:1.1):1.4;pt.muzzle=0.18;const dmg=Math.round((pt.elite?Math.max(2,Math.round((6+eff()*1.5-troops()*0.4)*(1+(pt.guns||0)*0.2)*(pt.boarder?0.5:1))):Math.max(1,Math.round(4+eff()-troops()*0.4)))*(1-prowMit('frontal')));hurt(dmg);if(pt.elite&&Math.random()<0.06)springLeak();S.flash=1.0;S.booms.push({x:165,y:126,t:0.08});if(S.hull<=0)theOverrun(pt.elite?'blockade':'swarm')}
 if(S.ptrain&&pt.hp<=0){if(pt.elite){const r=Math.round(base()*1.6*crewBuffs().scrapMult);S.scrap+=r;for(let i=0;i<8;i++)S.booms.push({x:pt.x+i*8,y:96+(i%3)*6,t:0.04+i*0.05});log('ELITE WARBAND WRECKED! You strip the convoy for '+r+' scrap as it derails in flames.');if(Math.random()<(pt.boarder?0.75:0.5))recruitHero('war');else{const b=Math.round(25+eff()*7);S.scrap+=b;log('You salvage another '+b+' scrap from the burning cars.')}}else{const r=Math.round(base()*0.8);S.scrap+=r;for(let i=0;i<5;i++)S.booms.push({x:pt.x+i*9,y:98+(i%2)*6,t:0.05+i*0.05});log('Raider train wrecked! You strip it for '+r+' scrap as it derails.')}pt.dead=true;pt.state='out'}
-else if(S.ptrain&&pt.t>(pt.elite?16:3.6)&&pt.state=='pace'){pt.state='out';if(pt.elite){S.ptFled=true;
+else if(S.ptrain&&pt.t>(pt.elite?(pt.wnd||16):3.6)&&pt.state=='pace'){pt.state='out';if(pt.elite){S.ptFled=true;
  log(pt.boarder?'The boarder wagon cuts its grapples and swings away \u2014 your rails HELD, but they keep their hides. No loot from a fight that got away.':'The warband opens the throttle and pulls ahead \u2014 they GOT AWAY. Their loot rides with them.');
  {const dmg=Math.max(1,Math.round((4+eff())*0.6*(1-prowMit('frontal'))));S.hull=Math.max(1,S.hull-dmg);S.flash=1.1;pt.muzzle=0.18;S.booms.push({x:165,y:126,t:0.08}); // the parting shot is an INSULT, never a kill (the fight is over — law: overrun only on defeat)
   log('A parting shot cracks off the plate as they go \u2014 hull takes '+dmg+'. An insult, not a wound.')}
