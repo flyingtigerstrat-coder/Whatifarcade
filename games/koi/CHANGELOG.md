@@ -1,6 +1,21 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-04 — C.9: lift it out — remove plants & decorations (§10, human's live read)
+DECIDED (human): "add functionality to remove plants/decoration." Built on the koi card's grammar (two-step confirm, calm, no error states). Engine v3.7 → **v3.8**.
+
+CHANGED:
+- **Tap to select:** tapping a plant or stone (a press that doesn't drag ≥7px) opens an **item card** — name, "returns ❀N serenity · drag to move instead", and **lift it out** with the same two-step confirm as the koi's "let it swim on". Drag-to-move is unchanged; a selection ring marks the chosen item.
+- **Half-cost salvage:** removal returns `ceil(cost/2)` serenity (copper pad 9→5, lantern 30→15; unknown/starter items fall back to 3) — composing stays cheap to experiment with, but placement isn't free money.
+- **The water closes over the space:** removal pops a soft ripple where the item sat; the save persists immediately; the tray's capacity readout updates live.
+- **Fauna-safe:** the frog re-seats on a real pad when his is lifted (existing `updateFrog` re-pick covers it — gate-tested); a removed spout stops spilling; double-remove is a safe no-op.
+- Cards are exclusive (koi card ⇄ item card), the chrome never auto-hides while one is open, and feeding taps close them.
+
+TRIED / VERIFIED: new C.9 gate suite (15/15 — arrays shrink + persist, salvage math exact, capacity frees a slot at cap, frog survives redecorating and re-seats on a pad still in the pond, removed spout goes quiet, all four skins render clean post-removal). Full sweep **167/167**. REAL-BROWSER: drove the whole flow — tap boulder → card + ring → two-step confirm → boulder gone with the closing ripple, serenity 101 → 112 (+11 = ceil(22/2)). Screenshots shared.
+
+OPEN: salvage rate (half) is a Phase-D economy dial; no bulk "clear pond" on purpose — removal stays deliberate, one piece at a time (the calm law).
+
+
 ## 2026-07-04 — C.8: realistic proportions (§10, human's live read)
 DECIDED (human, from a live composed-pond screenshot): "the koi are giants compared to them" — stepping stones, lanterns, the bamboo spout, and boulders were trinket-scale next to the fish. Sized everything against an adult koi (~100–150px ≈ a real 50cm fish). Engine v3.6 → **v3.7**.
 

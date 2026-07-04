@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v3.7 (living pond, C.8: realistic proportions — lanterns/spouts stand tall, steps stride apart, boulders dwarf the fish and wear moss) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.8 (living pond, C.9: lift it out — tap any plant/stone to remove it, half-cost salvage) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
@@ -80,18 +80,18 @@
   .buy.open{background:var(--ui-accent-soft);border-color:var(--ui-accent-line)}
   .traycap{display:inline-flex;align-items:center;padding:6px 11px;font-size:10.5px;letter-spacing:.1em;
     color:rgba(238,240,234,.45);border:1px dashed var(--ui-line);border-radius:999px;font-variant-numeric:tabular-nums}.chip .c::before{content:'❀ ';color:var(--ui-glyph);transition:color .5s}
-  #koicard{position:fixed;left:20px;bottom:24px;z-index:20;width:230px;padding:13px 15px;border-radius:14px;
+  #koicard,#itemcard{position:fixed;left:20px;bottom:24px;z-index:20;width:230px;padding:13px 15px;border-radius:14px;
     color:rgba(240,238,230,.92);background:var(--ui-bg2);border:1px solid var(--ui-line);
     backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);font-size:12.5px;line-height:1.5}
-  #koicard.hide{display:none}
-  #koicard b{font-size:13.5px}#koicard .jp{color:#9bc4b4;font-size:11px;margin-left:6px}
-  #koicard .ln{opacity:.7;font-size:11px}
-  #koicard .row{display:flex;gap:8px;margin-top:9px}
-  #kcSwim{flex:1;appearance:none;cursor:pointer;border-radius:9px;padding:7px 10px;font-size:11.5px;
+  #koicard.hide,#itemcard.hide{display:none}
+  #koicard b,#itemcard b{font-size:13.5px}#koicard .jp{color:#9bc4b4;font-size:11px;margin-left:6px}
+  #koicard .ln,#itemcard .ln{opacity:.7;font-size:11px}
+  #koicard .row,#itemcard .row{display:flex;gap:8px;margin-top:9px}
+  #kcSwim,#icLift{flex:1;appearance:none;cursor:pointer;border-radius:9px;padding:7px 10px;font-size:11.5px;
     color:#e8ecdf;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);transition:background .25s}
-  #kcSwim:hover{background:rgba(255,255,255,.14)}
-  #kcSwim.confirm{color:var(--ui-on-accent);background:var(--ui-accent);border-color:var(--ui-accent);font-weight:600}
-  #kcX{appearance:none;cursor:pointer;border-radius:9px;padding:7px 10px;font-size:11.5px;color:rgba(238,240,234,.6);
+  #kcSwim:hover,#icLift:hover{background:rgba(255,255,255,.14)}
+  #kcSwim.confirm,#icLift.confirm{color:var(--ui-on-accent);background:var(--ui-accent);border-color:var(--ui-accent);font-weight:600}
+  #kcX,#icX{appearance:none;cursor:pointer;border-radius:9px;padding:7px 10px;font-size:11.5px;color:rgba(238,240,234,.6);
     background:transparent;border:1px solid rgba(255,255,255,.1)}
   #devtray{position:fixed;right:16px;bottom:24px;z-index:30;display:flex;gap:5px;flex-wrap:wrap;max-width:300px;justify-content:flex-end}
   #skins{position:fixed;left:50%;bottom:24px;transform:translateX(-50%);display:flex;gap:4px;align-items:center;
@@ -148,6 +148,9 @@
 <div id="koicard" class="hide"><b id="kcName"></b><span class="jp" id="kcJp"></span>
   <div id="kcStage"></div><div class="ln" id="kcLin"></div>
   <div class="row"><button id="kcSwim">let it swim on</button><button id="kcX">&times;</button></div></div>
+<div id="itemcard" class="hide"><b id="icName"></b>
+  <div class="ln" id="icNote"></div>
+  <div class="row"><button id="icLift">lift it out</button><button id="icX">&times;</button></div></div>
 <div id="devtray" class="chrome" style="display:none"></div>
 <div id="skins" class="chrome">
   <button class="pill on" data-skin="natural">natural</button>
@@ -1329,7 +1332,8 @@ function drawFX(c){
   if(sel&&!sel.departing){const pu=.35+.15*Math.sin(Pond._t*2.4);                   // quiet ring under the selected koi
     c.strokeStyle=`rgba(240,207,134,${pu})`;c.lineWidth=1.4;
     c.beginPath();c.ellipse(sel.x,sel.y,elen(sel)*.62,elen(sel)*.4,sel.ang,0,TAU);c.stroke();}
-  if(drag){const p=drag.plant||drag.rock,R=drag.rock?rockR(p)+6:(p.type==='lotus'?48:24+(p.size??.3)*46*(p.grow??1));
+  if(drag||selItem){const p=drag?(drag.plant||drag.rock):selItem.ref,isRock=drag?!!drag.rock:selItem.kind==='rock';
+    const R=isRock?rockR(p)+6:(p.type==='lotus'?48:24+(p.size??.3)*46*(p.grow??1));
     c.strokeStyle='rgba(244,238,224,.4)';c.lineWidth=1.5;c.beginPath();c.arc(p.rx??p.x,p.ry??p.y,R,0,TAU);c.stroke();}
 }
 
@@ -1599,7 +1603,7 @@ function rockAt(x,y){for(let i=Pond.rocks.length-1;i>=0;i--){const r=Pond.rocks[
 function koiAt(x,y){let best=null,bd=1e9;for(const k of Pond.koi){if(k.departing)continue;
   const d=(x-k.x)**2+(y-k.y)**2,r=Math.max(20,elen(k)*.45);if(d<r*r&&d<bd){bd=d;best=k;}}return best;}
 function move(x,y){P.px=P.x;P.py=P.y;P.x=x;P.y=y;
-  if(drag){drag.tx=clamp(x,40,W-40);drag.ty=clamp(y,40,H-40);cv.style.cursor='grabbing';showUI();return;}
+  if(drag){drag.tx=clamp(x,40,W-40);drag.ty=clamp(y,40,H-40);if(!drag.moved&&Math.hypot(x-drag.sx,y-drag.sy)>7)drag.moved=true;cv.style.cursor='grabbing';showUI();return;}
   const now=performance.now();
   if(now-lastMove>34){const dx=x-P.px,dy=y-P.py;if(dx*dx+dy*dy>9)Pond.ripples.push({x,y,r:2,max:90,age:0,life:1.5,s:1});lastMove=now;}
   cv.style.cursor=placing?'copy':(plantAt(x,y)||rockAt(x,y))?'grab':'crosshair';showUI();}
@@ -1609,18 +1613,21 @@ cv.addEventListener('pointerdown',e=>{const x=e.clientX,y=e.clientY;
   const kh=koiAt(x,y);
   if(kh){showCard(kh);showUI();return;}                                      // click a koi -> its card; click water -> feed
   const rh=rockAt(x,y);
-  if(rh){drag={rock:rh,tx:clamp(x,40,W-40),ty:clamp(y,40,H-40)};cv.style.cursor='grabbing';showUI();return;}
+  if(rh){drag={rock:rh,tx:clamp(x,40,W-40),ty:clamp(y,40,H-40),sx:x,sy:y,moved:false};cv.style.cursor='grabbing';showUI();return;}
   const hit=plantAt(x,y);
   if(hit){const i=Pond.plants.indexOf(hit);if(i>=0){Pond.plants.splice(i,1);Pond.plants.push(hit);}  // lift to top
-    drag={plant:hit,tx:clamp(x,40,W-40),ty:clamp(y,40,H-40)};cv.style.cursor='grabbing';showUI();}
-  else{hideCard();feed(x,y);}});
-addEventListener('pointerup',()=>{if(drag){persist();drag=null;cv.style.cursor='crosshair';}});
+    drag={plant:hit,tx:clamp(x,40,W-40),ty:clamp(y,40,H-40),sx:x,sy:y,moved:false};cv.style.cursor='grabbing';showUI();}
+  else{hideCard();hideItemCard();feed(x,y);}});
+addEventListener('pointerup',()=>{if(drag){
+  if(!drag.moved)showItemCard(drag.plant||drag.rock,drag.plant?'plant':'rock');   // a TAP selects — the card offers "lift it out"
+  else persist();
+  drag=null;cv.style.cursor='crosshair';}});
 cv.addEventListener('pointerleave',()=>{P.x=-999;P.y=-999;});
 const ser=document.getElementById('serN');
 const skinsBar=document.getElementById('skins'),tendBar=document.getElementById('tend'),hint=document.getElementById('hint');
 let uiTimer=null;
 function tryHideUI(){ // never fade the chrome mid-task — open tray, armed chip, live drag, or koi card keep it up
-  if(trayMode||placing||drag||(typeof kcard!=='undefined'&&!kcard.classList.contains('hide'))){uiTimer=setTimeout(tryHideUI,1500);return;}
+  if(trayMode||placing||drag||(typeof kcard!=='undefined'&&!kcard.classList.contains('hide'))||(typeof itemcard!=='undefined'&&!itemcard.classList.contains('hide'))){uiTimer=setTimeout(tryHideUI,1500);return;}
   [skinsBar,tendBar].forEach(e=>e.classList.add('hide'));hint.style.opacity='0';}
 function showUI(){[skinsBar,tendBar].forEach(e=>e.classList.remove('hide'));hint.style.opacity='1';clearTimeout(uiTimer);
   uiTimer=setTimeout(tryHideUI,3000);}
@@ -1683,10 +1690,34 @@ bKoi.addEventListener('click',()=>{if(Pond.econ.serenity<koiCost()||Pond.koi.len
   Pond.ripples.push({x:k.x,y:k.y,r:3,max:140,age:0,life:2.4,s:1.6});persist();showUI();});
 
 // ---- koi card + graceful departure ("let it swim on" — curation, not commerce; no refund) ----
+// ---- item card (C.9): tap a plant/stone -> lift it out (two-step, half-cost salvage) ----
+const itemcard=document.getElementById('itemcard'),icName=document.getElementById('icName'),
+      icNote=document.getElementById('icNote'),icLift=document.getElementById('icLift'),icX=document.getElementById('icX');
+let selItem=null;
+function itemEntry(o,kind){const list=kind==='plant'?CATALOG.plant:CATALOG.place;
+  return (kind==='plant'
+    ? (list.find(c=>c.t===o.type&&(c.vr??'classic')===(o.vr??'classic'))||list.find(c=>c.t===o.type))
+    : list.find(c=>c.t===o.form))||null;}
+function itemSalvage(o,kind){const e=itemEntry(o,kind);return Math.ceil(((e&&e.cost)||6)/2);}
+function showItemCard(o,kind){hideCard();selItem={kind,ref:o};
+  icLift.classList.remove('confirm');icLift.textContent='lift it out';
+  const e=itemEntry(o,kind);icName.textContent=(e&&e.label)||o.type||o.form;
+  icNote.textContent='returns \u2740'+itemSalvage(o,kind)+' serenity \u00b7 drag to move instead';
+  itemcard.classList.remove('hide');showUI();}
+function hideItemCard(){selItem=null;itemcard.classList.add('hide');}
+function removeItem(o,kind){const arr=kind==='plant'?Pond.plants:Pond.rocks;
+  const i=arr.indexOf(o);if(i<0)return false;
+  arr.splice(i,1);Pond.econ.serenity+=itemSalvage(o,kind);
+  Pond.ripples.push({x:o.rx??o.x,y:o.ry??o.y,r:3,max:90,age:0,life:1.6,s:1.2});   // the water closes over the space
+  persist();if(trayMode)refreshTray();return true;}
+icX.addEventListener('click',hideItemCard);
+icLift.addEventListener('click',()=>{if(!selItem)return;
+  if(!icLift.classList.contains('confirm')){icLift.classList.add('confirm');icLift.textContent='lift it out of the pond?';return;}
+  const {kind,ref}=selItem;hideItemCard();removeItem(ref,kind);});
 const kcard=document.getElementById('koicard'),kcName=document.getElementById('kcName'),kcJp=document.getElementById('kcJp'),
       kcStage=document.getElementById('kcStage'),kcLin=document.getElementById('kcLin'),
       kcSwim=document.getElementById('kcSwim'),kcX=document.getElementById('kcX');
-function showCard(k){sel=k;kcSwim.classList.remove('confirm');kcSwim.textContent='let it swim on';
+function showCard(k){hideItemCard();sel=k;kcSwim.classList.remove('confirm');kcSwim.textContent='let it swim on';
   const e=KOIDEX.find(d=>d.id===k.variety)||{name:k.variety,jp:''};
   kcName.textContent=e.name;kcJp.textContent=e.jp;
   kcStage.textContent=stage(k)+(stage(k)==='elder'?' · long-finned':'');
@@ -1705,7 +1736,7 @@ kcSwim.addEventListener('click',()=>{if(!sel)return;
 function devWarp(days){Pond.eco.lastSeen=Date.now()-days*864e5;idleReturn(true);persist();}
 let devFps=null;
 if(DEV){const dtr=document.getElementById('devtray');dtr.style.display='flex';
-  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.7 · … fps';dtr.appendChild(devFps);
+  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.8 · … fps';dtr.appendChild(devFps);
   const acts=[['+1d',()=>devWarp(1)],['+7d',()=>devWarp(7)],['+30d',()=>devWarp(30)],
     ['+200❀',()=>{Pond.econ.serenity+=200;}],
     ['mature flora',()=>{for(const p of Pond.plants){p.grow=1;if(p.type==='lotus'||p.type==='iris'||p.type==='pad')p.bloom=1;}for(const r of Pond.rocks)r.grow=1;persist();}],
@@ -1781,7 +1812,7 @@ function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;retu
   if(_adT>=5){const f=_adN/_adT;_adN=0;_adT=0;
     if(f<22&&_shed<2){_shed++;DPR_CAP=_shed===1?1.5:1;WS=_shed===1?.45:.4;resize();
       try{localStorage.setItem('koipond_q',String(_shed));}catch(e){}}}
-  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.7 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
+  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.8 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
   saveT+=dt;if(saveT>5){saveT=0;persist();}}
 addEventListener('beforeunload',persist);
 
