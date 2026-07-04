@@ -371,6 +371,12 @@ S.ptFled=false;const jt0=S.jt;step(10);
 ok('warband: outlast the window and they GET AWAY (no overrun)', !!S.ptrain&&S.ptrain.state==='out'&&S.ptFled===true&&S.mode==='run');
 step(30);
 ok('warband fled: the leg clock resumes', S.jt>jt0);
+// the parting shot + bleeding flee: an insult, never a kill; a wounded escape half-pays
+S.ptrain={kind:'raider',elite:true,boarder:false,board:0,bLog:0,cars:[{wpn:'cannon'}],guns:1,x:150,state:'pace',t:16.5,gave:false,atkT:99,muzzle:0,hp:100,max:400,dead:false};
+S.ptFled=false;S.hull=2;{const sc0=S.scrap;step(3);
+ok('parting shot: stings but NEVER kills (hull floors at 1)', S.hull>=1&&S.mode==='run'&&!S.choice);
+ok('fled bleeding: they shed a burning car (partial salvage)', S.scrap>sc0)}
+S.ptrain=null;
 // the overrun fires ONLY when they defeat you - and the world keeps ticking after
 S.ptrain={kind:'raider',elite:true,boarder:false,board:0,bLog:0,cars:[{wpn:'cannon'}],guns:1,x:150,state:'pace',t:1,gave:false,atkT:0.01,muzzle:0,hp:500,max:500,dead:false};
 S.hull=1;S.choice=null;S.jt=0;step(5);
