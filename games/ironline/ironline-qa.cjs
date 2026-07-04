@@ -363,6 +363,22 @@ S.farlight=1;S.origin=false;S.stop=null;S.mode='idle';S.depot=null;await save();
 ok('far light: the permanent choice round-trips', S.farlight===1);
 S.farlight=0;
 
+// ===== THE HUNT, NOT THE TIMER (session 17): kill in the window = loot; outlast = they flee; overrun ONLY on defeat =====
+S.mode='run';S.jt=0;S.dur=9999;S.waves=[];S.wi=0;S.boss=null;S.adrift=null;S.stop=null;S.choice=null;S.hull=200;S.leak=null;
+S.navT={to:{reg:0,col:2,row:0},regChange:false,prof:{len:4,deep:false}};
+S.ptrain={kind:'raider',elite:true,boarder:false,board:0,bLog:0,cars:[{wpn:'cannon'}],guns:1,x:150,state:'pace',t:16.5,gave:false,atkT:99,muzzle:0,hp:500,max:500,dead:false};
+S.ptFled=false;const jt0=S.jt;step(10);
+ok('warband: outlast the window and they GET AWAY (no overrun)', !!S.ptrain&&S.ptrain.state==='out'&&S.ptFled===true&&S.mode==='run');
+step(30);
+ok('warband fled: the leg clock resumes', S.jt>jt0);
+// the overrun fires ONLY when they defeat you - and the world keeps ticking after
+S.ptrain={kind:'raider',elite:true,boarder:false,board:0,bLog:0,cars:[{wpn:'cannon'}],guns:1,x:150,state:'pace',t:1,gave:false,atkT:0.01,muzzle:0,hp:500,max:500,dead:false};
+S.hull=1;S.choice=null;S.jt=0;step(5);
+ok('overrun: fires when they DEFEAT you (hull zero)', S.mode==='idle'&&S.ptrain===null&&!!S.choice);
+{const T0=S.T;let threw=false;try{step(20)}catch(e){threw=true}
+ok('overrun: the world keeps ticking after (no freeze)', !threw&&S.T>T0)}
+closeChoice();
+
 // ===== HOME IS A FULL STATION (QA pass 16) =====
 // 54 · docked at the origin, the depot lights around the STANDING rig — no re-staged arrival
 S.nav={seed:7,reg:0,col:0,row:0};S.place=null;S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.mode='idle';S.choice=null;
