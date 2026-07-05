@@ -11,11 +11,11 @@ global.document={getElementById:()=>anyElCache,querySelector:()=>anyElCache,quer
 global.Image=class{set src(v){}};
 global.requestAnimationFrame=()=>{};
 const script=fs.readFileSync(__dirname+'/battle-train-hd.html','utf8').match(/<script>([\s\S]*)<\/script>/)[1]
- +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet,theOverrun,springLeak,stokerRank,closeChoice,openDepot};';
+ +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet,theOverrun,springLeak,stokerRank,closeChoice,openDepot,mintRigKey,mchk,MANIFEST_TAG,wirePull,manifestOut,manifestIn};';
 eval(script);
 (async()=>{
 await new Promise(r=>setTimeout(r,20)); // let the async boot IIFE settle
-const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet,theOverrun,springLeak,stokerRank,closeChoice,openDepot}=globalThis.__T;
+const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet,theOverrun,springLeak,stokerRank,closeChoice,openDepot,mintRigKey,mchk,MANIFEST_TAG,wirePull,manifestOut,manifestIn}=globalThis.__T;
 let t=0,fails=0;const maxHullSafe=()=>60+S.engine*30;const step=n=>{for(let i=0;i<n;i++){t+=16;tick(t)}};
 const ok=(name,cond)=>{console.log((cond?'PASS':'FAIL')+'  '+name);if(!cond)fails++};
 
@@ -393,6 +393,25 @@ ok('overrun: fires when they DEFEAT you (hull zero)', S.mode==='idle'&&S.ptrain=
 {const T0=S.T;let threw=false;try{step(20)}catch(e){threw=true}
 ok('overrun: the world keeps ticking after (no freeze)', !threw&&S.T>T0)}
 closeChoice();
+
+// ===== SESSION 19: THE MANIFEST + THE WIRE =====
+// the claim ticket: minted once, worker-legal format, rides every save
+ok('rig key: worker-legal format', /^RIG-[A-Z2-7]{5}-[A-Z2-7]{5}-[A-Z2-7]{5}-[A-Z2-7]{5}$/.test(mintRigKey()));
+S.rigKey=null;S.saveSeq=0;S.mode='idle';S.origin=false;S.stop=null;S.depot=null;
+await save();const rk1=S.rigKey,sq1=S.saveSeq;
+await save();
+ok('rig key: minted once, then held', !!rk1&&S.rigKey===rk1);
+ok('seq: counts every save, monotonic', sq1===S.saveSeq-1&&S.saveSeq>=2);
+await load();
+ok('v8: claim ticket + counter survive the round-trip', S.rigKey===rk1&&S.saveSeq>=2);
+// the v1->v8 chain carries an ancient rig all the way to the wire era
+{const relic=migrate({scrap:100,journeys:3,engine:2,caboose:1,maxSlots:3,slots:[],hull:50,dist:40});
+ ok('migrate: a v1 relic arrives at v'+SAVE_V+' with a null ticket', relic.v===SAVE_V&&relic.rigKey===null&&relic.seq===0)}
+// the manifest seal: deterministic, tamper-evident
+{const b='eyJ2Ijo4fQ==';ok('manifest: the seal is deterministic and tamper-evident', mchk(b)===mchk(b)&&mchk(b)!==mchk(b+'x'))}
+// the wire is DORMANT with no URL — pull resolves as a no-op (no fetch exists in this environment; reaching for it would throw)
+{let threw=false;try{await wirePull()}catch(e){threw=true}
+ ok('wire: dormant seam is a perfect no-op', !threw)}
 
 // ===== SESSION 18: the audit fixes =====
 // A1 · the odometer reads the REAL leg length (was frozen at +4)
