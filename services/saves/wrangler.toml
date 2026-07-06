@@ -2,9 +2,9 @@
 # Deploy path A (recommended, no secrets): Cloudflare dashboard -> Workers & Pages -> Create ->
 #   import the GitHub repo -> set root directory to services/saves -> deploy. See README.md.
 # The KV namespace id below is a PLACEHOLDER: create the namespace first (dashboard ->
-#   Storage & Databases -> KV -> Create namespace "wia-saves") and paste its id here.
+#   Storage & Databases -> KV -> Create namespace) and paste its id here.
 
-name = "wia-saves"
+name = "ironlinesaves"
 main = "worker.js"
 compatibility_date = "2026-06-01"
 

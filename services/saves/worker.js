@@ -27,7 +27,7 @@ export default {
     const h = cors(req.headers.get('origin'));
 
     if (req.method === 'OPTIONS') return new Response(null, { status: 204, headers: h });
-    if (url.pathname === '/v1/health') return J(200, { ok: true, svc: 'wia-saves', v: 1 }, h);
+    if (url.pathname === '/v1/health') return J(200, { ok: true, svc: 'ironlinesaves', v: 1 }, h);
 
     const m = url.pathname.match(/^\/v1\/save\/([^/]+)$/);
     if (!m) return J(404, { err: 'no such rail' }, h);

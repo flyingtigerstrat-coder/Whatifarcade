@@ -8,7 +8,7 @@
     put: async (k, v) => { store.set(k, v) },
   }};
   const call = (method, path, body, origin) => worker.fetch(
-    new Request('https://wia-saves.test.workers.dev' + path, {
+    new Request('https://ironlinesaves.test.workers.dev' + path, {
       method, body, headers: origin ? { origin } : {},
     }), env);
 
@@ -17,7 +17,7 @@
   const KEY = 'RIG-ABCDE-FGH23-JKLMN-PQRST';
 
   let r = await call('GET', '/v1/health');
-  ok('health answers', r.status === 200 && (await r.json()).svc === 'wia-saves');
+  ok('health answers', r.status === 200 && (await r.json()).svc === 'ironlinesaves');
 
   r = await call('GET', '/v1/save/not-a-key');
   ok('bad key refused', r.status === 400);
