@@ -409,9 +409,21 @@ ok('v8: claim ticket + counter survive the round-trip', S.rigKey===rk1&&S.saveSe
  ok('migrate: a v1 relic arrives at v'+SAVE_V+' with a null ticket', relic.v===SAVE_V&&relic.rigKey===null&&relic.seq===0)}
 // the manifest seal: deterministic, tamper-evident
 {const b='eyJ2Ijo4fQ==';ok('manifest: the seal is deterministic and tamper-evident', mchk(b)===mchk(b)&&mchk(b)!==mchk(b+'x'))}
-// the wire is DORMANT with no URL — pull resolves as a no-op (no fetch exists in this environment; reaching for it would throw)
+// THE WIRE is now LIVE (SAVES_URL points at the deployed Worker) — prove the logic with fetch mocked,
+// since this harness's sandbox has no route to the public internet (proven separately by hand: the
+// deployed health check answers {"ok":true,"svc":"ironlinesaves","v":1} from a real browser).
+const _realFetch=global.fetch;
+S.mode='idle';S.origin=false;S.stop=null;S.rigKey=null;S.saveSeq=0;await save();const _localSeq=S.saveSeq;
+global.fetch=async()=>{throw new Error('sandboxed: no route to the public internet here')};
 {let threw=false;try{await wirePull()}catch(e){threw=true}
- ok('wire: dormant seam is a perfect no-op', !threw)}
+ ok('wire: an unreachable endpoint is a perfect no-op', !threw&&!S._wireNews)}
+global.fetch=async()=>({ok:true,json:async()=>({v:8,seq:_localSeq-1,scrap:1})}); // a STALER remote record
+S._wireNews=false;await wirePull();
+ok('wire: a stale remote record is ignored', !S._wireNews);
+global.fetch=async()=>({ok:true,json:async()=>({v:8,rigKey:S.rigKey,seq:_localSeq+5,scrap:9999,journeys:1,engine:1,caboose:1,maxSlots:3,slots:[],hull:10,dist:0,discount:false,layout:'',layoutManual:false,engineSkin:null,fortressUnlocked:false,origin:0,nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0},linebroken:0,prow:{lvl:1,fit:'ram'},leak:null,crippled:[],prizes:[],fam:{},farlight:0})}); // a NEWER remote record
+S._wireNews=false;await wirePull();await load();
+ok('wire: a newer remote record is adopted on the next load', S._wireNews===true&&S.scrap===9999&&S.saveSeq===_localSeq+5);
+global.fetch=_realFetch;S.scrap=120;S.saveSeq=_localSeq;
 
 // ===== SESSION 18: the audit fixes =====
 // A1 · the odometer reads the REAL leg length (was frozen at +4)

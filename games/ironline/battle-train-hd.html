@@ -514,7 +514,7 @@ return false;
 /* ---- THE MANIFEST (phase 1) + THE WIRE (phase 2, dormant until deployed) ----
    Contract: [repo] services/saves/CONTRACT.md. Law (§3.3): the game NEVER depends on the wire —
    empty SAVES_URL or a dead endpoint must feel identical to today. */
-const SAVES_URL=''; // set to the deployed services/saves URL to light the wire
+const SAVES_URL='https://ironlinesaves.flyingtigerstrat.workers.dev'; // THE WIRE is live (session 19b) — services/saves, deployed
 function mintRigKey(){const A='ABCDEFGHIJKLMNOPQRSTUVWXYZ234567',b=new Uint8Array(20);
  if(typeof window!=='undefined'&&window.crypto&&window.crypto.getRandomValues)window.crypto.getRandomValues(b);
  else for(let i=0;i<20;i++)b[i]=Math.floor(Math.random()*256);
