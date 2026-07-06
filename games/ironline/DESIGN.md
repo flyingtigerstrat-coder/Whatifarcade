@@ -137,6 +137,8 @@ The rail ocean is **4 regions** (`REGIONS`): Rust Flats → Dead City → Bone R
 
 `save()` stamps `v: SAVE_V`; `load()` runs `migrate(d)` **first**, so load logic only ever reads the current schema. `migrate()` is a **chain of stepwise upgrades** — one step per wave that grows state (v1→v2 normalized the live-shipped unversioned shape; v2→v3 will add map state and place veterans on the node graph). **Policy: a rig is sacred** — unknown/higher versions pass through untouched and load reads known fields defensively; only a genuinely unparseable blob falls back to a fresh boot. Extend save/load/reset (and the harness) together every time state grows.
 
+**Persistence beyond the browser (v8, v9):** `S.rigKey` (a client-minted 100-bit ticket) + `S.saveSeq` (a monotonic counter) ride every save, syncing fire-and-forget to `services/saves` (a Cloudflare Worker + KV, contract in `[repo] services/saves/CONTRACT.md`) — the game never depends on it (§3.3: dark endpoint = plays identically). THE MANIFEST punches the whole blob into a portable, tamper-sealed code for offline device-to-device transfer. THE LEDGER (v9) hangs an optional human-chosen name+password over the same rig key via `/v1/claim` and `/v1/login` — a memorable alias, never a replacement for the underlying key. All three layers are additive: the rig key is always the ground truth; naming and manifests are just different ways to discover it.
+
 ---
 
 ## Extraction candidates for the studio pipeline (PROPOSALS — rule of three, Tier-1 serialized)

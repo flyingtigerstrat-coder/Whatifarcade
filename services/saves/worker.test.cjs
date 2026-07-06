@@ -6,10 +6,11 @@
   const env = { SAVES: {
     get: async k => (store.has(k) ? store.get(k) : null),
     put: async (k, v) => { store.set(k, v) },
+    delete: async k => { store.delete(k) },
   }};
   const call = (method, path, body, origin) => worker.fetch(
     new Request('https://ironlinesaves.test.workers.dev' + path, {
-      method, body, headers: origin ? { origin } : {},
+      method, body, headers: origin ? { origin, 'content-type': 'application/json' } : { 'content-type': 'application/json' },
     }), env);
 
   let fails = 0;
@@ -55,6 +56,48 @@
   r = await call('GET', '/v1/health', null, 'https://evil.example');
   ok('unknown origin gets the house origin, not an echo', r.headers.get('access-control-allow-origin') === 'https://whatifarcade.com');
 
-  console.log(fails ? '\n' + fails + ' FAILURES' : '\nTHE WIRE HOLDS (contract v1)');
+  // ===== THE LEDGER — claim + login =====
+  const RK1 = 'RIG-AAAAA-BBBBB-CCCCC-DDDDD', RK2 = 'RIG-ZZZZZ-YYYYY-XXXXX-WWWWW';
+  const claim = (name, password, rigKey) => call('POST', '/v1/claim', JSON.stringify({ name, password, rigKey }));
+  const login = (name, password) => call('POST', '/v1/login', JSON.stringify({ name, password }));
+
+  r = await claim('Bob', 'hunter2', RK1);
+  ok('claim: a fresh name lands', r.status === 200 && (await r.json()).ok === true);
+
+  r = await claim('bob', 'whatever', RK2);
+  ok('claim: canonicalized collision refused (Bob === bob === BOB)', r.status === 409);
+
+  r = await claim('x', 'pw', RK2);
+  ok('claim: name too short refused', r.status === 400);
+
+  r = await claim('Perfectly Fine Name', '', RK2);
+  ok('claim: empty password refused', r.status === 400);
+
+  r = await claim('Someone Else', 'pw', 'not-a-rig-key');
+  ok('claim: malformed rig key refused', r.status === 400);
+
+  const t0 = Date.now();
+  r = await login('Bob', 'hunter2');
+  const hashMs = Date.now() - t0;
+  const gotLogin = await r.json();
+  ok('login: right name + password returns the rig key', r.status === 200 && gotLogin.rigKey === RK1);
+  ok('login: PBKDF2 stays comfortably inside a Worker CPU budget (<500ms here)', hashMs < 500);
+
+  r = await login('BOB', 'hunter2');
+  ok('login: canonicalization matches on login too', r.status === 200);
+
+  r = await login('Bob', 'wrongpassword');
+  ok('login: wrong password refused (401)', r.status === 401);
+
+  r = await login('Nobody Here', 'hunter2');
+  ok('login: unknown name gets the SAME error as wrong password (no enumeration)', r.status === 401);
+
+  { let last; for (let i = 0; i < 6; i++) last = await login('Bob', 'wrongpassword');
+    ok('login: repeated failures trip the throttle (429)', last.status === 429) }
+
+  r = await login('Bob', 'hunter2');
+  ok('login: the throttle also blocks the RIGHT password until it cools', r.status === 429);
+
+  console.log(fails ? '\n' + fails + ' FAILURES' : '\nTHE WIRE HOLDS (contract v1 + THE LEDGER)');
   process.exit(fails ? 1 : 0);
 })();

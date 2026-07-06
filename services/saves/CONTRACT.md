@@ -1,5 +1,6 @@
-# services/saves — THE WIRE · endpoint contract v1
-**Status: ratified 2026-07-04 (human greenlight: "go, workers.dev URL, KV").**
+# services/saves — THE WIRE · endpoint contract v1 (+ THE LEDGER, v1 addendum)
+**Status: ratified 2026-07-04 (human greenlight: "go, workers.dev URL, KV"). THE LEDGER (naming layer)
+ratified 2026-07-06 (human: "Bob's train" — a memorable name+password over the raw rig key).**
 **Contract-first per `[repo] CLAUDE.md` §3.4 — the game depends on THIS SHAPE, never on the host.**
 
 ## What it is
@@ -33,9 +34,46 @@ Base URL: the deployed worker (v1: `https://<name>.<account>.workers.dev`; later
   key within 2 seconds of the last accepted write gets `429 {"err":"breathe"}`.
 - `200 {"ok":true,"seq":<stored>}` on accept.
 
+## THE LEDGER — naming layer (addendum, additive over the rig key)
+A memorable **name** the wire ever reveals to the player. **The rig key stays the real vault key
+underneath, unchanged** — a claimed name is just a lookup that resolves to one. Nothing above this
+section changes.
+
+### `POST /v1/claim`
+- Body: `{name, password, rigKey}` — "give my CURRENT rig this name."
+- `name`: 2–24 chars after trim; canonicalized (trim + lowercase + collapse whitespace) as the
+  lookup key, so `Bob` / `BOB` / `bob` are the same claim. The original casing is kept for display.
+- `password`: 1–100 chars. **No complexity rule — loose by design (human call).**
+- `rigKey` must match the rig-key format above. It is NOT required to already have a save.
+- `409 {"err":"taken"}` if the canonical name is already claimed.
+- `400 {"err":"bad name"}` / `{"err":"bad password"}` / `{"err":"bad key"}` on validation failure.
+- `200 {"ok":true}` on success. Stored: `{name, rigKey, salt, hash, iter}` under `claim:<canonical>`
+  — password hashed with PBKDF2-SHA256 (WebCrypto, native to both Workers and Node), never stored
+  plain. Iteration count kept conservative on purpose, mindful of a Worker's per-request CPU budget
+  — this is a save-slot latch, not a bank vault; revisit upward if ever moved to a paid Workers plan.
+- **v1 simplification, stated plainly:** claiming again for an ALREADY-named rig is not exposed by
+  the game client (the UI only offers "Name this rig" while unnamed) and the endpoint does not
+  block it server-side either — a rename/reclaim flow that requires the OLD password is a natural
+  future addition, not built this pass.
+
+### `POST /v1/login`
+- Body: `{name, password}` — "find my rig by name, hand back its key."
+- Same canonicalization as claim. On match: `200 {"ok":true,"rigKey":"RIG-..."}` — the client then
+  reuses the existing `GET /v1/save/:rigKey` to pull the actual record (no new save-shape endpoint).
+- Unknown name AND wrong password return the **same** `401 {"err":"invalid"}` — deliberately not
+  distinguishing them, so a login attempt can't be used to probe which names exist.
+- **Throttled, because human-chosen name+password is guessable in a way the 100-bit rig key never
+  was:** a per-canonical-name failure counter (`fail:<canonical>`, 15-minute TTL) trips `429
+  {"err":"breathe"}` after 6 failed attempts, checked BEFORE the password is even verified. A
+  success clears the counter.
+- **No password recovery.** No email, no PII, by design (§ above). If a player forgets their
+  password and never punched a manifest, that name is unrecoverable — same as any password-only
+  system with no recovery channel. THE MANIFEST is the honest answer to "I forgot" as much as it
+  is to "my browser died."
+
 ## CORS
 - Allowed origins: `https://whatifarcade.com`, `https://www.whatifarcade.com`, plus `http://localhost:*` and `null` for development.
-- Methods `GET, PUT, OPTIONS`; header `content-type`. Preflight answered with `204` + 24h max-age.
+- Methods `GET, PUT, POST, OPTIONS`; header `content-type`. Preflight answered with `204` + 24h max-age.
 
 ## Storage
 - Workers **KV**, binding `SAVES`, key = the rig key string, value = the blob (with server `_ts` added).

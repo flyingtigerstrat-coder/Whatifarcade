@@ -10,12 +10,14 @@ global.window={storage:{get:async()=>_store?{value:_store}:null,set:async(k,v)=>
 global.document={getElementById:()=>anyElCache,querySelector:()=>anyElCache,querySelectorAll:()=>[],addEventListener(){},documentElement:anyElCache,fullscreenElement:null};
 global.Image=class{set src(v){}};
 global.requestAnimationFrame=()=>{};
+global.__promptQueue=[];global.prompt=()=>(global.__promptQueue.length?global.__promptQueue.shift():null); // claimRig/loginRig drive real prompt() calls; tests queue answers
+global.location={reload(){}};
 const script=fs.readFileSync(__dirname+'/battle-train-hd.html','utf8').match(/<script>([\s\S]*)<\/script>/)[1]
- +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet,theOverrun,springLeak,stokerRank,closeChoice,openDepot,mintRigKey,mchk,MANIFEST_TAG,wirePull,manifestOut,manifestIn};';
+ +'\n;globalThis.__T={S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet,theOverrun,springLeak,stokerRank,closeChoice,openDepot,mintRigKey,mchk,MANIFEST_TAG,wirePull,manifestOut,manifestIn,claimRig,loginRig};';
 eval(script);
 (async()=>{
 await new Promise(r=>setTimeout(r,20)); // let the async boot IIFE settle
-const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet,theOverrun,springLeak,stokerRank,closeChoice,openDepot,mintRigKey,mchk,MANIFEST_TAG,wirePull,manifestOut,manifestIn}=globalThis.__T;
+const {S,tick,stopArrive,stopDepart,save,load,migrate,STATION_HOME,REGIONS,navRows,nodeType,nodeEdges,nodeName,navVK,eff,finish,bossKill,navArrive,GOODS,GKEYS,GMKT,gPrice,cargoCap,seats,mkBoard,stationPers,SAVE_V,dtMix,gunVs,markMult,AC,CLANS,wave,CAPTAINS,drawTerminus,CREW,WANDER_HEROES,WAR_HEROES,grantHero,hasHero,crewBuffs,MAXRANK,BIOMES,WEATHERS,RH_FONT,RH_BUILDINGS,edgeProfile,legFuelOf,legCost,tankCap,oilTank,SINGLE_MAX,TANK_ENG,leakDrain,ovrSeverity,prowMit,PROW_CAP,PROW_BYPASS,PROW_FITS,rgGarrison,RGT,settleTier,settleSpec,stationNeed,famGreet,theOverrun,springLeak,stokerRank,closeChoice,openDepot,mintRigKey,mchk,MANIFEST_TAG,wirePull,manifestOut,manifestIn,claimRig,loginRig}=globalThis.__T;
 let t=0,fails=0;const maxHullSafe=()=>60+S.engine*30;const step=n=>{for(let i=0;i<n;i++){t+=16;tick(t)}};
 const ok=(name,cond)=>{console.log((cond?'PASS':'FAIL')+'  '+name);if(!cond)fails++};
 
@@ -424,6 +426,61 @@ global.fetch=async()=>({ok:true,json:async()=>({v:8,rigKey:S.rigKey,seq:_localSe
 S._wireNews=false;await wirePull();await load();
 ok('wire: a newer remote record is adopted on the next load', S._wireNews===true&&S.scrap===9999&&S.saveSeq===_localSeq+5);
 global.fetch=_realFetch;S.scrap=120;S.saveSeq=_localSeq;
+
+// ===== SESSION 20: THE LEDGER (name+password over the same rig key) =====
+// migrate v8 -> v9: an old rig arrives with no name and no offer yet made
+{const relic8=migrate({v:8,rigKey:'RIG-AAAAA-BBBBB-CCCCC-DDDDD',seq:3,scrap:1,journeys:1,engine:1,caboose:1,maxSlots:3,slots:[],hull:1,dist:0});
+ ok('migrate: v8 -> v9 gives an old rig a null name, never yet offered', relic8.v===SAVE_V&&relic8.rigName===null&&relic8.nameOffered===false)}
+// claimRig / loginRig drive REAL prompt() calls (queued below) and REAL fetch (mocked below) — full round-trips, no shortcuts.
+S.mode='idle';S.origin=false;S.stop=null;S.choice=null;S.rigName=null;S.rigKey=null;S.saveSeq=0;await save();const _rk=S.rigKey;
+
+global.fetch=async(url)=>(String(url).includes('/v1/claim')?{status:200,json:async()=>({ok:true})}:{status:404,json:async()=>({})});
+global.__promptQueue=['Bob’s Train','hunter2'];
+await claimRig();
+ok('claimRig: a successful claim sets S.rigName from the real prompt+fetch flow', S.rigName==='Bob’s Train');
+
+S.rigName=null;S.nameOffered=false;
+global.fetch=async(url)=>(String(url).includes('/v1/claim')?{status:409,json:async()=>({err:'taken'})}:{status:404,json:async()=>({})});
+global.__promptQueue=['Somebody Else','pw'];
+{let threw=false;try{await claimRig()}catch(e){threw=true}
+ ok('claimRig: a taken name never throws and never sets a name', !threw&&S.rigName===null)}
+
+global.fetch=async()=>{throw new Error('sandboxed: no route to the public internet here')};
+global.__promptQueue=['Whoever','pw'];
+{let threw=false;try{await claimRig()}catch(e){threw=true}
+ ok('claimRig: an unreachable ledger degrades safely (never throws)', !threw&&S.rigName===null)}
+
+global.fetch=async(url)=>{ const u=String(url);
+ if(u.includes('/v1/login'))return{status:200,json:async()=>({ok:true,rigKey:_rk})};
+ if(u.includes('/v1/save/'))return{ok:true,text:async()=>JSON.stringify({v:SAVE_V,rigKey:_rk,seq:9,scrap:555})};
+ return{status:404,json:async()=>({})}};
+global.__promptQueue=['Bob’s Train','hunter2'];
+{let threw=false;try{await loginRig()}catch(e){threw=true}
+ ok('loginRig: a correct login never throws (pulls the record, schedules a reload)', !threw)}
+
+global.fetch=async(url)=>(String(url).includes('/v1/login')?{status:401,json:async()=>({err:'invalid'})}:{status:404,json:async()=>({})});
+global.__promptQueue=['Bob’s Train','wrongpass'];
+{let threw=false;try{await loginRig()}catch(e){threw=true}
+ ok('loginRig: a wrong password never throws', !threw)}
+
+global.__promptQueue=[]; // declining at the prompt (cancel = null) exits before any network call
+{let threw=false,called=false;global.fetch=async()=>{called=true;return{status:200,json:async()=>({ok:true})}};
+ try{await claimRig()}catch(e){threw=true}
+ ok('claimRig: cancelling the prompt never touches the network', !threw&&!called)}
+global.fetch=_realFetch;S.rigName=null;S.nameOffered=false;
+
+// THE RAILHEAD offer: fires once, ever; declining suppresses it for good; it never re-nags
+S.rigName=null;S.nameOffered=false;S.choice=null;S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.mode='idle';
+openDepot('THE RAILHEAD');
+ok('the offer: THE DISPATCHER asks once, at home, if you have no name yet', !!S.choice&&S.choice.title.includes('DISPATCHER')&&S.nameOffered===true);
+closeChoice();S.choice=null;
+openDepot('THE RAILHEAD');
+ok('the offer: declining (or just moving on) never nags again', S.choice===null);
+// ...and a rig that already answers to a name is never asked
+S.rigName='Bob’s Train';S.nameOffered=false;S.choice=null;
+openDepot('THE RAILHEAD');
+ok('the offer: a named rig is never asked at all', S.choice===null);
+S.rigName=null;S.nameOffered=true;S.choice=null;S.origin=false;S.stop=null;S.mode='idle';
 
 // ===== SESSION 18: the audit fixes =====
 // A1 · the odometer reads the REAL leg length (was frozen at +4)

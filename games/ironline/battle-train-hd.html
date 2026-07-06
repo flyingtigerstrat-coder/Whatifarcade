@@ -232,8 +232,11 @@ button{font-family:'VT323',monospace;cursor:pointer;border:none}
 <button id="lt" title="Toggle mobile / desktop layout">⛶ Desktop</button>
 <button id="mfout" title="Copy your rig's full record — restore it on any device">⏚ Copy manifest</button>
 <button id="mfin" title="Restore a rig from a manifest code">⎗ Present manifest</button>
+<button id="rgclaim" title="Give this rig a memorable name and password">🖊 Name this rig</button>
+<button id="rglogin" title="Log in to a named rig from any device">🔑 Log in by name</button>
 <button id="fs" title="Toggle fullscreen">⛶ Full</button>
 <button id="im" title="Immersive mode (hide all UI)">◹ Immerse</button>
+<button id="reset">Scuttle &amp; restart</button>
 </div>
 </div>
 <div class="frame"><div class="cvwrap"><div id="chips"></div><canvas id="cv" width="640" height="360" aria-label="Side view of your armored battle train rolling through a ruined desert wasteland on a multi-lane rail ocean"></canvas><div id="region"></div></div></div>
@@ -245,7 +248,7 @@ button{font-family:'VT323',monospace;cursor:pointer;border:none}
 </div>
 <div class="view" id="v-train" hidden>
 <div id="cars"></div>
-<div class="trainfoot"><span id="savemsg"></span><button id="reset">Scuttle &amp; restart</button></div>
+<div class="trainfoot"><span id="savemsg"></span></div>
 </div>
 <div class="view" id="v-crew" hidden><div id="crewlist"></div></div>
 <div class="view" id="v-map" hidden><div id="maplist"></div></div>
@@ -277,7 +280,7 @@ const KEY='battle-train-save';
 const S={scrap:120,food:20,fuel:30,heroes:[],crewSel:-1,journeys:0,engine:1,caboose:1,maxSlots:3,
 slots:[{type:'oil',lvl:1},{type:'gun',wpn:'cannon',port:'auto',lvl:1,plvl:1},null],
 mode:'idle',jt:0,dur:14,waves:[],wi:0,hull:0,off:0,flash:0,raiders:[],smoke:[],booms:[],tracers:[],smT:0,saveT:0,resetArm:0,T:0,dt:0.016,ex:216,stackX:286,pan:0,maxPan:0,panHintT:0,tw:{x:360,r:0},turr:{},boss:null,crate:null,crateAt:-1,lastRegion:-1,lastWx:-1,ptrain:null,ptrainAt:-1,ptrainKind:'trader',ptrainElite:false,dist:0,depot:null,discount:false,view:'travel',logHist:[],layout:'',layoutManual:false,immersive:false,engineSkin:null,fortressUnlocked:false,origin:false,stationX:null,stop:null,lampK:1,
-nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null,cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0},linebroken:false,prow:{lvl:1,fit:'ram'},leak:null,crippled:[],prizes:[],place:null,fam:{},depotView:null,farlight:0};
+nav:{seed:1,reg:0,col:0,row:0},visited:['0:0:0'],sel:0,navT:null,cargo:{},pax:[],contracts:[],rep:{disp:0,carav:0,tr:0},linebroken:false,prow:{lvl:1,fit:'ram'},leak:null,crippled:[],prizes:[],place:null,fam:{},depotView:null,farlight:0,rigName:null,nameOffered:false};
 const gun=()=>S.slots.reduce((a,s)=>a+(s&&!s.crip&&s.type=='gun'?s.lvl*(TOPW[s.wpn||'cannon']?TOPW[s.wpn||'cannon'].pow:5)+(s.plvl||s.lvl)*(PORTW[s.port||'auto']?PORTW[s.port||'auto'].pow:4):0),0)*crewBuffs().gunMult;
 const troops=()=>S.slots.reduce((a,s)=>a+(s&&!s.crip&&s.type=='troop'?s.lvl*4:0),0);
 const farm=()=>S.slots.reduce((a,s)=>a+(s&&!s.crip&&s.type=='farm'?s.lvl*0.5:0),0)*crewBuffs().foodMult;
@@ -434,7 +437,7 @@ let canSave=typeof window.storage!=='undefined';
 // ---- save schema: versioned, migrated stepwise (one step per state-growing wave; BRIEF v1.2 rule 2) ----
 // POLICY: a rig is sacred. Unknown/higher versions pass through untouched and load reads known fields
 // defensively — we never wipe. Only a genuinely unparseable blob falls back to a fresh boot.
-const SAVE_V=8;
+const SAVE_V=9;
 function migrate(d){
  if(!d||typeof d!=='object')return null;
  if(!d.v){                                  // v1: the unversioned live-shipped shape -> v2 (normalize, no behavior change)
@@ -474,7 +477,11 @@ function migrate(d){
   d.rigKey=d.rigKey||null;d.seq=d.seq|0;
   d.v=8;
  }
- // future steps append here, in order: if(d.v==8){ ... d.v=9 }
+ if(d.v==8){                                // v8 -> v9: THE LEDGER — a name is optional; the offer to give one happens once, ever
+  d.rigName=d.rigName||null;d.nameOffered=!!d.nameOffered;
+  d.v=9;
+ }
+ // future steps append here, in order: if(d.v==9){ ... d.v=10 }
  return d;
 }
 function setSaveMsg(t){document.getElementById('savemsg').textContent=t}
@@ -483,7 +490,7 @@ async function save(){
 if(!canSave){setSaveMsg('Saving unavailable here');return}
 try{
 S.saveSeq=(S.saveSeq|0)+1;if(!S.rigKey)S.rigKey=mintRigKey();
-const d={v:SAVE_V,rigKey:S.rigKey,seq:S.saveSeq,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0,nav:S.nav,visited:S.visited,cargo:S.cargo,pax:S.pax,contracts:S.contracts,rep:S.rep,linebroken:S.linebroken?1:0,prow:S.prow,leak:S.leak,crippled:S.crippled,prizes:S.prizes,fam:S.fam,farlight:S.farlight|0};
+const d={v:SAVE_V,rigKey:S.rigKey,seq:S.saveSeq,scrap:Math.floor(S.scrap),food:Math.floor(S.food),fuel:Math.floor(S.fuel),heroes:S.heroes,journeys:S.journeys,engine:S.engine,caboose:S.caboose,maxSlots:S.maxSlots,slots:S.slots,hull:Math.round(S.hull),dist:Math.round(S.dist),discount:S.discount,layout:S.layout,layoutManual:S.layoutManual,engineSkin:S.engineSkin,fortressUnlocked:S.fortressUnlocked,origin:(S.origin&&S.stop&&S.stop.ph=='docked')?1:0,nav:S.nav,visited:S.visited,cargo:S.cargo,pax:S.pax,contracts:S.contracts,rep:S.rep,linebroken:S.linebroken?1:0,prow:S.prow,leak:S.leak,crippled:S.crippled,prizes:S.prizes,fam:S.fam,farlight:S.farlight|0,rigName:S.rigName||null,nameOffered:!!S.nameOffered};
 const raw=JSON.stringify(d);const r=await window.storage.set(KEY,raw);_wireRaw=raw;wirePush();
 if(r){setSaveMsg('Progress saved');clearTimeout(saveTimer);saveTimer=setTimeout(()=>setSaveMsg(''),2500)}
 }catch(e){canSave=false;setSaveMsg('Saving unavailable here')}
@@ -505,6 +512,7 @@ S.prow=(d.prow&&typeof d.prow=='object')?{lvl:Math.max(1,d.prow.lvl|0),fit:d.pro
 S.leak=(d.leak&&typeof d.leak=='object')?{rate:+d.leak.rate||0,t:+d.leak.t||0}:null;
 S.crippled=Array.isArray(d.crippled)?d.crippled:[];S.prizes=Array.isArray(d.prizes)?d.prizes:[];S.fam=(d.fam&&typeof d.fam=='object')?d.fam:{};S.farlight=d.farlight|0;
 S.rigKey=(typeof d.rigKey=='string'&&d.rigKey)?d.rigKey:null;S.saveSeq=d.seq|0;
+S.rigName=(typeof d.rigName=='string'&&d.rigName)?d.rigName:null;S.nameOffered=!!d.nameOffered;
 if(d.origin&&S.nav.reg==0&&S.nav.col==0){S.origin=true;S.stationX=STATION_HOME;S.stop={ph:'docked',t:0,vis:true};S.lampK=1} // saved while docked at the origin — wake up there
 else{S.origin=false;S.stop=null;S.stationX=null;S.lampK=1}S.place=null;                          // ...otherwise the load is authoritative: mid-journey, no stop (staged places are session-only)
 return true}
@@ -550,6 +558,34 @@ async function manifestIn(){const raw=prompt('Present a manifest \u2014 paste th
  let d;try{d=JSON.parse(decodeURIComponent(escape(atob(b))))}catch(e){d=null}
  if(!d||typeof d!=='object'||!d.v){log('The manifest is unreadable.');return}
  try{await window.storage.set(KEY,JSON.stringify(d));log('MANIFEST ACCEPTED. The line re-reads the record\u2026');setTimeout(()=>location.reload(),600)}catch(e){log('Could not take the manifest aboard.')}}
+/* ---- THE LEDGER: a memorable name+password over the same rig key (services/saves CONTRACT.md) ----
+   Additive, never required: the rig key + manifest remain the ground truth. Both fail silently
+   per \u00a73.3 if SAVES_URL is dark or the wire is unreachable. */
+async function claimRig(){
+ if(!SAVES_URL){log('There is no ledger out here to write in.');return}
+ if(S.rigName){log('This rig already answers to a name \u2014 '+S.rigName+'.');return}
+ const name=prompt('Name your rig \u2014 this is how you\u2019ll find it again:');if(!name||!name.trim())return;
+ const pass=prompt('Set a password (keep it simple, keep it yours):');if(!pass)return;
+ await save(); // make sure a rigKey exists before we hand it to the ledger
+ try{
+  const res=await fetch(SAVES_URL+'/v1/claim',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name,password:pass,rigKey:S.rigKey})});
+  if(res.status===200){S.rigName=name.trim();log('THE LEDGER: \u201c'+S.rigName+'.\u201d Written down. We\u2019ll know you next time.');save()}
+  else if(res.status===409)log('That name is already claimed on the line \u2014 try another.');
+  else log('The ledger would not take that name just now.');
+ }catch(e){log('The wire is quiet. Try again another time.')}}
+async function loginRig(){
+ if(!SAVES_URL){log('There is no ledger out here to check.');return}
+ const name=prompt('Log in by name:');if(!name||!name.trim())return;
+ const pass=prompt('Password:');if(!pass)return;
+ try{
+  const res=await fetch(SAVES_URL+'/v1/login',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({name,password:pass})});
+  if(res.status===200){const {rigKey}=await res.json();
+   const sres=await fetch(SAVES_URL+'/v1/save/'+rigKey);
+   if(sres.ok){const blob=await sres.text();await window.storage.set(KEY,blob);log('THE LEDGER KNOWS YOU. Riding in as '+name.trim()+'\u2026');setTimeout(()=>location.reload(),600)}
+   else log('Found your name, but the record would not load. Try again.')}
+  else if(res.status===429)log('Too many tries \u2014 the ledger wants you to wait a while.');
+  else log('The ledger doesn\u2019t know that name and password together.');
+ }catch(e){log('The wire is quiet. Try again another time.')}}
 function statLine(s){if(s.type=='gun')return TOPW[s.wpn||'cannon'].nm+' LV'+s.lvl+' + '+PORTW[s.port||'auto'].nm+' LV'+(s.plvl||1)+' · pow '+Math.round(s.lvl*TOPW[s.wpn||'cannon'].pow+(s.plvl||1)*PORTW[s.port||'auto'].pow);if(s.type=='farm')return '+'+(s.lvl*0.5).toFixed(1)+' food/s';if(s.type=='oil')return '+'+(s.lvl*0.4).toFixed(1)+' fuel/s';if(s.type=='repair')return '+'+(s.lvl*3)+' hull/s in combat';if(s.type=='cargo')return (2+s.lvl*2)+' cargo holds · trade the spread';if(s.type=='pass')return (1+s.lvl)+' coach seats · fares on arrival';return s.lvl*4+' troops · escort'}
 function pip(c){return '<span class="pip" style="background:'+c+'"></span>'}
 function tierMk(l){const t=vtier(l);return '<span style="color:#e0a33a;letter-spacing:1px">'+('★'.repeat(t+1))+'</span>'}
@@ -978,6 +1014,10 @@ S.depotView=null; // the sheet never opens itself — the chips carry the stop (
  S.depot.offers.push({label:CREW[h.kind].nm+'\u2019s favor',desc:'\u2212'+cost+' scrap \u00b7 they train to '+RNK[h.rank+1],can:()=>S.scrap>=cost,act:()=>{S.scrap-=cost;h.rank++;log(CREW[h.kind].nm+' repays the favor in skill \u2014 rank '+RNK[h.rank]+'.')}})}}
 if(S.linebroken){if(Math.random()<0.2)log('They speak your name at the gates now, engineer.')}
 else if(Math.random()<0.35){const rl=RUMORS[S.nav.reg];log('Rumor — '+rl[Math.floor(Math.random()*rl.length)])}
+if(S.origin&&!S.rigName&&!S.nameOffered&&!S.choice){S.nameOffered=true;save(); // THE LEDGER — offered once, ever, at home; declining never nags again (the ⚙ menu stays open to it)
+ showChoice('THE DISPATCHER LEANS IN','“Let us remember who you are, stranger — in case the ledger ever needs to find you again.”',[
+  {label:'Log your name',desc:'name · password · free',fn:()=>{closeChoice();claimRig()}},
+  {label:'Not yet',desc:'the ledger can wait',fn:()=>{closeChoice();log('You tip your hat and keep your name to yourself. For now.')}}])}
 renderDepot();showView('travel')}
 function renderChips(){const el=document.getElementById('chips');if(!el)return;
 if(S.mode!='depot'||!S.depot||!(S.stop&&S.stop.ph=='docked')){el.style.display='none';el.innerHTML='';return} // the chips light when the wheels stop
@@ -1064,6 +1104,8 @@ window.addEventListener('resize',()=>{if(autoLayout())applyLayout()});
 document.getElementById('lt').addEventListener('click',()=>{S.layout=(S.layout=='landscape')?'portrait':'landscape';S.layoutManual=true;applyLayout();save()});
 document.getElementById('mfout').addEventListener('click',manifestOut);
 document.getElementById('mfin').addEventListener('click',manifestIn);
+document.getElementById('rgclaim').addEventListener('click',claimRig);
+document.getElementById('rglogin').addEventListener('click',loginRig);
 function isFs(){return !!(document.fullscreenElement||document.webkitFullscreenElement)}
 function updFsBtn(){const b=document.getElementById('fs');if(b)b.textContent=isFs()?'▢ Exit':'⛶ Full'}
 function fsFail(){const b=document.getElementById('fs');if(b){b.textContent='↗ Open in tab';setTimeout(()=>{if(!isFs())updFsBtn()},3000)}log('Fullscreen is blocked inside the embedded preview. Download this file or open it in its own browser tab to go fullscreen.')}
