@@ -1015,7 +1015,7 @@ S.depotView=null; // the sheet never opens itself — the chips carry the stop (
 if(S.linebroken){if(Math.random()<0.2)log('They speak your name at the gates now, engineer.')}
 else if(Math.random()<0.35){const rl=RUMORS[S.nav.reg];log('Rumor — '+rl[Math.floor(Math.random()*rl.length)])}
 if(S.origin&&!S.rigName&&!S.nameOffered&&!S.choice){S.nameOffered=true;save(); // THE LEDGER — offered once, ever, at home; declining never nags again (the ⚙ menu stays open to it)
- showChoice('THE DISPATCHER LEANS IN','“Let us remember who you are, stranger — in case the ledger ever needs to find you again.”',[
+ showChoice('THE DISPATCHER LEANS IN','“Let us put a name to you, stranger — engines get rebuilt, but the ledger remembers who’s really riding.”',[
   {label:'Log your name',desc:'name · password · free',fn:()=>{closeChoice();claimRig()}},
   {label:'Not yet',desc:'the ledger can wait',fn:()=>{closeChoice();log('You tip your hat and keep your name to yourself. For now.')}}])}
 renderDepot();showView('travel')}
