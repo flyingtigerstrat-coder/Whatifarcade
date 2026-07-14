@@ -1,5 +1,5 @@
 <!doctype html>
-<!-- Koi — a pond to keep · koi v3.8 (living pond, C.9: lift it out — tap any plant/stone to remove it, half-cost salvage) · Noodle Studios / What If Arcade -->
+<!-- Koi — a pond to keep · koi v3.9 (living pond, C.10: the pond remembers you — whispers, named koi, gift-glow, dev-gated QA) · Noodle Studios / What If Arcade -->
 <!--
   ARCHITECTURE: the pond is the platform; a "skin" is content.
   Single shared POND state (koi, plants, food, ripples, economy, time).
@@ -26,6 +26,11 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<meta name="description" content="An ambient koi pond you keep. It grows, blooms, and stays alive while you're away.">
+<meta property="og:title" content="Koi — a pond to keep">
+<meta property="og:description" content="An ambient koi pond you keep. It grows, blooms, and stays alive while you're away.">
+<meta name="theme-color" content="#0c1512">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 64 64'%3E%3Crect width='64' height='64' rx='14' fill='%230c1512'/%3E%3Cpath d='M18 36c5-11 19-14 28-9-1 9-12 17-25 15l-9 7 3-10z' fill='%23d86a3a'/%3E%3Ccircle cx='39' cy='31' r='2.6' fill='%230c1512'/%3E%3C/svg%3E">
 <title>Koi — a pond to keep</title>
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
@@ -104,6 +109,18 @@
   .pill:hover{color:rgba(238,240,234,.95)}
   .pill.on{color:#0c1512;background:rgba(238,240,234,.94);font-weight:500}
   @media (max-width:580px){ .pill{padding:7px 10px;letter-spacing:.04em} #tend{flex-wrap:wrap} }
+  #whisper{position:fixed;left:50%;top:78px;transform:translateX(-50%);max-width:86vw;text-align:center;
+    font-family:ui-sans-serif,-apple-system,"Segoe UI",Inter,sans-serif;font-size:12px;letter-spacing:.14em;
+    text-transform:lowercase;color:rgba(240,238,230,.55);opacity:0;transition:opacity 1.6s;pointer-events:none;z-index:9}
+  #whisper.on{opacity:1}
+  #ser{transition:background .5s,border-color .8s,box-shadow .8s}
+  #ser.glow{border-color:var(--ui-accent-line);box-shadow:0 0 20px var(--ui-accent-soft)}
+  .linkbtn{appearance:none;background:none;border:none;cursor:pointer;padding:0;font-size:11px;
+    color:rgba(238,240,234,.55);text-decoration:underline dotted;letter-spacing:.04em}
+  .linkbtn:hover{color:rgba(238,240,234,.9)}
+  #kcNameIn{width:100%;margin-top:7px;appearance:none;border-radius:9px;padding:7px 10px;font-size:12px;
+    color:#f2efe4;background:rgba(255,255,255,.08);border:1px solid var(--ui-line);outline:none}
+  #kcNameIn:focus{border-color:var(--ui-accent-line)}
   #hint{position:fixed;left:50%;bottom:66px;transform:translateX(-50%);font-size:11px;letter-spacing:.16em;
     text-transform:lowercase;color:rgba(238,240,234,.4);transition:opacity 1s;z-index:10;pointer-events:none}
   #veil{position:fixed;inset:0;background:#0c1512;opacity:0;pointer-events:none;transition:opacity .42s;z-index:5}
@@ -144,9 +161,12 @@
   </div>
   <div id="tray" class="chrome hide"></div>
 </div>
+<div id="whisper"></div>
 <div id="hint" class="chrome">drag to stir &nbsp;·&nbsp; click to feed &nbsp;·&nbsp; tend &amp; grow</div>
 <div id="koicard" class="hide"><b id="kcName"></b><span class="jp" id="kcJp"></span>
   <div id="kcStage"></div><div class="ln" id="kcLin"></div>
+  <div class="ln"><button class="linkbtn" id="kcRename">name it</button></div>
+  <input id="kcNameIn" class="hide" maxlength="20" placeholder="name this koi">
   <div class="row"><button id="kcSwim">let it swim on</button><button id="kcX">&times;</button></div></div>
 <div id="itemcard" class="hide"><b id="icName"></b>
   <div class="ln" id="icNote"></div>
@@ -302,7 +322,7 @@ function seedDefault(){
 function restore(s){
   Pond.econ.serenity=s.econ?.serenity||6;
   Pond.unlocked=s.unlocked&&s.unlocked.length?s.unlocked:['kohaku','asagi','ogon'];
-  Pond.koi=(s.koi||[]).map(k=>makeKoi(k.variety,k.x*W,k.y*H,k.age,k.seed,k.parents||null));
+  Pond.koi=(s.koi||[]).map(k=>{const kk=makeKoi(k.variety,k.x*W,k.y*H,k.age,k.seed,k.parents||null);if(k.name)kk.name=String(k.name).slice(0,20);return kk;});
   Pond.plants=(s.plants||[]).map(p=>{const mk=PLANT_MAKE[p.type]||makePad;
     const pl=p.type==='pad'?makePad(p.x*W,p.y*H,p.size,p.vr,p.sd):mk(p.x*W,p.y*H,p.sd);
     Object.assign(pl,{grow:p.grow??pl.grow,bloom:p.bloom||0,vr:p.vr||'classic'});
@@ -314,7 +334,7 @@ function restore(s){
 }
 function persist(){
   Store.save({v:3, econ:Pond.econ, unlocked:Pond.unlocked,
-    koi:Pond.koi.map(k=>({variety:k.variety,age:k.age,x:k.x/W,y:k.y/H,seed:k.seed,parents:k.parents||null})),
+    koi:Pond.koi.map(k=>({variety:k.variety,age:k.age,x:k.x/W,y:k.y/H,seed:k.seed,parents:k.parents||null,name:k.name||undefined})),
     plants:Pond.plants.map(p=>({type:p.type,x:p.x/W,y:p.y/H,size:p.size,grow:p.grow,bloom:p.bloom,vr:p.vr||'classic',sd:p.sd})),
     rocks:Pond.rocks.map(r=>({form:r.form,x:r.x/W,y:r.y/H,size:r.size,rot:r.rot,grow:r.grow,sd:r.sd})),
     frog:Pond.frog, departed:Pond.departed, seen:Pond.seen,
@@ -341,12 +361,19 @@ function idleReturn(uncap){
   if(hrs<.05){Pond.eco.lastSeen=now;return;}
   const dAge=(hrs/24)*GROW_DAY;                           // capped passive growth while away
   for(const k of Pond.koi)k.age=Math.min(AGE_MAX,k.age+dAge*rand(.8,1.2));
-  for(const p of Pond.plants){p.grow=Math.min(1,(p.grow??0)+hrs*.01);
+  let _nb=0;                                              // blooms that opened while away (for the return whisper)
+  for(const p of Pond.plants){p.grow=Math.min(1,(p.grow??0)+hrs*.01);const _b0=p.bloom||0;
     if((p.type==='lotus'||p.type==='iris')&&p.grow>.9)p.bloom=Math.min(1,(p.bloom||0)+hrs*.02);
-    if(p.type==='pad'&&p.vr!=='cluster'&&p.grow>.85)p.bloom=Math.min(1,(p.bloom||0)+hrs*.012);}  // water-lily on old pads
+    if(p.type==='pad'&&p.vr!=='cluster'&&p.grow>.85)p.bloom=Math.min(1,(p.bloom||0)+hrs*.012);
+    if(_b0<.5&&(p.bloom||0)>=.5)_nb++;}  // water-lily on old pads
   for(const r of Pond.rocks)r.grow=Math.min(1,r.grow+hrs*.008);                                  // moss creeps while away
   Pond.econ.serenity+=Math.min(hrs*2,uncap?1e9:60);       // gentle trickle, capped (dev warps honest to elapsed)
   Pond.eco.lastSeen=now; rollVisitors();                  // returning can mean finding a visitor already here
+  if(hrs>=1&&typeof whisper==='function'){                // the pond says what it did — one line, from real facts
+    const d=hrs>=42?Math.round(hrs/24)+' days':hrs>=20?'a day':Math.round(hrs)+(hrs<1.5?' hour':' hours');
+    const bits=[];if(_nb>0)bits.push(_nb===1?'a bloom opened':_nb+' blooms opened');
+    if(Pond.frog)bits.push('the frog stayed');if(Fauna.school.length)bits.push('the minnows are here');
+    setTimeout(()=>whisper('while you were away · '+d+(bits.length?' — '+bits[0]:''),9000),2600);}
 }
 
 // =================================================================
@@ -359,8 +386,8 @@ function idleReturn(uncap){
 const Fauna={school:[],frog:null,frogRt:null,dragonfly:null,fireflies:[],_roll:0,_m:{}};
 const VISIT={shelter:6,frogPads:3,bloom:3};   // quick-unlock thresholds (human rider: first visitors within the first good session or two)
 function maturePads(){let n=0;for(const p of Pond.plants)if(p.type==='pad'&&(p.grow??0)>.8)n++;return n;}
-function firstSeen(key,gift){if(!Pond.seen[key]){Pond.seen[key]=Date.now();Pond.econ.serenity+=gift;persist();}}
-function momentT(key,gift,cool){const now=Pond._t;if((Fauna._m[key]||-1e9)+cool>now)return;Fauna._m[key]=now;Pond.econ.serenity+=gift;}   // presence quietly rewarded — zero UI
+function firstSeen(key,gift){if(!Pond.seen[key]){Pond.seen[key]=Date.now();Pond.econ.serenity+=gift;Pond._gift=Pond._t;persist();}}
+function momentT(key,gift,cool){const now=Pond._t;if((Fauna._m[key]||-1e9)+cool>now)return;Fauna._m[key]=now;Pond.econ.serenity+=gift;Pond._gift=Pond._t;}   // presence quietly rewarded — zero UI
 
 // ---- the school (BELOW): one boids flock of minnows; darts from koi — prey grammar, zero predation ----
 function spawnSchool(){const n=Math.min(15+(Math.random()*6|0),CAPS.school);Fauna.school=[];
@@ -1485,7 +1512,7 @@ function step(dt){Pond._t+=dt;
   for(const k of Pond.koi)updateKoi(k,dt);
   for(let i=Pond.koi.length-1;i>=0;i--){const k=Pond.koi[i];                        // a departing koi reaches open water
     if(k.departing&&(k.x<-70||k.x>W+70||k.y<-70||k.y>H+70)){
-      Pond.departed.push({variety:k.variety,seed:k.seed,age:k.age,departed:Date.now()});
+      Pond.departed.push({variety:k.variety,seed:k.seed,age:k.age,departed:Date.now(),name:k.name||null});   // the Almanac will know it by name
       Pond.ripples.push({x:clamp(k.x,20,W-20),y:clamp(k.y,20,H-20),r:3,max:110,age:0,life:2.2,s:1.3});  // one farewell ripple
       Pond.koi.splice(i,1);persist();}}
   for(const r of Pond.ripples){r.age+=dt;r.r=lerp(r.r,r.max,1-Math.pow(.001,dt));}
@@ -1678,13 +1705,16 @@ function toggleTray(mode){if(trayMode===mode){trayMode=null;placing=null;trayEl.
   openPlant.classList.toggle('open',trayMode==='plant');openPlace.classList.toggle('open',trayMode==='place');showUI();}
 openPlant.addEventListener('click',()=>toggleTray('plant'));
 openPlace.addEventListener('click',()=>toggleTray('place'));
-const _ui={s:-1,kc:-1,kd:null};
+const _ui={s:-1,kc:-1,kd:null,gl:false};
+const serChip=document.getElementById('ser');
 function syncShop(){ // perf: runs every tick — only touch the DOM when a value actually changed
   const s=Math.floor(Pond.econ.serenity),kc=koiCost(),kd=s<kc||Pond.koi.length>=CAPS.koi;
   if(s!==_ui.s){_ui.s=s;ser.textContent=s;
     if(trayMode&&!trayEl.classList.contains('hide'))refreshTray();codexTick();}
   if(kc!==_ui.kc){_ui.kc=kc;cKoi.textContent=kc;}
-  if(kd!==_ui.kd){_ui.kd=kd;bKoi.disabled=kd;}}                    // ledger: quiet cap, no error state
+  if(kd!==_ui.kd){_ui.kd=kd;bKoi.disabled=kd;}
+  const gl=!!(Pond._gift&&(Pond._t-Pond._gift)<1.5);                 // a gift just landed — the chip glows once, quietly
+  if(gl!==_ui.gl){_ui.gl=gl;if(serChip)serChip.classList.toggle('glow',gl);}}                    // ledger: quiet cap, no error state
 bKoi.addEventListener('click',()=>{if(Pond.econ.serenity<koiCost()||Pond.koi.length>=CAPS.koi)return;Pond.econ.serenity-=koiCost();
   const pool=(Pond.unlocked&&Pond.unlocked.length)?Pond.unlocked:STARTERS;const v=pool[(Math.random()*pool.length)|0];const k=makeKoi(v,rand(W*.3,W*.7),rand(H*.3,H*.7),.3);Pond.koi.push(k);
   Pond.ripples.push({x:k.x,y:k.y,r:3,max:140,age:0,life:2.4,s:1.6});persist();showUI();});
@@ -1714,16 +1744,28 @@ icX.addEventListener('click',hideItemCard);
 icLift.addEventListener('click',()=>{if(!selItem)return;
   if(!icLift.classList.contains('confirm')){icLift.classList.add('confirm');icLift.textContent='lift it out of the pond?';return;}
   const {kind,ref}=selItem;hideItemCard();removeItem(ref,kind);});
+// ---- whispers (C.10): one quiet line, the pond speaking softly. Never stacks, never demands. ----
+const whisperEl=document.getElementById('whisper');let _wt=null;
+function whisper(t,dur){whisper.last=t;if(!whisperEl)return;whisperEl.textContent=t;whisperEl.classList.add('on');
+  clearTimeout(_wt);_wt=setTimeout(()=>{whisperEl.classList.remove('on');},dur||7000);}
 const kcard=document.getElementById('koicard'),kcName=document.getElementById('kcName'),kcJp=document.getElementById('kcJp'),
       kcStage=document.getElementById('kcStage'),kcLin=document.getElementById('kcLin'),
       kcSwim=document.getElementById('kcSwim'),kcX=document.getElementById('kcX');
 function showCard(k){hideItemCard();sel=k;kcSwim.classList.remove('confirm');kcSwim.textContent='let it swim on';
   const e=KOIDEX.find(d=>d.id===k.variety)||{name:k.variety,jp:''};
-  kcName.textContent=e.name;kcJp.textContent=e.jp;
+  kcName.textContent=k.name||e.name;kcJp.textContent=k.name?e.name:e.jp;   // a named koi wears its name; the variety steps back
+  kcRename.textContent=k.name?'rename':'name it';kcNameIn.classList.add('hide');kcRename.parentElement.classList.remove('hide');
   kcStage.textContent=stage(k)+(stage(k)==='elder'?' · long-finned':'');
   kcLin.textContent=k.parents?'pond-born · carries two lineages':'released by hand';
   kcard.classList.remove('hide');}
 function hideCard(){sel=null;kcard.classList.add('hide');}
+const kcRename=document.getElementById('kcRename'),kcNameIn=document.getElementById('kcNameIn');
+kcRename.addEventListener('click',()=>{if(!sel)return;
+  kcNameIn.value=sel.name||'';kcNameIn.classList.remove('hide');kcRename.parentElement.classList.add('hide');kcNameIn.focus();});
+function commitName(){if(!sel){kcNameIn.classList.add('hide');return;}
+  const v=kcNameIn.value.trim().slice(0,20);sel.name=v||null;persist();showCard(sel);}   // textContent everywhere — names render safely
+kcNameIn.addEventListener('keydown',e=>{if(e.key==='Enter')commitName();if(e.key==='Escape'){kcNameIn.classList.add('hide');kcRename.parentElement.classList.remove('hide');}});
+kcNameIn.addEventListener('blur',commitName);
 kcX.addEventListener('click',hideCard);
 kcSwim.addEventListener('click',()=>{if(!sel)return;
   if(!kcSwim.classList.contains('confirm')){kcSwim.classList.add('confirm');kcSwim.textContent="it won't return — let it swim on?";return;}
@@ -1736,7 +1778,7 @@ kcSwim.addEventListener('click',()=>{if(!sel)return;
 function devWarp(days){Pond.eco.lastSeen=Date.now()-days*864e5;idleReturn(true);persist();}
 let devFps=null;
 if(DEV){const dtr=document.getElementById('devtray');dtr.style.display='flex';
-  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.8 · … fps';dtr.appendChild(devFps);
+  devFps=document.createElement('span');devFps.className='chip';devFps.textContent='v3.9 · … fps';dtr.appendChild(devFps);
   const acts=[['+1d',()=>devWarp(1)],['+7d',()=>devWarp(7)],['+30d',()=>devWarp(30)],
     ['+200❀',()=>{Pond.econ.serenity+=200;}],
     ['mature flora',()=>{for(const p of Pond.plants){p.grow=1;if(p.type==='lotus'||p.type==='iris'||p.type==='pad')p.bloom=1;}for(const r of Pond.rocks)r.grow=1;persist();}],
@@ -1758,7 +1800,7 @@ const KOIDEX=[
 const codexEl=document.getElementById('codex'),cxList=document.getElementById('cxList'),codexBtn=document.getElementById('codexBtn');
 function cxOwned(e){return e.cost===0||(Pond.unlocked||[]).includes(e.id);}
 function buildCodex(){cxList.innerHTML='';
-  { // Pond QA — time (temporary QA surface, human-requested; remove/gate before any wider push)
+  if(DEV){ // Pond QA — DEV-GATED (?dev=1): time forcing + warps must never reach players (economy + real-clock magic)
     const qa=document.createElement('div');qa.className='cx';
     qa.innerHTML=`<div class="info"><div class="nm">Pond QA <span class="jp">time</span></div>
       <div class="ds">day-cycle preview (Phase C grade, session-only) · time warps run the real return path.</div>
@@ -1812,13 +1854,16 @@ function tick(now){requestAnimationFrame(tick);if(document.hidden){last=now;retu
   if(_adT>=5){const f=_adN/_adT;_adN=0;_adT=0;
     if(f<22&&_shed<2){_shed++;DPR_CAP=_shed===1?1.5:1;WS=_shed===1?.45:.4;resize();
       try{localStorage.setItem('koipond_q',String(_shed));}catch(e){}}}
-  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.8 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
+  if(devFps){_fpsN++;_fpsT+=dt;if(_fpsT>=1){devFps.textContent='v3.9 · '+(_fpsN/_fpsT).toFixed(0)+' fps';_fpsN=0;_fpsT=0;}}
   saveT+=dt;if(saveT>5){saveT=0;persist();}}
 addEventListener('beforeunload',persist);
 
 resize();const saved=Store.load();
 if(saved&&saved.koi&&saved.koi.length){restore(saved);idleReturn();}   // away-progress applied on return (capped gift)
-else{seedDefault();Pond.eco.lastSeen=Date.now();}
+else{seedDefault();Pond.eco.lastSeen=Date.now();
+  setTimeout(()=>whisper('this pond is yours to keep',8000),2400);       // the pond says hello, once
+  setTimeout(()=>whisper('tap the water to feed \u00b7 drag to stir',8000),13000);
+  setTimeout(()=>whisper('it keeps living while you\u2019re away',8000),27000);}
 requestAnimationFrame(tick);
 </script>
 <!-- analytics: record an open ("times played") via the shared studio hook.

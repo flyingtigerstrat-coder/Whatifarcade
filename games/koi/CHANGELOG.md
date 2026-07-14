@@ -1,6 +1,21 @@
 # CHANGELOG — KOI GARDEN
 (newest on top; fields: DECIDED / TRIED / PARKED / CHANGED / OPEN / FEELING)
 
+## 2026-07-04 — C.10: the pond remembers you (§10 polish pass, human-ratified plan)
+DECIDED (human: "aligned, execute" on the polish-lens review). Engine v3.8 → **v3.9**.
+
+CHANGED:
+- **🚨 The Pond QA card is DEV-GATED.** The codex's time forcing + day-warps were live for every player (the +30-day warp = a month of free growth/serenity, and it broke the real-clock magic). Now behind `?dev=1`, per the tripwire the code itself carried. Ship-blocker class fix.
+- **Whispers — the pond speaks softly.** A single quiet line, top-center, never stacking, never demanding: a first-run hello ("this pond is yours to keep" → "tap the water to feed · drag to stir" → "it keeps living while you're away"), and a **return whisper built from real facts** — idleReturn now counts what actually happened ("while you were away · 2 days — 3 blooms opened", the frog stayed, the minnows are here).
+- **Name your koi.** The koi card gains name it / rename → inline input (Enter/blur commits, Esc cancels, 20-char cap, rendered via textContent — injection-safe). A named koi wears its name as the card title with the variety as subtitle; the name **persists in the save** and **follows the fish into the departed record** — the future Almanac will know it by name. Persistence = attachment, now with names.
+- **Gifts glow.** When a serenity moment lands (first sightings, quiet rewards), the serenity chip glows for ~1.5s — presence rewarded, still no meters. Transient, never saved.
+- **Web dress:** favicon (a koi comma on pond-dark), description + og: tags, theme-color.
+
+TRIED / VERIFIED: new C.10 gate suite (11/11 — DEV false for players + QA behind if(DEV); names survive reload, cap at 20 chars, and ride into departed[]; gift stamp transient; whisper wired; four skins clean). Full sweep **178/178**. REAL-BROWSER: fresh first-run caught the hello whisper over the starter pond; named a koi "Brick" through the actual UI and verified the save **through a true reload** (an earlier "missing name" scare was a test artifact — Playwright re-seeding localStorage on navigation — the engine was right).
+
+OPEN: next per the ratified plan — C.11 pond backup (export/import), then Phase D. The QA card's warps remain available under ?dev=1 for our lifecycle testing.
+
+
 ## 2026-07-04 — C.9: lift it out — remove plants & decorations (§10, human's live read)
 DECIDED (human): "add functionality to remove plants/decoration." Built on the koi card's grammar (two-step confirm, calm, no error states). Engine v3.7 → **v3.8**.
 
